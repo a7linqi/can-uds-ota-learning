@@ -334,7 +334,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>-std=c99 -Wall -Wextra -mfloat-abi=soft</MiscControls>
-              <Define>STM32F407xx,USE_HAL_DRIVER,__MICROLIB,FLASH_TOTAL_SIZE=1048576u,HSE_VALUE=8000000u,OTA_EXPLORER_REFERENCE_PINS=1,OTA_EXPLORER_CAN_LOOPBACK=1,OTA_ENABLE_FLASHING=0,OTA_ENABLE_BOOT_HANDOFF=0,OTA_ENABLE_WATCHDOG=0</Define>
+              <Define>STM32F407xx,USE_HAL_DRIVER,__MICROLIB,FLASH_TOTAL_SIZE=1048576u,HSE_VALUE=8000000u,OTA_EXPLORER_REFERENCE_PINS=1,OTA_EXPLORER_CAN_LOOPBACK=1,OTA_DIAG_UART=0,OTA_ENABLE_FLASHING=0,OTA_ENABLE_BOOT_HANDOFF=0,OTA_ENABLE_WATCHDOG=0</Define>
               <Undefine />
               <IncludePath>..\platform\stm32f407\board\explorer_reference;..\include;..\platform\stm32f407\include;..\platform\stm32f407\examples;..\third_party\ed25519;..\..\..\..\Keil\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc;..\..\..\..\Keil\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.16.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include;..\..\..\..\Keil\Keil5\ARM\PACK\ARM\CMSIS\5.0.1\CMSIS\Include</IncludePath>
             </VariousControls>
@@ -384,6 +384,11 @@
               <FileName>boot.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\core\boot.c</FilePath>
+            </File>
+            <File>
+              <FileName>can_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\core\can_uart.c</FilePath>
             </File>
             <File>
               <FileName>crc32.c</FileName>
@@ -464,6 +469,11 @@
               <FileName>stm32_spi_flash.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\platform\stm32f407\src\stm32_spi_flash.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\platform\stm32f407\src\stm32_uart.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -635,7 +645,7 @@
       </Groups>
     </Target>
     <Target>
-      <TargetName>explorer_ZG_diagnostics_READONLY</TargetName>
+      <TargetName>explorer_ZG_uart_READONLY</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
       <uAC6>1</uAC6>
@@ -676,14 +686,14 @@
             <NotGenerated>0</NotGenerated>
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
-          <OutputDirectory>..\build\mdk_explorer_ZG_diagnostics_READONLY\</OutputDirectory>
-          <OutputName>explorer_ZG_diagnostics_READONLY</OutputName>
+          <OutputDirectory>..\build\mdk_explorer_ZG_uart_READONLY\</OutputDirectory>
+          <OutputName>explorer_ZG_uart_READONLY</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>0</CreateHexFile>
           <DebugInformation>1</DebugInformation>
           <BrowseInformation>0</BrowseInformation>
-          <ListingPath>..\build\mdk_explorer_ZG_diagnostics_READONLY\</ListingPath>
+          <ListingPath>..\build\mdk_explorer_ZG_uart_READONLY\</ListingPath>
           <HexFormatSelection>1</HexFormatSelection>
           <Merge32K>0</Merge32K>
           <CreateBatchFile>0</CreateBatchFile>
@@ -965,7 +975,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>-std=c99 -Wall -Wextra -mfloat-abi=soft</MiscControls>
-              <Define>STM32F407xx,USE_HAL_DRIVER,__MICROLIB,FLASH_TOTAL_SIZE=1048576u,HSE_VALUE=8000000u,OTA_EXPLORER_REFERENCE_PINS=1,OTA_EXPLORER_CAN_LOOPBACK=0,OTA_ENABLE_FLASHING=0,OTA_ENABLE_BOOT_HANDOFF=0,OTA_ENABLE_WATCHDOG=0</Define>
+              <Define>STM32F407xx,USE_HAL_DRIVER,__MICROLIB,FLASH_TOTAL_SIZE=1048576u,HSE_VALUE=8000000u,OTA_EXPLORER_REFERENCE_PINS=1,OTA_EXPLORER_CAN_LOOPBACK=0,OTA_DIAG_UART=1,OTA_ENABLE_FLASHING=0,OTA_ENABLE_BOOT_HANDOFF=0,OTA_ENABLE_WATCHDOG=0</Define>
               <Undefine />
               <IncludePath>..\platform\stm32f407\board\explorer_reference;..\include;..\platform\stm32f407\include;..\platform\stm32f407\examples;..\third_party\ed25519;..\..\..\..\Keil\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc;..\..\..\..\Keil\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.16.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include;..\..\..\..\Keil\Keil5\ARM\PACK\ARM\CMSIS\5.0.1\CMSIS\Include</IncludePath>
             </VariousControls>
@@ -1015,6 +1025,11 @@
               <FileName>boot.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\core\boot.c</FilePath>
+            </File>
+            <File>
+              <FileName>can_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\core\can_uart.c</FilePath>
             </File>
             <File>
               <FileName>crc32.c</FileName>
@@ -1095,6 +1110,11 @@
               <FileName>stm32_spi_flash.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\platform\stm32f407\src\stm32_spi_flash.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\platform\stm32f407\src\stm32_uart.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1596,7 +1616,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>-std=c99 -Wall -Wextra -mfloat-abi=soft</MiscControls>
-              <Define>STM32F407xx,USE_HAL_DRIVER,__MICROLIB,FLASH_TOTAL_SIZE=524288u,HSE_VALUE=8000000u,OTA_EXPLORER_REFERENCE_PINS=1,OTA_EXPLORER_CAN_LOOPBACK=1,OTA_ENABLE_FLASHING=0,OTA_ENABLE_BOOT_HANDOFF=0,OTA_ENABLE_WATCHDOG=0</Define>
+              <Define>STM32F407xx,USE_HAL_DRIVER,__MICROLIB,FLASH_TOTAL_SIZE=524288u,HSE_VALUE=8000000u,OTA_EXPLORER_REFERENCE_PINS=1,OTA_EXPLORER_CAN_LOOPBACK=1,OTA_DIAG_UART=0,OTA_ENABLE_FLASHING=0,OTA_ENABLE_BOOT_HANDOFF=0,OTA_ENABLE_WATCHDOG=0</Define>
               <Undefine />
               <IncludePath>..\platform\stm32f407\board\explorer_reference;..\include;..\platform\stm32f407\include;..\platform\stm32f407\examples;..\third_party\ed25519;..\..\..\..\Keil\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc;..\..\..\..\Keil\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.16.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include;..\..\..\..\Keil\Keil5\ARM\PACK\ARM\CMSIS\5.0.1\CMSIS\Include</IncludePath>
             </VariousControls>
@@ -1646,6 +1666,11 @@
               <FileName>boot.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\core\boot.c</FilePath>
+            </File>
+            <File>
+              <FileName>can_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\core\can_uart.c</FilePath>
             </File>
             <File>
               <FileName>crc32.c</FileName>
@@ -1726,6 +1751,11 @@
               <FileName>stm32_spi_flash.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\platform\stm32f407\src\stm32_spi_flash.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\platform\stm32f407\src\stm32_uart.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1897,7 +1927,7 @@
       </Groups>
     </Target>
     <Target>
-      <TargetName>explorer_ZE_diagnostics_READONLY</TargetName>
+      <TargetName>explorer_ZE_uart_READONLY</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
       <uAC6>1</uAC6>
@@ -1938,14 +1968,14 @@
             <NotGenerated>0</NotGenerated>
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
-          <OutputDirectory>..\build\mdk_explorer_ZE_diagnostics_READONLY\</OutputDirectory>
-          <OutputName>explorer_ZE_diagnostics_READONLY</OutputName>
+          <OutputDirectory>..\build\mdk_explorer_ZE_uart_READONLY\</OutputDirectory>
+          <OutputName>explorer_ZE_uart_READONLY</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>0</CreateHexFile>
           <DebugInformation>1</DebugInformation>
           <BrowseInformation>0</BrowseInformation>
-          <ListingPath>..\build\mdk_explorer_ZE_diagnostics_READONLY\</ListingPath>
+          <ListingPath>..\build\mdk_explorer_ZE_uart_READONLY\</ListingPath>
           <HexFormatSelection>1</HexFormatSelection>
           <Merge32K>0</Merge32K>
           <CreateBatchFile>0</CreateBatchFile>
@@ -2227,7 +2257,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>-std=c99 -Wall -Wextra -mfloat-abi=soft</MiscControls>
-              <Define>STM32F407xx,USE_HAL_DRIVER,__MICROLIB,FLASH_TOTAL_SIZE=524288u,HSE_VALUE=8000000u,OTA_EXPLORER_REFERENCE_PINS=1,OTA_EXPLORER_CAN_LOOPBACK=0,OTA_ENABLE_FLASHING=0,OTA_ENABLE_BOOT_HANDOFF=0,OTA_ENABLE_WATCHDOG=0</Define>
+              <Define>STM32F407xx,USE_HAL_DRIVER,__MICROLIB,FLASH_TOTAL_SIZE=524288u,HSE_VALUE=8000000u,OTA_EXPLORER_REFERENCE_PINS=1,OTA_EXPLORER_CAN_LOOPBACK=0,OTA_DIAG_UART=1,OTA_ENABLE_FLASHING=0,OTA_ENABLE_BOOT_HANDOFF=0,OTA_ENABLE_WATCHDOG=0</Define>
               <Undefine />
               <IncludePath>..\platform\stm32f407\board\explorer_reference;..\include;..\platform\stm32f407\include;..\platform\stm32f407\examples;..\third_party\ed25519;..\..\..\..\Keil\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.16.0\Drivers\STM32F4xx_HAL_Driver\Inc;..\..\..\..\Keil\Keil5\ARM\PACK\Keil\STM32F4xx_DFP\2.16.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include;..\..\..\..\Keil\Keil5\ARM\PACK\ARM\CMSIS\5.0.1\CMSIS\Include</IncludePath>
             </VariousControls>
@@ -2277,6 +2307,11 @@
               <FileName>boot.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\src\core\boot.c</FilePath>
+            </File>
+            <File>
+              <FileName>can_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\core\can_uart.c</FilePath>
             </File>
             <File>
               <FileName>crc32.c</FileName>
@@ -2357,6 +2392,11 @@
               <FileName>stm32_spi_flash.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\platform\stm32f407\src\stm32_spi_flash.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32_uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\platform\stm32f407\src\stm32_uart.c</FilePath>
             </File>
           </Files>
         </Group>

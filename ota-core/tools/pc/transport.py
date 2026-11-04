@@ -309,7 +309,26 @@ class SerialCanTransport:
                 self.ser=serial_module.Serial(port,baudrate,timeout=0.01)
             except Exception as error:
                 raise TransportError(f"cannot open serial port: {error}") from error
+            # ATK boards wire the CH340's RTS/DTR to BOOT0/RESET ("one-click
+            # download"): pyserial raises both lines when it opens the port, so
+            # the next reset lands in the system bootloader and the bench image
+            # never runs. This link has no hardware flow control, so hold both
+            # lines low.
+            try:
+                self.ser.dtr=False
+                self.ser.rts=False
+            except Exception:
+                pass
+            # Opening the port still produces a reset pulse on ATK boards, so the
+            # MCU reboots right now: wait for its banner and start from a clean
+            # decoder instead of sending the first request into the boot window.
+            time.sleep(0.4)
+            try:
+                self.ser.reset_input_buffer()
+            except Exception:
+                pass
         self.decoder=CanUartDecoder()
+        self._pending=[]   # frames decoded from one chunk but not yet delivered
     def send(self,frame,timeout=1):
         raw=can_uart_encode(frame)
         try:
@@ -320,6 +339,12 @@ class SerialCanTransport:
     def recv(self,timeout):
         deadline=time.monotonic()+timeout
         while True:
+            # A single read() can carry several CAN frames, and a multi-frame
+            # UDS answer puts consecutive frames back to back in one chunk.
+            # Returning on the first decoded frame would silently drop the rest,
+            # so queue everything this chunk produced and hand it out one by one.
+            if self._pending:
+                return self._pending.pop(0)
             try:
                 chunk=self.ser.read(64)
             except Exception as error:
@@ -328,7 +353,8 @@ class SerialCanTransport:
                 for byte in chunk:
                     frame=self.decoder.feed(byte)
                     if frame is not None:
-                        return frame
+                        self._pending.append(frame)
+                continue
             if time.monotonic()>=deadline:
                 return None
     def now(self): return time.monotonic()

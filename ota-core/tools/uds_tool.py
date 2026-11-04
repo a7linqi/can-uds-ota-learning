@@ -15,8 +15,11 @@ def main():
     inspect=actions.add_parser("inspect",help="validate an IMG2 without opening any CAN backend")
     inspect.add_argument("image",type=Path)
     inspect.add_argument("--flash-kib",type=int,choices=(512,1024),default=1024)
-    for name in ("info","status","flash","install"):
+    for name in ("info","status","flash","install","request"):
         action=actions.add_parser(name)
+        if name=="request":
+            action.add_argument("--hex",dest="hex_request",required=True,
+                                help='request bytes, e.g. "22 F1 90"')
         if name in ("flash","install"):
             action.add_argument("image",type=Path)
             action.add_argument("--log",type=Path)
@@ -75,7 +78,15 @@ def main():
                 parser.error("--interface/--channel/--serial-port apply only to hardware backends")
             transport=SimTransport(args.cc,args.flash_kib,args.ecu_bin)
         client=UdsClient(IsoTpClient(transport),log,total_timeout=args.request_timeout)
-        if args.action=="info": result=client.info()
+        if args.action=="request":
+            payload=bytes.fromhex(args.hex_request.replace(" ","").replace("_",""))
+            if not payload: raise ValueError("empty request")
+            answer=client.request(payload)
+            result={"request":payload.hex(" ").upper(),
+                    "response":answer.hex(" ").upper(),
+                    "response_bytes":len(answer),
+                    "response_ascii":"".join(chr(b) if 32<=b<127 else "." for b in answer)}
+        elif args.action=="info": result=client.info()
         elif args.action=="status": result=client.status()
         elif args.action=="install": result=client.install_staged(package,args.flash_kib)
         else: result=client.flash(package,args.flash_kib,reset=not args.no_reset,retries=args.retries)

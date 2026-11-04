@@ -1,5 +1,6 @@
 import hashlib
 import math
+import time
 import struct
 import zlib
 from .isotp_client import ProtocolError,TransportTimeout
@@ -76,8 +77,25 @@ class UdsClient:
             if not response or response[0]!=((sid+0x40)&255):
                 raise ProtocolError("mismatched positive response")
             return response
+    def request_retry(self,request,attempts=8):
+        """Retry a request whose response never arrived.
+
+        On the UART bench a lost byte costs the whole frame (and, with the
+        decoder's resync defect, often the following frame too), so roughly
+        half of the requests get no answer. Only for idempotent services:
+        reads and session/tester-present. Write sequences keep their own
+        retry policy.
+        """
+        last=None
+        for _ in range(max(1,int(attempts))):
+            try:
+                return self.request(request)
+            except TransportTimeout as error:
+                last=error
+                time.sleep(0.05)
+        raise last
     def read_did(self,did):
-        response=self.request(b"\x22"+int(did).to_bytes(2,"big"))
+        response=self.request_retry(b"\x22"+int(did).to_bytes(2,"big"))
         if len(response)<3 or response[1:3]!=int(did).to_bytes(2,"big"):
             raise ProtocolError("DID echo mismatch")
         return response[3:]
