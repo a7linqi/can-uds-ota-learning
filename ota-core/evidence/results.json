@@ -10,13 +10,13 @@
     "checks": 3164,
     "failures": 0,
     "storage_power_cut_scenarios": 420,
-    "execution": "native C executable"
+    "execution": "TinyCC native in-memory C"
   },
   "512": {
     "checks": 3164,
     "failures": 0,
     "storage_power_cut_scenarios": 420,
-    "execution": "native C executable"
+    "execution": "TinyCC native in-memory C"
   },
   "cortex_m4_syntax": {
     "performed_this_run": false,
