@@ -303,7 +303,10 @@ void isotp_on_frame(isotp_link_t *l, const can_frame_t *f)
             uint8_t encoded=f->data[2];
             if(encoded<=0x7Fu) l->fc_stmin=encoded;
             else if(encoded>=0xF1u && encoded<=0xF9u) l->fc_stmin=1u;
-            else { (void)abort_tx(l,ISOTP_ERR_FLOW); return; }
+            /* 0x80..0xF0 and 0xFA..0xFF are reserved. ISO 15765-2 requires the
+               sender to use the longest legal value (0x7F = 127 ms) and keep
+               transmitting; aborting would make one sloppy tester fatal. */
+            else l->fc_stmin=0x7Fu;
             l->tx_block_cnt = 0u;
             l->tx_wait_count = 0u;
             l->tx_last_ms = link_now(l);

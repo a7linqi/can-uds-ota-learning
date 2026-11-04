@@ -77,9 +77,13 @@ static void flow_checks(void)
         W.now=1u;
         TEST_ASSERT(!isotp_poll(&W.link) && W.sent==2u && W.last.data[0]==0x21u);
     }
+    /* 0x80..0xF0 and 0xFA..0xFF are reserved; ISO 15765-2 requires the sender
+       to fall back to the longest legal STmin (0x7F = 127 ms) and keep going.
+       This used to abort the transfer, which made one sloppy tester fatal. */
     fresh(); TEST_ASSERT(!isotp_send(&W.link,payload,20u));
     feed(0x30u,0u,0x80u);
-    TEST_ASSERT(W.link.tx_state==ISOTP_IDLE && W.link.tx_error==ISOTP_ERR_FLOW);
+    TEST_ASSERT(W.link.tx_state==ISOTP_SENDING_CF && W.link.tx_error==0);
+    TEST_ASSERT(W.link.fc_stmin==0x7Fu);
 }
 static void receive_checks(void)
 {
