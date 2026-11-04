@@ -9,6 +9,7 @@
 #define NRC_SERVICE_NOT_SUPPORTED       0x11u
 #define NRC_SUBFUNCTION_NOT_SUPPORTED   0x12u
 #define NRC_INCORRECT_LENGTH            0x13u
+#define NRC_RESPONSE_TOO_LONG           0x14u
 #define NRC_CONDITIONS_NOT_CORRECT      0x22u
 #define NRC_REQUEST_SEQUENCE_ERROR      0x24u
 #define NRC_REQUEST_OUT_OF_RANGE        0x31u
@@ -206,7 +207,10 @@ static uint16_t handle_read_data(uds_server_t *s, const uint8_t *req, uint16_t r
         if (r == -1) {
             return nrc_reply(resp, max, 0x22u, NRC_REQUEST_OUT_OF_RANGE);
         }
-        if (r == -2 || r == -3) {
+        if (r == -2) {
+            return nrc_reply(resp, max, 0x22u, NRC_RESPONSE_TOO_LONG);
+        }
+        if (r == -3) {
             return nrc_reply(resp, max, 0x22u, NRC_GENERAL_PROGRAMMING_FAILURE);
         }
     }

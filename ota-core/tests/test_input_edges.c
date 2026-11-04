@@ -439,8 +439,7 @@ static void did_combination_edges(void)
     n = uds_handle(&B.server, req, 3u, resp, 19u);
     TEST_ASSERT(n == 3u);
     TEST_ASSERT(resp[0] == 0x7Fu && resp[1] == 0x22u);
-    NOTE(resp[2] == 0x14u,
-         "response buffer too small reports 0x72 (generalProgrammingFailure); ISO 14229 has 0x14 responseTooLong");
+    TEST_ASSERT(resp[2] == 0x14u);  /* responseTooLong, not generalProgrammingFailure */
 
     /* odd request length: 0x22 + 1.5 DIDs */
     req[0] = 0x22u; req[1] = 0xF1u;

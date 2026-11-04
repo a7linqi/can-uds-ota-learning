@@ -26,6 +26,9 @@ static void wrong_key_once(void)
     (void)call(6);
 }
 
+/* defined in test_uds_bounds.c */
+void run_uds_bounds_tests(void);
+
 void run_uds_tests(void)
 {
     bench_init(&B);
@@ -191,7 +194,13 @@ void run_uds_tests(void)
         req[1]=2u; req[2]=0u; B.eeprom.read_fail_after=0;
         TEST_ASSERT(call(3)==1 && rl==3u && resp[2]==0x72u);
         B.eeprom.read_fail_after=-1;
-        TEST_ASSERT(uds_handle(&B.server,req,3u,resp,42u)==3u && resp[2]==0x72u);
+        /* 0x0200 needs 1 + 2 + 40 = 43 bytes. A 42-byte buffer is one short,
+         * so the server must answer responseTooLong (0x14) -- ISO 14229-1 --
+         * and must NOT confuse it with the storage failure above (0x72). */
+        TEST_ASSERT(uds_handle(&B.server,req,3u,resp,42u)==3u && resp[2]==0x14u);
+        TEST_ASSERT(uds_handle(&B.server,req,3u,resp,43u)==43u && resp[0]==0x62u);
         TEST_ASSERT(B.eeprom.write_ops==writes);
     }
+
+    run_uds_bounds_tests();
 }
