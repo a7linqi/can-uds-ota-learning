@@ -20,9 +20,15 @@ test_stack_alignment (test_make_image.PackageTests.test_stack_alignment) ... ok
 test_wire_header (test_make_image.PackageTests.test_wire_header) ... ok
 test_wrong_link (test_make_image.PackageTests.test_wrong_link) ... ok
 test_zero_version (test_make_image.PackageTests.test_zero_version) ... ok
+test_corrupt_crc_rejected_then_recovers (test_uart_transport.UartWireTests.test_corrupt_crc_rejected_then_recovers) ... ok
+test_crc_vector (test_uart_transport.UartWireTests.test_crc_vector) ... ok
+test_extended_frame_roundtrip (test_uart_transport.UartWireTests.test_extended_frame_roundtrip) ... ok
+test_noise_then_frame (test_uart_transport.UartWireTests.test_noise_then_frame) ... ok
+test_serial_transport_send_and_recv (test_uart_transport.UartWireTests.test_serial_transport_send_and_recv) ... ok
+test_standard_frame_matches_c_vector (test_uart_transport.UartWireTests.test_standard_frame_matches_c_vector) ... ok
 
 ----------------------------------------------------------------------
-Ran 22 tests in 0.272s
+Ran 28 tests in 0.665s
 
 OK
 

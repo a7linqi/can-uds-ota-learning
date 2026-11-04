@@ -58,6 +58,8 @@ V3 手册的变更表明确列出 NOR 可换为 NM25Q128/BY25Q128、CAN 收发�
 python tools/generate_explorer_mdk.py --dfp "你的STM32F4xx_DFP/2.16.0目录" --cmsis "你的CMSIS/5.0.1/CMSIS/Include目录"
 ~~~
 
+USB-CAN 未到货时，追加 `--uart` 会把两个 CAN diagnostics 目标替换为 USART1 台架目标（`explorer_ZG_uart_READONLY` / `ZE`）；仍保持四目标、只读门控。串口线序、构建和 PC 命令见 [USART1 台架说明](UART_BENCH.md)。
+
 打开 `mdk/explorer_readonly.uvprojx`，按实际容量选择：
 
 第一次下载测试固件前，先用调试器读取并保存原有内部 Flash。这里的“只读”指测试固件运行期间不擦写升级存储；下载测试固件本身会改写它占用的内部 Flash。

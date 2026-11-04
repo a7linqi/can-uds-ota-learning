@@ -47,6 +47,22 @@ int ota_bsp_can_try_tx(const can_frame_t *f)
     M.sent_at[M.sent_count]=M.now; M.sent[M.sent_count++]=*f; return 0;
 }
 int ota_bsp_can_tx_idle(void) { return M.hardware_idle; }
+int ota_bsp_uart_start(void)
+{
+    M.uart_started++;
+    return M.uart_start_fail?-1:0;
+}
+int ota_bsp_uart_write(const uint8_t *data,uint32_t len)
+{
+    uint32_t i;
+    if(!data || !len || M.uart_busy) return -1;
+    if(M.uart_tx_count+len>sizeof M.uart_tx) return -1;
+    for(i=0u;i<len;i++) M.uart_tx[M.uart_tx_count+i]=data[i];
+    M.uart_tx_count+=len;
+    return 0;
+}
+int ota_bsp_uart_tx_idle(void) { return M.uart_busy?0:1; }
+void ota_bsp_uart_binary(int active) { M.uart_binary=active?1u:0u; }
 int ota_bsp_iflash_read(uint32_t a,uint8_t *out,uint32_t n)
 {
     if(a<FLASH_BASE_ADDR || a-FLASH_BASE_ADDR>FLASH_TOTAL_SIZE ||

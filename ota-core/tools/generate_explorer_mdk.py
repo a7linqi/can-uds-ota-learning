@@ -28,7 +28,7 @@ def relative(path, parent):
         return str(path).replace("/", "\\")
 
 
-def generate(dfp, cmsis):
+def generate(dfp, cmsis, uart=False):
     dfp, cmsis = dfp.resolve(), cmsis.resolve()
     hal = dfp / "Drivers/STM32F4xx_HAL_Driver"
     device = dfp / "Drivers/CMSIS/Device/ST/STM32F4xx"
@@ -53,8 +53,10 @@ def generate(dfp, cmsis):
     adapter = [p for p in sorted((ROOT / "platform/stm32f407/src").glob("*.c"))
                if p.name != "system_minimal.c"]
     ed25519 = sorted((ROOT / "third_party/ed25519").glob("*.c"))
+    roles = (("loopback", 1, 0), ("uart", 0, 1)) if uart else (
+        ("loopback", 1, 0), ("diagnostics", 0, 0))
     for part, capacity in (("ZG", 0x100000), ("ZE", 0x80000)):
-        for role, loopback in (("loopback", 1), ("diagnostics", 0)):
+        for role, loopback, uart_link in roles:
             name = f"explorer_{part}_{role}_READONLY"
             target = node(targets, "Target")
             for key, value in (("TargetName", name), ("ToolsetNumber", "0x4"),
@@ -100,6 +102,7 @@ def generate(dfp, cmsis):
                 "STM32F407xx,USE_HAL_DRIVER,__MICROLIB,"
                 f"FLASH_TOTAL_SIZE={capacity}u,HSE_VALUE=8000000u,"
                 f"OTA_EXPLORER_REFERENCE_PINS=1,OTA_EXPLORER_CAN_LOOPBACK={loopback},"
+                f"OTA_DIAG_UART={uart_link},"
                 "OTA_ENABLE_FLASHING=0,OTA_ENABLE_BOOT_HANDOFF=0,OTA_ENABLE_WATCHDOG=0")
             controls.find("IncludePath").text = ";".join(relative(p, mdk) for p in includes)
             aads = ads.find("Aads")
@@ -143,9 +146,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dfp", type=Path, required=True)
     parser.add_argument("--cmsis", type=Path, required=True)
+    parser.add_argument("--uart", action="store_true",
+                        help="replace the two CAN diagnostics targets with USART1 bench targets")
     args = parser.parse_args()
     try:
-        output = generate(args.dfp, args.cmsis)
+        output = generate(args.dfp, args.cmsis, args.uart)
     except (ValueError, OSError) as error:
         parser.error(str(error))
     print(f"Generated {output}; 4 read-only reference-pins targets, no hardware accessed.")

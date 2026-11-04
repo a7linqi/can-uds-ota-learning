@@ -2,6 +2,8 @@
 
 v0.13 的完整矩阵已通过，详见 [核心复核记录](CORE_REVIEW_20261102.md)：每容量 3138 个 C 断言、420 个模型断电场景，Python 工具 22 项、实际 python-can virtual 后端 7 项、Python 包到 C 校验 8 组。四套参考目标各编译 43 个 ARM C 对象，GNU 各 45 个对象并完成 ELF/BIN/MAP 链接检查。实物 SWD 识别已单独记录，项目固件尚未上板运行。
 
+2026-11-04 UART 台架阶段：新增 26 条 CAN-over-UART 编解码断言，主机 C 基线为 3164 条/容量；STM32 适配器主机模型 232（门控关闭）/298（门控打开）条断言；Python 工具 28 项。真实串口、擦写、跳转和断电仍未执行，详见 [UART 台架说明](UART_BENCH.md)。
+
 v0.12 增加探索者只读 BSP 验证：实际回环入口与接收队列的主机模型为 51 项断言、14 个场景；这不是物理 CAN 实验。给出 ARM/ST/CMSIS 参数时，另检查四个参考目标，每目标编译 35 个 C 对象。
 
 追加 `--gcc "arm-none-eabi-gcc的完整路径"`、`--dfp` 和 `--cmsis`，会用 GNU Arm 工具链完成四个只读目标的汇编、链接及 ELF/BIN 地址检查。先运行 `tools/generate_explorer_mdk.py` 为本机 pack 路径生成源文件计划。主报告中的 `target_linked=true` 仅表示 GNU 只读目标完整链接；`keil_target_linked=false`、`hardware_verified=false` 仍分别表示 Keil 未完成链接、实物未验证。

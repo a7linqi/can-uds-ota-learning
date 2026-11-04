@@ -20,6 +20,15 @@ int ota_firmware_service(void) { return ota_stm32_storage_service(&storage); }
 /* Call from the board's CAN FIFO0 callback after HAL has read one frame. */
 void ota_bootloader_can_rx(const can_frame_t *frame)
 { (void)ota_stm32_can_rx_isr(&diagnostics.can,frame); }
+/* Call from the board's USART1 RX-complete callback in UART bench builds. */
+void ota_user_uart_rx(uint8_t byte)
+{
+#if OTA_DIAG_UART
+    (void)ota_stm32_uart_rx_isr(&diagnostics.uart,byte);
+#else
+    (void)byte;
+#endif
+}
 int main(void)
 {
     ota_board_config_t config;
@@ -46,12 +55,20 @@ int main(void)
     }
 #endif
     /* Bring-up first supports version reads even without storage drivers. */
+#if OTA_DIAG_UART
+    if(ota_stm32_diag_init_uart(&diagnostics,&storage)) {
+        ota_bsp_log("UART diagnostics start failed; verify USART1 wiring");
+        for(;;) ota_bsp_idle();
+    }
+    /* Binary transport owns USART1; text logging is suppressed by the BSP. */
+#else
     ota_stm32_diag_init(&diagnostics,&storage);
     if(ota_bsp_can_start()) {
         ota_bsp_log("CAN start failed; verify board configuration");
         for(;;) ota_bsp_idle();
     }
     ota_bsp_log("loader diagnostics: request 7E0, response 7E8");
+#endif
     last=ota_bsp_now_ms();
     for(;;) {
         if(ota_firmware_service()) {

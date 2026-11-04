@@ -100,6 +100,22 @@ for image in ("bootloader", "app"):
 result["project_semantics"] = projects
 print("Keil source paths, scatter ranges, default gates: 4 targets passed", flush=True)
 
+# Link the real UART bootloader entry against the host board mock. This
+# catches source/define drift without executing firmware or touching hardware.
+uart_entry = build / "uart_bootloader_entry"
+uart_sources = core + drivers + portable + ed25519 + [ROOT / "tests_stm32/mock_board.c",
+                                                     ROOT / "firmware/bootloader/main.c"]
+uart_command = [args.cc, "-std=c99", "-Wall", "-Wextra", "-Werror", "-Iinclude",
+                "-Iplatform/stm32f407/include", "-Itests_stm32", "-Ithird_party/ed25519",
+                "-DFLASH_TOTAL_SIZE=1048576u", "-DOTA_ENABLE_FLASHING=1",
+                "-DOTA_ENABLE_BOOT_HANDOFF=1", "-DOTA_DIAG_UART=1",
+                "-DOTA_TEST_REAL_FIRMWARE=1"]
+uart_command += [str(p.relative_to(ROOT)) for p in uart_sources]
+uart_command += ["-o", str(uart_entry)]
+execute(uart_command, evidence / "uart-bootloader-entry.txt")
+result["uart_bootloader_entry"] = {"linked": True, "executed": False, "hardware": False}
+print("UART bootloader entry linked against host mock", flush=True)
+
 if args.arm_bin:
     cc = args.arm_bin / ("armclang.exe" if sys.platform == "win32" else "armclang")
     if not cc.is_file():

@@ -7,6 +7,7 @@
 int ota_user_generated_init(void);
 void ota_user_config(ota_board_config_t *config);
 CAN_HandleTypeDef *ota_user_can(void);
+UART_HandleTypeDef *ota_user_uart(void);
 I2C_HandleTypeDef *ota_user_i2c(void);
 /* Only needed when opting into w25q128_hal_user.c. The board owns these
  * CubeMX settings and /CS GPIO; the example never guesses pins or clocks. */
@@ -22,9 +23,15 @@ int ota_user_force_loader(void);
 int ota_user_app_healthy(void);
 int ota_user_quiesce_peripherals(void);
 void ota_user_can_rx(const can_frame_t *frame);
+void ota_user_uart_rx(uint8_t byte);
+void ota_user_uart_binary(int active);
 int ota_user_nor_read(uint32_t off,uint8_t *out,uint32_t len);
 int ota_user_nor_erase_4k(uint32_t off);
 int ota_user_nor_page_program(uint32_t off,const uint8_t *data,uint32_t len);
 /* Call from the existing HAL_CAN_RxFifo0MsgPendingCallback. */
 void ota_hal_can_fifo0_callback(CAN_HandleTypeDef *hcan);
+/* Call from HAL_UART_RxCpltCallback / HAL_UART_ErrorCallback for the UART
+ * selected by ota_user_uart(); re-arms one-byte interrupt reception. */
+void ota_hal_uart_rx_complete(UART_HandleTypeDef *huart);
+void ota_hal_uart_error(UART_HandleTypeDef *huart);
 #endif

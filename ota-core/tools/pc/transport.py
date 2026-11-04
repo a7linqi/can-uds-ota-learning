@@ -14,6 +14,76 @@ ROOT=Path(__file__).resolve().parents[2]
 class TransportError(RuntimeError):
     pass
 
+CAN_UART_SYNC0=0xA5
+CAN_UART_SYNC1=0x5A
+CAN_UART_VERSION=0x01
+CAN_UART_EXTENDED=0x80
+
+def can_uart_crc16(data):
+    crc=0xFFFF
+    for byte in data:
+        crc^=byte<<8
+        for _ in range(8):
+            crc=((crc<<1)^0x1021)&0xFFFF if crc&0x8000 else (crc<<1)&0xFFFF
+    return crc
+
+def can_uart_encode(frame):
+    if not 1<=len(frame.data)<=8:
+        raise ValueError("classic CAN frame out of range")
+    if frame.extended:
+        if not 0<=frame.arbitration_id<=0x1FFFFFFF:
+            raise ValueError("extended CAN id out of range")
+        version=CAN_UART_VERSION|CAN_UART_EXTENDED
+    else:
+        if not 0<=frame.arbitration_id<=0x7FF:
+            raise ValueError("standard CAN id out of range")
+        version=CAN_UART_VERSION
+    dlc=len(frame.data)
+    payload=bytes([version,dlc])+frame.arbitration_id.to_bytes(4,"big")+frame.data
+    return bytes([CAN_UART_SYNC0,CAN_UART_SYNC1])+payload+can_uart_crc16(payload).to_bytes(2,"big")
+
+class CanUartDecoder:
+    """Byte-level decoder matching src/core/can_uart.c."""
+    def __init__(self):
+        self.buf=bytearray()
+        self.expected=0
+        self.state=0
+    def _reset(self):
+        self.buf.clear(); self.expected=0; self.state=0
+    def feed(self,byte):
+        if self.state==0:
+            if byte==CAN_UART_SYNC0: self.state=1
+            return None
+        if self.state==1:
+            if byte==CAN_UART_SYNC1:
+                self.state=2; self.buf.clear(); self.expected=0
+            elif byte!=CAN_UART_SYNC0:
+                self.state=0
+            return None
+        self.buf.append(byte)
+        if len(self.buf)==2:
+            dlc=self.buf[1]
+            if dlc==0 or dlc>8:
+                self._reset(); return None
+            self.expected=8+dlc
+        if self.expected==0 or len(self.buf)<self.expected:
+            return None
+        if len(self.buf)!=self.expected:
+            self._reset(); return None
+        version,dlc=self.buf[0],self.buf[1]
+        if (version&0x7F)!=CAN_UART_VERSION:
+            self._reset(); return None
+        extended=bool(version&CAN_UART_EXTENDED)
+        can_id=int.from_bytes(self.buf[2:6],"big")
+        if (can_id>0x1FFFFFFF) if extended else (can_id>0x7FF):
+            self._reset(); return None
+        crc=int.from_bytes(self.buf[6+dlc:8+dlc],"big")
+        if crc!=can_uart_crc16(self.buf[:6+dlc]):
+            self._reset(); return None
+        frame=Frame(can_id,bytes(self.buf[6:6+dlc]),extended)
+        self._reset()
+        return frame
+
 @dataclass(frozen=True)
 class Frame:
     arbitration_id:int
@@ -217,3 +287,54 @@ class PythonCanTransport:
             self.bus.shutdown()
         except self.can.CanError as error:
             raise TransportError(f"CAN shutdown failed: {error}") from error
+
+class SerialCanTransport:
+    """Bench backend: classic CAN frames carried over a USART using can_uart.h.
+
+    The MCU sends the same ISO-TP/UDS bytes; only the physical link changes.
+    pyserial is optional and imported only when this backend is selected.
+    """
+    def __init__(self,port,baudrate=115200,serial_module=None,serial_instance=None):
+        if not port or baudrate<=0:
+            raise ValueError("explicit serial port and baud rate required")
+        if serial_instance is not None:
+            self.ser=serial_instance
+        else:
+            if serial_module is None:
+                try:
+                    import serial as serial_module
+                except ImportError as error:
+                    raise TransportError("UART backend requires the optional pyserial package") from error
+            try:
+                self.ser=serial_module.Serial(port,baudrate,timeout=0.01)
+            except Exception as error:
+                raise TransportError(f"cannot open serial port: {error}") from error
+        self.decoder=CanUartDecoder()
+    def send(self,frame,timeout=1):
+        raw=can_uart_encode(frame)
+        try:
+            self.ser.write(raw)
+            self.ser.flush()
+        except Exception as error:
+            raise TransportError(f"serial send failed: {error}") from error
+    def recv(self,timeout):
+        deadline=time.monotonic()+timeout
+        while True:
+            try:
+                chunk=self.ser.read(64)
+            except Exception as error:
+                raise TransportError(f"serial receive failed: {error}") from error
+            if chunk:
+                for byte in chunk:
+                    frame=self.decoder.feed(byte)
+                    if frame is not None:
+                        return frame
+            if time.monotonic()>=deadline:
+                return None
+    def now(self): return time.monotonic()
+    def wait(self,seconds): time.sleep(max(0,seconds))
+    def close(self):
+        try:
+            self.ser.close()
+        except Exception as error:
+            raise TransportError(f"serial close failed: {error}") from error

@@ -113,6 +113,17 @@ CRC32 只防意外损坏，防不了伪造（攻击者可重算 CRC）。因此�
 
 所以同一份 `boot.c` 既能在 PC 上用 RAM 模拟存储跑完整回归，也能编到 Cortex-M4 上运行——这是可验证性的来源。
 
+### 4.5 传输层可替换：先用串口，再接 CAN
+
+平台层把 CAN 收发抽成 `ota_stm32_link_t`（poll / pop / idle + `ota_port_t`），`stm32_can.c` 与 `stm32_uart.c` 各自实现。串口不是第二套 OTA，而是把经典 CAN 帧编码成 `A5 5A ...` 字节流，`uds.c` / `isotp.c` / `boot.c` 完全不变。
+
+USB-CAN 未到货时，可以用板载 USART1（PA9/PA10，115200 8N1）先跑通 `info` / `status` 和诊断链路；接 CAN 时只替换 link。当前阶段是只读验证，不开放擦写。详见 [串口台架说明](ota-core/docs/UART_BENCH.md)。
+
+```bash
+python ota-core/tools/uds_tool.py info \
+  --backend uart --serial-port COM5 --baud 115200
+```
+
 ---
 
 ## 5. 目录结构
@@ -130,7 +141,7 @@ ota-core/
 ├── src/driver/        SPI NOR 驱动（0x9F / 0x03 / 页编程 / 扇区擦除）
 ├── src/port/host/     PC 侧 RAM 模拟存储
 ├── platform/stm32f407/  HAL 适配与板级支持
-├── firmware/          四个入口：bootloader / app / loopback / diagnostics
+├── firmware/          四个入口：bootloader / app / loopback / diagnostics（UART 台架是 bootloader 的编译变体）
 ├── include/ota/       公共头文件与内存布局常量
 ├── tools/             PC 工具：打包签名、CAN 客户端
 ├── tests*/            主机测试（TinyCC 直接编译运行）
@@ -179,14 +190,16 @@ python verify_project.py --cc <tcc> --gcc <gcc> --dfp <dfp> --cmsis <cmsis>
 
 | 层面 | 状态 |
 |---|---|
-| 主机 C 回归 | **3138 条断言 × 2 种容量（ZG/ZE），0 失败** |
+| 主机 C 回归 | **3164 条断言 × 2 种容量（ZG/ZE），0 失败**（含 UART 编解码 26 条） |
+| STM32 适配器主机模型 | 232 / 298 条断言（门控关闭/打开），0 失败 |
 | 存储断电场景 | **420 个模型场景**（RAM 模拟 + 故障注入，非物理断电） |
-| PC 集成 / NOR 驱动 / 适配器 | 45 / 720 / 177+243 断言，全部通过 |
+| PC 集成 / NOR 驱动 / 适配器 | 45 / 720 / 232+298 断言，全部通过 |
+| UART 台架 Python 线格式 | 6 个 unittest 用例，0 失败 |
 | 目标构建 | 四套 GNU 只读固件完整链接，ARMClang `-Werror` 零警告 |
 | **实机已完成** | 芯片识别（`0x413` / 1 MiB）、时钟 168/42/84 MHz、**内部 CAN 静默回环 16 帧（三次复位复测）**、NOR JEDEC 识别、EEPROM 读取与 CRC 校验、内部 Flash 1 MiB 双遍备份一致、LCD（NT35310）从零点亮 |
-| **实机未完成** | **真实 CAN 总线通信**（缺 USB-CAN 适配器）、**真实升级 V1→V2**、**升级中断后重做**、**试运行失败回滚**、**真实断电恢复**、NOR 实际擦写、擦写耗时测量 |
+| **实机未完成** | **真实 CAN 总线通信**（缺 USB-CAN 适配器）、**串口实机 info/status**（代码已完成，未上板）、**真实升级 V1→V2**、**升级中断后重做**、**试运行失败回滚**、**真实断电恢复**、NOR 实际擦写、擦写耗时测量 |
 
-**当前可复现的上限是"主机模型 + 目标构建 + 部分实机识别"。完整升级与断电恢复尚未在真实硬件上执行。**
+**当前可复现的上限是"主机模型 + 目标构建 + 部分实机识别 + 串口台架代码"。完整升级与断电恢复尚未在真实硬件上执行。**
 
 ---
 

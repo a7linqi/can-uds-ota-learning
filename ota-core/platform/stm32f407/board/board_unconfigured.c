@@ -16,6 +16,10 @@ void ota_bsp_reset(void) { ota_arch_reset(); }
 int ota_bsp_can_try_tx(const can_frame_t *f) { (void)f; return -1; }
 int ota_bsp_can_start(void) { return -1; }
 int ota_bsp_can_tx_idle(void) { return 0; }
+int ota_bsp_uart_start(void) { return -1; }
+int ota_bsp_uart_write(const uint8_t *d,uint32_t n) { (void)d;(void)n;return -1; }
+int ota_bsp_uart_tx_idle(void) { return 0; }
+void ota_bsp_uart_binary(int active) { (void)active; }
 int ota_bsp_iflash_read(uint32_t a,uint8_t *p,uint32_t n) { (void)a;(void)p;(void)n;return -1; }
 int ota_bsp_iflash_unlock(void) { return -1; }
 int ota_bsp_iflash_lock(void) { return -1; }

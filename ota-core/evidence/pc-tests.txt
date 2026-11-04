@@ -1,5 +1,5 @@
-COMMAND: C:\Users\li14\AppData\Local\Programs\Python\Python314\python.exe -m unittest discover -s tests_pc -v
-OTA_TEST_CC=D:\Project\Can\toolchain\tccbox-2025.10.27.data\purelib\tccbox\tcc_dist\tcc.exe
+COMMAND: /root/.pyenv/versions/3.14.8/bin/python3 -m unittest discover -s tests_pc -v
+OTA_TEST_CC=gcc
 test_bad_crc_stopped_before_sending (test_pc.CIntegration.test_bad_crc_stopped_before_sending) ... ok
 test_bad_sim_command_does_not_desynchronize (test_pc.CIntegration.test_bad_sim_command_does_not_desynchronize) ... ok
 test_block_counter_wrap (test_pc.CIntegration.test_block_counter_wrap) ... ok
@@ -47,6 +47,6 @@ test_wrong_negative_sid (test_pc.ClientGuards.test_wrong_negative_sid) ... ok
 test_wrong_positive_sid (test_pc.ClientGuards.test_wrong_positive_sid) ... ok
 
 ----------------------------------------------------------------------
-Ran 45 tests in 5.779s
+Ran 45 tests in 33.083s
 
 OK

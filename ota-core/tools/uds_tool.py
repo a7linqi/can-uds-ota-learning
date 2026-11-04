@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import sys
 import uuid
-from pc.transport import ROOT,SimTransport,PythonCanTransport,TransportError
+from pc.transport import ROOT,SimTransport,PythonCanTransport,SerialCanTransport,TransportError
 from pc.isotp_client import IsoTpClient,ProtocolError
 from pc.uds_client import UdsClient,NegativeResponse,UnknownCommit,UnknownReset,inspect_package
 
@@ -23,7 +23,7 @@ def main():
         if name=="flash":
             action.add_argument("--no-reset",action="store_true")
             action.add_argument("--retries",type=int,choices=range(4),default=1)
-        action.add_argument("--backend",choices=("sim","can"),default="sim")
+        action.add_argument("--backend",choices=("sim","can","uart"),default="sim")
         action.add_argument("--cc",help="host C compiler for the simulator")
         action.add_argument("--ecu-bin",type=Path,help="optional prebuilt C simulator")
         action.add_argument("--flash-kib",type=int,choices=(512,1024),default=1024)
@@ -31,6 +31,8 @@ def main():
         action.add_argument("--channel")
         action.add_argument("--index",type=int)
         action.add_argument("--bitrate",type=int,default=500000)
+        action.add_argument("--serial-port",help="UART backend port, e.g. COM5 or /dev/ttyUSB0")
+        action.add_argument("--baud",type=int,default=115200,help="UART backend baud rate")
         action.add_argument("--request-timeout",type=float,default=120,
                             help="overall deadline per UDS request, including pending/ISO-TP")
     args=parser.parse_args()
@@ -57,19 +59,27 @@ def main():
         if args.backend=="can":
             if not args.interface or args.channel is None:
                 parser.error("real CAN requires explicit --interface and --channel")
+            if args.cc or args.ecu_bin or args.serial_port:
+                parser.error("--cc/--ecu-bin/--serial-port do not apply to real CAN")
+            transport=PythonCanTransport(args.interface,args.channel,args.bitrate,args.index)
+        elif args.backend=="uart":
+            if not args.serial_port:
+                parser.error("UART backend requires explicit --serial-port")
             if args.cc or args.ecu_bin:
                 parser.error("--cc/--ecu-bin apply only to the simulator")
-            transport=PythonCanTransport(args.interface,args.channel,args.bitrate,args.index)
+            if args.interface or args.channel is not None or args.index is not None:
+                parser.error("--interface/--channel/--index apply only to real CAN")
+            transport=SerialCanTransport(args.serial_port,args.baud)
         else:
-            if args.interface or args.channel is not None:
-                parser.error("--interface/--channel apply only to real CAN")
+            if args.interface or args.channel is not None or args.serial_port:
+                parser.error("--interface/--channel/--serial-port apply only to hardware backends")
             transport=SimTransport(args.cc,args.flash_kib,args.ecu_bin)
         client=UdsClient(IsoTpClient(transport),log,total_timeout=args.request_timeout)
         if args.action=="info": result=client.info()
         elif args.action=="status": result=client.status()
         elif args.action=="install": result=client.install_staged(package,args.flash_kib)
         else: result=client.flash(package,args.flash_kib,reset=not args.no_reset,retries=args.retries)
-        result["backend"]="C simulator" if args.backend=="sim" else "python-can"
+        result["backend"]={"sim":"C simulator","can":"python-can","uart":"USART1 bench"}[args.backend]
         if args.backend=="sim":
             result["simulation_state"]=transport.get_state()
         if log_file:

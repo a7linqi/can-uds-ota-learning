@@ -38,6 +38,7 @@ def main():
         name = target.findtext("TargetName")
         capacity = 1048576 if "_ZG_" in name else 524288
         loopback = int("_loopback_" in name)
+        uart = int("_uart_" in name)
         controls = target.find("TargetOption/TargetArmAds/Cads/VariousControls")
         defines = controls.findtext("Define").split(",")
         for definition in ("STM32F407xx", "USE_HAL_DRIVER", f"FLASH_TOTAL_SIZE={capacity}u",
@@ -45,6 +46,8 @@ def main():
                            "HSE_VALUE=8000000u", "OTA_ENABLE_FLASHING=0",
                            "OTA_ENABLE_BOOT_HANDOFF=0", "OTA_ENABLE_WATCHDOG=0"):
             assert definition in defines, (name, definition)
+        if uart:
+            assert "OTA_DIAG_UART=1" in defines, name
         includes = [(project.parent / p.replace("\\", "/")).resolve()
                     for p in controls.findtext("IncludePath").split(";")]
         assert includes == expected_includes, "Regenerate the project for these ST/CMSIS pack locations"

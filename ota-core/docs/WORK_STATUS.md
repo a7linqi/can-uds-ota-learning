@@ -1,6 +1,15 @@
 # Engineering checkpoint
 
-Latest completed stage: physical Phase 2 ZG silent CAN loopback and read-only storage probe (2026-11-02). Core v0.13 remains frozen; full upgrade/recovery hardware acceptance is still pending. Older checkpoints describe their capture-time state.
+UART bench transport stage (2026-11-04, Asia/Shanghai):
+- Added a transport-neutral `ota_stm32_link_t`; `stm32_diag.c` no longer calls the CAN queue directly. `stm32_can.c` and `stm32_uart.c` implement the same link.
+- Added `src/core/can_uart.c`: classic CAN frames encoded as `A5 5A | ver | dlc | id[4] | data | crc16`, with resynchronisation and CRC rejection. This is a bench protocol, not a vehicle bus protocol.
+- Added USART1 link: HAL RX interrupt, one-byte decode, frame queue, blocking TX, binary-mode log suppression. `tools/generate_explorer_mdk.py --uart` replaces the two CAN diagnostics targets with `explorer_{ZG,ZE}_uart_READONLY`; gates stay read-only.
+- Added PC `SerialCanTransport` and `uds_tool.py --backend uart`; same `IsoTpClient`/`UdsClient` code path. New optional dependency `requirements-serial.txt`.
+- Host verification: 3164 C checks / 420 power-cut scenarios per capacity (ZG and ZE), 0 failures; STM32 adapter mocks 232 checks with gates off and 298 with gates on, per capacity, 0 failures; PC 45; tools 28 (22 existing + 6 UART wire tests); firmware 35+35+51. No ARM target was rebuilt in this environment and no UART target was linked here.
+- **Not executed on hardware**: USART1 info/status, real NOR erase/program, App handoff, real V1→V2, and physical power-cut recovery. The current UART target is read-only and `flash` returns NRC 0x22. The write-enabled bench and App VTOR/health path remain the next stage; see `docs/UART_BENCH.md`.
+- Evidence remains model/host evidence; do not present it as physical acceptance. Host-stage summary is `evidence/uart-bench-stage.json`; `evidence/verification.json` is still the historical v0.13 full-matrix report, not regenerated because ARM/GNU toolchains were not available in this environment.
+
+Latest completed hardware stage: physical Phase 2 ZG silent CAN loopback and read-only storage probe (2026-11-02). Core v0.13 remains frozen; full upgrade/recovery hardware acceptance is still pending. Older checkpoints describe their capture-time state.
 
 Full ownership handover (2026-11-02, Asia/Shanghai):
 - The user requested continued work primarily through the other harness due to limited GPT usage. Workspace PROJECT_TAKEOVER.md is now the authoritative project handover and roadmap; HARNESS_TASKS.md points to it.

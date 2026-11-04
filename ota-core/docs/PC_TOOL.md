@@ -42,6 +42,18 @@ python tools/uds_tool.py info --backend can --interface gs_usb --channel "你的
 
 工具另外做软件过滤，因为 gs_usb 不支持设备侧报文过滤。该后端的 `send(timeout)` 不支持超时中断；客户端会传入剩余期限并在返回后检查，但不能强行打断被驱动阻塞的调用。因此总期限覆盖协议状态机的等待，不是对所有第三方驱动调用的硬实时保证。
 
+## USART1 台架（USB-CAN 未到货时）
+
+真实后端还可以走串口：PC 把经典 CAN 帧编码成 `A5 5A ...` 字节流，MCU 用同一份 ISO-TP/UDS 处理。需要可选依赖 `pyserial`，并且只对已经烧入 UART 台架固件的板子有效。
+
+~~~powershell
+python -m pip install -r requirements-serial.txt
+python tools/uds_tool.py info --backend uart --serial-port COM5 --baud 115200
+python tools/uds_tool.py status --backend uart --serial-port COM5 --baud 115200
+~~~
+
+当前 UART 目标是只读阶段：`info` / `status` 可以跑，`flash` 会返回 NRC 0x22。接线、构建、故障排查和后续写使能步骤见 [USART1 台架说明](UART_BENCH.md)。
+
 ## 工具处理的边界
 
 | 情况 | 行为 |
@@ -55,7 +67,7 @@ python tools/uds_tool.py info --backend can --interface gs_usb --channel "你的
 | FC、STmin、分帧或连续等待消耗过久 | 受每次 UDS 请求的总期限限制，默认 120 秒，可用 `--request-timeout` 调整 |
 | `0x11` 应答完成 | 只说明复位请求已被确认，不代表新 App 健康或升级最终成功 |
 
-`flash` 默认发复位；`--no-reset` 只下载并验证 READY 包。事件日志默认写入 `runs/`，可用 `--log 路径` 指定。SHA256 仅作文件标识；包仍只有 CRC32 和版本策略，没有签名。0x27 是演示算法，不能作为量产安全机制。
+`flash` 默认发复位；`--no-reset` 只下载并验证 READY 包。事件日志默认写入 `runs/`，可用 `--log 路径` 指定。SHA256 仅作文件标识；包已支持 CRC32、版本策略和 Ed25519 签名，但演示公钥不是生产密钥。0x27 是演示算法，不能作为量产安全机制。
 
 `status` 只读查询本工程 DID 0x0200，用于观察 READY/TRIAL、版本、长度和 CRC，详见 `UPDATE_STATUS.md`。它不做镜像扫描，也不代替 App 健康确认。
 

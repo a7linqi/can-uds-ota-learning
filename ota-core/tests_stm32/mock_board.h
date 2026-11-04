@@ -12,6 +12,8 @@ typedef struct {
     uint32_t sent_at[64],nor_erase_delay_ms,nor_read_delay_ms,eeprom_delay_ms;
     uint32_t first_erase_sent_count;
     int fail_can_after;
+    uint32_t uart_started,uart_binary,uart_tx_count,uart_busy,uart_start_fail;
+    uint8_t uart_tx[2048];
     int app_healthy,watchdog_start_fail,watchdog_reload_fail,eeprom_ignore_writes;
     uint32_t watchdog_starts,watchdog_feeds,watchdog_last_feed_ms,health_delay_ms;
     void (*idle_hook)(void);

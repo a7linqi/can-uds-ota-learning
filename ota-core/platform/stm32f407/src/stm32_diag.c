@@ -37,37 +37,57 @@ static int job_service(void *user)
     }
     /* S3 does not expire while this server is processing its current job. */
     d->uds.last_request_ms=now;
-    if(ota_stm32_can_poll(&d->can)) goto failed;
+    if(!d->io.poll || d->io.poll(d->io.port.user)) goto failed;
     if(d->pending_in_flight) {
-        if(ota_stm32_can_idle(&d->can)) d->pending_in_flight=0u;
+        if(d->io.idle && d->io.idle(d->io.port.user)) d->pending_in_flight=0u;
         else if((uint32_t)(now-d->pending_last_ms)>INITIAL_TX_TIMEOUT_MS) goto failed;
     }
     if(!d->pending_in_flight && (uint32_t)(now-d->pending_last_ms)>=PENDING_INTERVAL_MS) {
-        if(send_pending(d) || ota_stm32_can_poll(&d->can)) goto failed;
+        if(send_pending(d) || (d->io.poll && d->io.poll(d->io.port.user))) goto failed;
     }
     return 0;
 failed:
     d->job_error=1u; d->programming_allowed=0u;
     return -1;
 }
-void ota_stm32_diag_init(ota_stm32_diag_t *d,ota_stm32_ports_t *p)
+static void diag_common(ota_stm32_diag_t *d,ota_stm32_ports_t *p)
 {
-    memset(d,0,sizeof *d); d->storage=p;
-    ota_stm32_can_init(&d->can); d->transport=ota_stm32_can_port(&d->can);
-    isotp_init(&d->link,&d->transport,0x7E8u,0x7E0u);
+    d->storage=p;
+    isotp_init(&d->link,&d->io.port,0x7E8u,0x7E0u);
     isotp_set_flow(&d->link,8u,0u);
-    uds_init(&d->uds,&p->boot,&d->transport);
+    uds_init(&d->uds,&p->boot,&d->io.port);
     d->programming_allowed=(uint8_t)(OTA_ENABLE_FLASHING && p->storage_ready);
     p->service=job_service; p->service_user=d;
+}
+int ota_stm32_diag_init(ota_stm32_diag_t *d,ota_stm32_ports_t *p)
+{
+    memset(d,0,sizeof *d);
+    ota_stm32_can_init(&d->can);
+    d->io=ota_stm32_can_link(&d->can);
+    diag_common(d,p);
+    return 0;
+}
+int ota_stm32_diag_init_uart(ota_stm32_diag_t *d,ota_stm32_ports_t *p)
+{
+    memset(d,0,sizeof *d);
+    ota_stm32_uart_init(&d->uart);
+    d->io=ota_stm32_uart_link(&d->uart);
+    diag_common(d,p);
+    ota_bsp_uart_binary(1);
+    if(ota_bsp_uart_start()) {
+        ota_bsp_uart_binary(0);
+        return -1;
+    }
+    return 0;
 }
 int ota_stm32_diag_poll(ota_stm32_diag_t *d)
 {
     can_frame_t frame;
     int event;
     uint32_t accepted=0u;
-    if(ota_stm32_can_poll(&d->can)) return -1;
+    if(!d->io.poll || d->io.poll(d->io.port.user)) return -1;
     /* Limit work so a noisy RX source cannot starve timeouts/TX. */
-    while(accepted++<OTA_RX_QUEUE && ota_stm32_can_pop(&d->can,&frame)) {
+    while(accepted++<OTA_RX_QUEUE && d->io.pop && d->io.pop(d->io.port.user,&frame)) {
         if(frame.id==0x7E0u && !frame.extended) isotp_on_frame(&d->link,&frame);
     }
     uds_poll(&d->uds);
@@ -96,7 +116,7 @@ int ota_stm32_diag_poll(ota_stm32_diag_t *d)
              * response has left both the queue and hardware mailboxes. */
             goto finish_tx;
         }
-        if(deferred && !ota_stm32_can_idle(&d->can)) {
+        if(deferred && (!d->io.idle || !d->io.idle(d->io.port.user))) {
             if((uint32_t)(ota_bsp_now_ms()-d->pending_last_ms)>INITIAL_TX_TIMEOUT_MS) {
                 d->request_pending=0u; d->long_announced=0u;
                 d->programming_allowed=0u; return -1;
@@ -123,8 +143,9 @@ int ota_stm32_diag_poll(ota_stm32_diag_t *d)
         if(d->uds.reset_requested) d->reset_pending=1u;
     }
 finish_tx:
-    if(ota_stm32_can_poll(&d->can)) return -1;
-    if(d->reset_pending && !isotp_busy(&d->link) && ota_stm32_can_idle(&d->can)) {
+    if(!d->io.poll || d->io.poll(d->io.port.user)) return -1;
+    if(d->reset_pending && !isotp_busy(&d->link) &&
+       d->io.idle && d->io.idle(d->io.port.user)) {
         d->reset_pending=0u; d->uds.reset_requested=0u; ota_bsp_reset();
     }
     return 0;

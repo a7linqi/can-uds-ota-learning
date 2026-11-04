@@ -62,7 +62,7 @@
 
 core 通过 `flash_port_t` / `eeprom_port_t` 两个函数表访问存储，**一行 HAL 代码都没有**（也不该有）。
 
-这是可验证性的来源：同一份 `boot.c` 既能在 PC 上用 RAM 模拟存储跑 3138 条断言，也能编到 Cortex-M4 上运行。
+这是可验证性的来源：同一份 `boot.c` 既能在 PC 上用 RAM 模拟存储跑 3164 条断言，也能编到 Cortex-M4 上运行。平台层再把 CAN 抽成 `ota_stm32_link_t`，所以同一套 UDS/ISO-TP 也能跑在 USART1 台架上。
 
 **如果你为了"让它能跑"而在 core 里 `#include "stm32f4xx_hal.h"`，主机测试就全废了。** 要加平台能力，去 `platform/` 层加。
 
@@ -71,7 +71,13 @@ core 通过 `flash_port_t` / `eeprom_port_t` 两个函数表访问存储，**一
 ## 4. 代码地图（推荐阅读顺序）
 
 ```
+platform/stm32f407/src/  ★ 唯一碰硬件的地方
+├── stm32_diag.c           诊断任务：只依赖 ota_stm32_link_t
+├── stm32_can.c            CAN link 实现
+└── stm32_uart.c           USART1 台架 link 实现
+
 src/core/                ★ 核心，纯逻辑，无硬件依赖
+├── can_uart.c             CAN-over-UART 台架编解码（纯逻辑，可主机测试）
 ├── flash_layout.h         ★ 先读：三种存储的地址与大小（一切的地基）
 ├── metadata.h             ★ 再读：事务元数据的字段与状态机
 ├── boot.c                  上电决策：READY / INSTALLING / TRIAL / RESTORING
@@ -99,6 +105,8 @@ docs/                      设计文档，见第 5 节
 | `docs/STORAGE_MODEL.md` | 三种存储的分工、为什么不用内部 A/B 双槽 |
 | `docs/SIGNATURE.md` | 验签的三条路径 + 备份区例外的边界 |
 | `docs/CODE_LEARNING_PLAN.md` | 14 个学习单元的完整路线 |
+| `docs/LEARNING_DIAGRAMS.md` | 状态机图、0x34→0x36→0x37 时序、五个脱稿讲点 |
+| `docs/UART_BENCH.md` | 没有 USB-CAN 时先用 USART1 跑通诊断链路 |
 
 ---
 
@@ -106,9 +114,10 @@ docs/                      设计文档，见第 5 节
 
 | 层面 | 状态 |
 |---|---|
-| 主机 C 回归 | 3138 条断言 × 2 种容量（ZG 1 MiB / ZE 512 KiB），0 失败 |
+| 主机 C 回归 | 3164 条断言 × 2 种容量（ZG 1 MiB / ZE 512 KiB），0 失败 |
+| 串口台架代码 | CAN-over-UART 编解码、STM32 link、PC 后端均完成主机测试；实机未执行 |
 | 存储断电场景 | **420 个模型场景**（RAM 模拟 + 故障注入，**不是物理断电**） |
-| PC 集成 / NOR 驱动 / 适配器 | 45 / 720 / 177+243 断言，全部通过 |
+| PC 集成 / NOR 驱动 / 适配器 | 45 / 720 / 232+298 断言，全部通过 |
 | 目标构建 | 四套 GNU 只读固件完整链接，ARMClang `-Werror` 零警告 |
 | **实机已完成** | 芯片识别、时钟、内部 CAN 回环 16 帧（三次复位复测）、NOR JEDEC、EEPROM 读取、1 MiB 内部 Flash 双遍备份、LCD 点亮 |
 | **实机未完成** | **真实 CAN 总线通信**（缺 USB-CAN 适配器）、**真实升级 V1→V2**、**升级中断后重做**、**试运行失败回滚**、**真实断电恢复**、NOR 实际擦写 |
@@ -197,7 +206,7 @@ python tools/build_explorer_gnu.py \
 1. **先说明理由和影响**，不要直接改完再说。
 2. **不要降低验证强度**（例如把断言改成打印、把断电场景删掉）。
 3. **不要为了跑通而绕过设计**（例如在 core 里加 HAL、放宽备份区验证、把 `commit` 提前写）。
-4. **改动后跑一次 `run_tests.py`**，确认 3138 条断言仍然通过。
+4. **改动后跑一次 `run_tests.py`**，确认 3164 条断言仍然通过。
 5. **文档同步更新**，尤其是 `docs/WORK_STATUS.md` 的检查点。
 
 ---

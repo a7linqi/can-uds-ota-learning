@@ -34,6 +34,14 @@ int ota_bsp_watchdog_reload(void);
 int ota_bsp_can_try_tx(const can_frame_t *frame);
 int ota_bsp_can_start(void); /* enable RX notification only AFTER diag init */
 int ota_bsp_can_tx_idle(void);
+
+/* Bench UART link. Bytes are the CAN-over-UART wire format from can_uart.h.
+ * start() enables RX interrupts; binary(1) suppresses text logging so log
+ * lines cannot corrupt frames. write() returns after the bytes left the UART. */
+int ota_bsp_uart_start(void);
+int ota_bsp_uart_write(const uint8_t *data,uint32_t len);
+int ota_bsp_uart_tx_idle(void);
+void ota_bsp_uart_binary(int active);
 int ota_bsp_iflash_read(uint32_t absolute,uint8_t *out,uint32_t len);
 int ota_bsp_iflash_unlock(void);
 int ota_bsp_iflash_lock(void);

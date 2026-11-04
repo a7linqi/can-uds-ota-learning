@@ -4,6 +4,7 @@ static ota_stm32_ports_t storage;
  * main-loop health decision below is allowed to refresh the watchdog. */
 int ota_firmware_watchdog_service(void) { return 0; }
 int ota_firmware_service(void) { return ota_stm32_storage_service(&storage); }
+void ota_user_uart_rx(uint8_t byte) { (void)byte; }
 int main(void)
 {
     ota_board_config_t config;

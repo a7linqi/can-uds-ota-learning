@@ -11,6 +11,7 @@ int ota_firmware_service(void) { return 0; }
 int ota_firmware_watchdog_service(void) { return 0; }
 void ota_bootloader_can_rx(const can_frame_t *frame)
 { (void)ota_stm32_can_rx_isr(&received,frame); }
+void ota_user_uart_rx(uint8_t byte) { (void)byte; }
 static void stop(uint32_t stage,const char *reason)
 {
     ota_explorer_loopback_stage=stage;ota_bsp_log(reason);

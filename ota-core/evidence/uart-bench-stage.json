@@ -1,0 +1,158 @@
+{
+  "stage": "uart-bench-transport",
+  "date": "2026-11-04",
+  "status": "passed",
+  "scope": "host model and link-level checks only; no hardware execution",
+  "hardware_verified": false,
+  "target_linked": false,
+  "core": {
+    "baseline": {
+      "checks": 236,
+      "failures": 0,
+      "original_archive_sha256": "43ef8b3358c2e7306b19c322943a242636e401cb99383de67316057e180cb4a0"
+    },
+    "hardware_verified": false,
+    "signature_implemented": true,
+    "1024": {
+      "checks": 3164,
+      "failures": 0,
+      "storage_power_cut_scenarios": 420,
+      "execution": "native C executable"
+    },
+    "512": {
+      "checks": 3164,
+      "failures": 0,
+      "storage_power_cut_scenarios": 420,
+      "execution": "native C executable"
+    },
+    "cortex_m4_syntax": {
+      "performed_this_run": false,
+      "target_linked": false
+    }
+  },
+  "pc": {
+    "tests": 45,
+    "failures": 0,
+    "skipped": 0,
+    "ecu": "native compiled C core in a child process",
+    "transport": "line-based virtual classic CAN",
+    "real_can_tested": false,
+    "hardware_verified": false
+  },
+  "nor": {
+    "checks": 720,
+    "failures": 0,
+    "chip_profile": "W25Q128JV-IQ/JQ EF4018",
+    "evidence": "SPI command fixture",
+    "hardware_verified": false,
+    "transfer_failure_points": 31
+  },
+  "firmware": {
+    "app_entry": [
+      {
+        "flash_kib": 1024,
+        "checks": 35,
+        "failures": 0,
+        "scenarios": 8
+      },
+      {
+        "flash_kib": 512,
+        "checks": 35,
+        "failures": 0,
+        "scenarios": 8
+      }
+    ],
+    "explorer_loopback_entry": {
+      "checks": 51,
+      "failures": 0,
+      "scenarios": 14,
+      "uses_real_entry_and_can_queue": true,
+      "physical_can_tested": false
+    },
+    "watchdog": "virtual timeout, not physical IWDG",
+    "hardware_verified": false
+  },
+  "stm32": {
+    "hardware_verified": false,
+    "target_linked": false,
+    "host_adapters": [
+      {
+        "flash_kib": 1024,
+        "gates_enabled": 0,
+        "checks": 232,
+        "failures": 0
+      },
+      {
+        "flash_kib": 1024,
+        "gates_enabled": 1,
+        "checks": 298,
+        "failures": 0
+      },
+      {
+        "flash_kib": 512,
+        "gates_enabled": 0,
+        "checks": 232,
+        "failures": 0
+      },
+      {
+        "flash_kib": 512,
+        "gates_enabled": 1,
+        "checks": 298,
+        "failures": 0
+      }
+    ],
+    "project_semantics": [
+      {
+        "name": "bootloader_ZG_UNCONFIGURED",
+        "sources": 28,
+        "base": "0x8000000",
+        "length": "0x10000"
+      },
+      {
+        "name": "bootloader_ZE_UNCONFIGURED",
+        "sources": 28,
+        "base": "0x8000000",
+        "length": "0x10000"
+      },
+      {
+        "name": "app_ZG_UNCONFIGURED",
+        "sources": 28,
+        "base": "0x8010000",
+        "length": "0xf0000"
+      },
+      {
+        "name": "app_ZE_UNCONFIGURED",
+        "sources": 28,
+        "base": "0x8010000",
+        "length": "0x70000"
+      }
+    ],
+    "uart_bootloader_entry": {
+      "linked": true,
+      "executed": false,
+      "hardware": false
+    }
+  },
+  "python_tools": {
+    "python_unittest": 28,
+    "cross_language": {
+      "valid": "accepted",
+      "bad-header": "rejected",
+      "bad-payload": "rejected",
+      "bad-signature": "rejected",
+      "noncanonical-scalar": "rejected",
+      "unsigned": "rejected",
+      "wrong-key": "rejected",
+      "truncated-signature": "rejected"
+    },
+    "hardware_verified": false
+  },
+  "notes": [
+    "3164 C checks / 420 storage power-cut model scenarios per capacity",
+    "STM32 adapter host model: 232 checks gates-off, 298 checks gates-on, per capacity",
+    "UART bootloader entry linked against host mock; not executed",
+    "PC 45, tools 28, firmware 35+35+51",
+    "No USART1 physical run, NOR erase/program, App handoff, V1->V2 or power-cut was executed",
+    "evidence/verification.json remains the historical v0.13 full-matrix report"
+  ]
+}

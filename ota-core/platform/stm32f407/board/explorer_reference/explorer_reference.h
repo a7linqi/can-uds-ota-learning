@@ -37,4 +37,6 @@ typedef struct {
 extern ota_explorer_probe_t ota_explorer_probe;
 /* Implemented by the selected firmware main; called from FIFO0 ISR. */
 void ota_bootloader_can_rx(const can_frame_t *frame);
+/* Implemented by the selected firmware main; called from USART1 ISR. */
+void ota_user_uart_rx(uint8_t byte);
 #endif

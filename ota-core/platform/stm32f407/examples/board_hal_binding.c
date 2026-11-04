@@ -7,6 +7,7 @@
 #include <string.h>
 static IWDG_HandleTypeDef watchdog;
 static int watchdog_started;
+static uint8_t uart_rx_byte;
 int ota_bsp_watchdog_start(void)
 {
     watchdog.Instance=IWDG; watchdog.Init.Prescaler=IWDG_PRESCALER_256;
@@ -60,6 +61,39 @@ int ota_bsp_can_tx_idle(void)
 {
     CAN_HandleTypeDef *h=ota_user_can();
     return h && !HAL_CAN_IsTxMessagePending(h,CAN_TX_MAILBOX0|CAN_TX_MAILBOX1|CAN_TX_MAILBOX2);
+}
+int ota_bsp_uart_start(void)
+{
+    UART_HandleTypeDef *h=ota_user_uart();
+    if(!h) return -1;
+    HAL_NVIC_SetPriority(USART1_IRQn,6u,0u);
+    HAL_NVIC_ClearPendingIRQ(USART1_IRQn);
+    HAL_NVIC_EnableIRQ(USART1_IRQn);
+    return HAL_UART_Receive_IT(h,&uart_rx_byte,1u)==HAL_OK?0:-1;
+}
+int ota_bsp_uart_write(const uint8_t *data,uint32_t len)
+{
+    UART_HandleTypeDef *h=ota_user_uart();
+    if(!h || !data || !len || len>0xFFFFu) return -1;
+    return HAL_UART_Transmit(h,(uint8_t *)data,(uint16_t)len,100u)==HAL_OK?0:-1;
+}
+int ota_bsp_uart_tx_idle(void)
+{
+    UART_HandleTypeDef *h=ota_user_uart();
+    return h && h->gState==HAL_UART_STATE_READY;
+}
+void ota_bsp_uart_binary(int active) { ota_user_uart_binary(active); }
+void ota_hal_uart_rx_complete(UART_HandleTypeDef *h)
+{
+    if(!h || h!=ota_user_uart()) return;
+    ota_user_uart_rx(uart_rx_byte);
+    (void)HAL_UART_Receive_IT(h,&uart_rx_byte,1u);
+}
+void ota_hal_uart_error(UART_HandleTypeDef *h)
+{
+    if(!h || h!=ota_user_uart()) return;
+    __HAL_UART_CLEAR_OREFLAG(h);
+    (void)HAL_UART_Receive_IT(h,&uart_rx_byte,1u);
 }
 void ota_hal_can_fifo0_callback(CAN_HandleTypeDef *h)
 {

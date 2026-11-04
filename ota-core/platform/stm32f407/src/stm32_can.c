@@ -44,3 +44,13 @@ int ota_stm32_can_poll(ota_stm32_can_t *c)
 }
 int ota_stm32_can_idle(const ota_stm32_can_t *c)
 { return !c->tx_error && c->tx_head==c->tx_tail && ota_bsp_can_tx_idle()==1; }
+static int link_poll(void *u) { return ota_stm32_can_poll((ota_stm32_can_t *)u); }
+static int link_pop(void *u,can_frame_t *f) { return ota_stm32_can_pop((ota_stm32_can_t *)u,f); }
+static int link_idle(const void *u) { return ota_stm32_can_idle((const ota_stm32_can_t *)u); }
+ota_stm32_link_t ota_stm32_can_link(ota_stm32_can_t *c)
+{
+    ota_stm32_link_t l;
+    l.port=ota_stm32_can_port(c);
+    l.poll=link_poll; l.pop=link_pop; l.idle=link_idle;
+    return l;
+}

@@ -1,0 +1,2 @@
+# Optional USART1 bench backend for tools/uds_tool.py --backend uart
+pyserial>=3.5

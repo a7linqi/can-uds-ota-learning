@@ -282,10 +282,66 @@ static void pending_checks(void)
     CHECK(M.sent[M.sent_count-1u].data[1]==0x7Fu && M.sent[M.sent_count-1u].data[3]==0x22u);
 #endif
 }
+static void uart_feed(const can_frame_t *f)
+{
+    uint8_t raw[CAN_UART_MAX_FRAME];
+    uint32_t n=can_uart_encode(f,raw,sizeof raw),i;
+    CHECK(n>0u);
+    for(i=0u;i<n;i++) CHECK(ota_stm32_uart_rx_isr(&D.uart,raw[i])==0);
+}
+static int uart_decode_next(uint32_t *pos,can_frame_t *out)
+{
+    can_uart_decoder_t decoder;
+    can_uart_decoder_init(&decoder);
+    while(*pos<M.uart_tx_count) {
+        if(can_uart_decoder_feed(&decoder,M.uart_tx[(*pos)++],out)==1) return 1;
+    }
+    return 0;
+}
+static void uart_checks(void)
+{
+    can_frame_t request,response;
+    uint32_t pos=0u;
+    fresh();
+    M.uart_start_fail=1;
+    CHECK(ota_stm32_diag_init_uart(&D,&P)!=0);
+    fresh();
+    CHECK(ota_stm32_diag_init_uart(&D,&P)==0);
+    CHECK(M.uart_started==1u && M.uart_binary==1u);
+    CHECK(D.io.port.user==&D.uart && D.io.pop!=0 && D.io.poll!=0);
+    memset(&request,0,sizeof request); request.id=0x7E0u; request.dlc=3u;
+    request.data[0]=2u; request.data[1]=0x10u; request.data[2]=0x03u;
+    uart_feed(&request);
+    CHECK(!ota_stm32_diag_poll(&D)); /* request processed and response transmitted */
+    CHECK(M.uart_tx_count>=10u);
+    CHECK(uart_decode_next(&pos,&response));
+    CHECK(response.id==0x7E8u && response.dlc==7u &&
+          response.data[0]==6u && response.data[1]==0x50u &&
+          response.data[2]==0x03u);
+    CHECK(!uart_decode_next(&pos,&response));
+
+    /* A corrupted frame must be discarded without enqueuing. */
+    {
+        uint8_t raw[CAN_UART_MAX_FRAME];
+        uint32_t n=can_uart_encode(&request,raw,sizeof raw),i;
+        CHECK(n>0u);
+        raw[n-1u]^=0x01u;
+        for(i=0u;i<n;i++) CHECK(ota_stm32_uart_rx_isr(&D.uart,raw[i])==0);
+        CHECK(D.uart.rx_head==D.uart.rx_tail);
+    }
+    /* The link is a replaceable queue: fail closed on a hardware TX error. */
+    fresh();
+    CHECK(ota_stm32_diag_init_uart(&D,&P)==0);
+    M.uart_busy=1;
+    uart_feed(&request);
+    CHECK(ota_stm32_diag_poll(&D)<0);
+    CHECK(D.uart.tx_error==1);
+}
 int main(void)
 {
     init_sign_key();
-    storage_checks(); can_checks(); diagnostics_checks(); handoff_checks(); pending_checks(); status_checks();
+    storage_checks(); can_checks(); diagnostics_checks(); handoff_checks();
+    pending_checks(); status_checks(); uart_checks();
     printf("STM32 adapter mocks: %d checks, %d failures\n",checks,failures);
     return failures?1:0;
 }

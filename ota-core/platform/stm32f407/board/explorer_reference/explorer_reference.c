@@ -9,7 +9,7 @@ static CAN_HandleTypeDef can1;
 static UART_HandleTypeDef uart1;
 static I2C_HandleTypeDef i2c1;
 static SPI_HandleTypeDef spi1;
-static int initialized,uart_ready;
+static int initialized,uart_ready,uart_binary;
 ota_explorer_probe_t ota_explorer_probe;
 
 static int clock_init(void)
@@ -171,6 +171,7 @@ void ota_user_config(ota_board_config_t *config)
     config->storage_verified=0u;
 }
 CAN_HandleTypeDef *ota_user_can(void) { return &can1; }
+UART_HandleTypeDef *ota_user_uart(void) { return &uart1; }
 I2C_HandleTypeDef *ota_user_i2c(void) { return &i2c1; }
 SPI_HandleTypeDef *ota_user_spi(void) { return &spi1; }
 uint8_t ota_user_eeprom_address7(void) { return 0x50u; }
@@ -180,11 +181,12 @@ int ota_user_nor_select(int active)
     if(!initialized) return -1;
     HAL_GPIO_WritePin(GPIOB,GPIO_PIN_14,active?GPIO_PIN_RESET:GPIO_PIN_SET);return 0;
 }
+void ota_user_uart_binary(int active) { uart_binary=active?1:0; }
 void ota_user_log(const char *message)
 {
     static const uint8_t end[2]={'\r','\n'};
     size_t length;
-    if(!uart_ready || !message) return;
+    if(!uart_ready || uart_binary || !message) return;
     length=strlen(message);if(length>192u) length=192u;
     (void)HAL_UART_Transmit(&uart1,(uint8_t *)message,(uint16_t)length,30u);
     (void)HAL_UART_Transmit(&uart1,(uint8_t *)end,sizeof end,5u);
@@ -196,9 +198,10 @@ void ota_user_can_rx(const can_frame_t *frame) { ota_bootloader_can_rx(frame); }
 int ota_user_quiesce_peripherals(void)
 {
     HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);HAL_NVIC_ClearPendingIRQ(CAN1_RX0_IRQn);
+    HAL_NVIC_DisableIRQ(USART1_IRQn);HAL_NVIC_ClearPendingIRQ(USART1_IRQn);
     if(ota_user_nor_select(0) || HAL_SPI_DeInit(&spi1)!=HAL_OK ||
        HAL_I2C_DeInit(&i2c1)!=HAL_OK || HAL_UART_DeInit(&uart1)!=HAL_OK) return -1;
-    uart_ready=0;return 0;
+    uart_ready=0;uart_binary=0;return 0;
 }
 /* An explicit supported chip driver and measured timing are a later stage. */
 int ota_user_nor_read(uint32_t a,uint8_t *p,uint32_t n)
