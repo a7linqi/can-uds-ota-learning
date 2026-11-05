@@ -1,6 +1,6 @@
 {
   "status": "passed",
-  "duration_s": 76.016,
+  "duration_s": 84.703,
   "validated_source_hashes": {
     "firmware/app/main.c": "69e2aaac35467c979e3cce9e0761416141e8582be5cbd4fd7eb3c5b3d0ee7d18",
     "firmware/bootloader/main.c": "09dc13059eb1ea2aac3025ca565b5395f57bc3327415deb18bfd2ebf704cf2b4",
@@ -23,7 +23,7 @@
     "include/ota/pubkey.h": "67b5b989f439d9869fb13b25be70dd571988f6297907a9f17be1147b1e88802b",
     "include/ota/signature.h": "62aa856f4fb9778dbdd5c90029b802ea7510306f766777d19c8e22a07c5fd61e",
     "include/ota/spi_nor.h": "2c1ca1733f313aadc9ecd5eadaa82a8f74567a65ef388b898644a9b573c864b6",
-    "include/ota/uds.h": "b8bdb48322300d0af71f0e1b21e5861d673e108b6e374166ba73f9ecf492cbb3",
+    "include/ota/uds.h": "ed59dabc89015f48238278ca5b3027bb7775af98f33cd7372ee7950992986077",
     "include/ota/watchdog_policy.h": "9c2aa995a01dd523170e923dabfc410b52fec93f0f0b0bdd985b1b533b981181",
     "Makefile": "98478e9e3ec6eafbe1ab5cf3bb5413eae6d8d64fc56ba8f7cb4c8d5e6cd35916",
     "mdk/app.uvprojx": "6fdf89172ac9c947aa6fcba08d705f113aad16639e9d93d10ac58322998eb74b",
@@ -66,7 +66,7 @@
     "src/core/isotp.c": "4db8e74761947d442570b3f844e596430e89218d373c5f47e41cabb93f7d74f5",
     "src/core/metadata.c": "48494d05b895f852a6e0ea7363a8ff93322cc306e5bb821a11d822046d72db32",
     "src/core/signature.c": "15d55f8ce2e29d61368671aa292bb239b6e80cd2113f8ff58242eff99b9488b2",
-    "src/core/uds.c": "6687ce110c23e15e966752cf51289883d8d67f737c6bffad8a4da2b6874f786c",
+    "src/core/uds.c": "d5abd86b69f8ecbe703b96150cca414638c9b08cc194289b7a14c23330db173e",
     "src/core/watchdog_policy.c": "60e34b515494e54df2769fe5bd1f2ad52a84692f4829b45d2cd3f8088d1c5450",
     "src/driver/spi_nor.c": "f13cbfa3c0ddc4dd40ac69a6f42c4878229cc5902e701930b0f4291a0abfc3bd",
     "src/port/host/flash_ram.c": "7592fbe03e1fbe0940ab00f96a36c80c817e07525d06595d80637dacd6214803",
@@ -75,9 +75,10 @@
     "tests/bench.h": "a11c14e67d5443182d26aa8fe3a5745fff9e1d3e1dc9f282d9be15e07352aff6",
     "tests/test_boot.c": "8b18fb158900a3088a112d354896b21917b186be7c9f55c88686daef5dc9a439",
     "tests/test_crc.c": "00659830d334b05f6e5bee90d9d05dd4855db07b5423cd310f2bdf07ce487ae9",
+    "tests/test_dtc.c": "dc9af9cc990149626837b05ba6f6c2b5eb371b64ddab527070904a13e9b64e6f",
     "tests/test_input_edges.c": "5722ce95b6aba9d6db63ab5196f7516624d36ff864690a07afd647be59a7d12a",
     "tests/test_isotp.c": "71450d608cb671472833a20142dd99bdb757b2bac3918f8cb9a5a22d35e7af37",
-    "tests/test_main.c": "f82f3ea0446c18c59a835e9e3ed49d73e4728edd7c4a29f4ec08af68884c4187",
+    "tests/test_main.c": "5b0e180623d6363bc47bdeaa2636e1bbbe2d424d121c48e3c17d1189dd245471",
     "tests/test_protocol_edges.c": "e2ed4dd84cd9e31c206b56c2c458a80d94d04a1268daed367c5d734fe075dfe7",
     "tests/test_signature.c": "56bda0398b25e96a963bc8d2ed2daf2707315487491e0dc19cb4b9407fdc2073",
     "tests/test_uart_codec.c": "e29f62626aa693cbfe1a027278d9e3273083178609945dd6db2bdeaf5e44b872",
@@ -145,13 +146,13 @@
     "hardware_verified": false,
     "signature_implemented": true,
     "1024": {
-      "checks": 3328,
+      "checks": 3385,
       "failures": 0,
       "storage_power_cut_scenarios": 420,
       "execution": "TinyCC native in-memory C"
     },
     "512": {
-      "checks": 3328,
+      "checks": 3385,
       "failures": 0,
       "storage_power_cut_scenarios": 420,
       "execution": "TinyCC native in-memory C"
@@ -305,15 +306,15 @@
         "linked": true,
         "image": {
           "flash_base": "0x8000000",
-          "flash_bytes": 40784,
+          "flash_bytes": 41240,
           "flash_limit": "0x8010000",
-          "ram_bytes_with_reserved_stack": 13064,
+          "ram_bytes_with_reserved_stack": 13136,
           "initial_sp": "0x20020000",
-          "reset_vector": "0x8008bad",
-          "elf_entry": "0x8008bad"
+          "reset_vector": "0x8008d75",
+          "elf_entry": "0x8008d75"
         },
         "hardware_verified": false,
-        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  40772\t     12\t  13052\t  53836\t   d24c\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZG_uart_READONLY\\explorer_ZG_uart_READONLY.elf"
+        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  41228\t     12\t  13124\t  54364\t   d45c\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZG_uart_READONLY\\explorer_ZG_uart_READONLY.elf"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
@@ -337,23 +338,23 @@
         "linked": true,
         "image": {
           "flash_base": "0x8000000",
-          "flash_bytes": 40792,
+          "flash_bytes": 41248,
           "flash_limit": "0x8010000",
-          "ram_bytes_with_reserved_stack": 13064,
+          "ram_bytes_with_reserved_stack": 13136,
           "initial_sp": "0x20020000",
-          "reset_vector": "0x8008bb5",
-          "elf_entry": "0x8008bb5"
+          "reset_vector": "0x8008d7d",
+          "elf_entry": "0x8008d7d"
         },
         "hardware_verified": false,
-        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  40780\t     12\t  13052\t  53844\t   d254\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZE_uart_READONLY\\explorer_ZE_uart_READONLY.elf"
+        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  41236\t     12\t  13124\t  54372\t   d464\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZE_uart_READONLY\\explorer_ZE_uart_READONLY.elf"
       }
     ],
     "artifacts": [
       {
         "target": "explorer_ZG_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.elf",
-        "bytes": 1220352,
-        "sha256": "d245c3897c155c1bbf3bb94617d5503c3886c732bc6aa2a69230c7971d80457a"
+        "bytes": 1220856,
+        "sha256": "830ff7a542c3cd0c7e91f7f0c85b6642510231e57574893f987c1f465040753a"
       },
       {
         "target": "explorer_ZG_loopback_READONLY",
@@ -364,32 +365,32 @@
       {
         "target": "explorer_ZG_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.map",
-        "bytes": 597154,
-        "sha256": "4db84d99506ebd6478587435b170014f8ed9819c19b187c57c94147a9bea7869"
+        "bytes": 597307,
+        "sha256": "4f5b12ac1a1ea94168a1894bdebfd3dd00990369d4b47e644f24da97c22d22ab"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.elf",
-        "bytes": 1476972,
-        "sha256": "6666134ce19fb60cac15b898534b7962aea59ba5aadbbef52731eb165d7f57d7"
+        "bytes": 1484364,
+        "sha256": "60b318982f515e043a15582ba6f7790dcf1c357a36fd6048e86b1229a949a1d4"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.bin",
-        "bytes": 40784,
-        "sha256": "424428a42877a709f163d2669d3b19a021e863e4bcfae05030b204f8e2fbeeab"
+        "bytes": 41240,
+        "sha256": "82e7c4b4a7194fee98f58765be49d55dbe841f018757263b247f2941366c12b0"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.map",
-        "bytes": 586552,
-        "sha256": "6cf5d5528955a2816222d75145b17bcdb51d89b6afb74d79b69c7b1c60334b1d"
+        "bytes": 586839,
+        "sha256": "80eb6c77237a187414dfe75f78973e60efc406e5cf32b79623316d9cdc182cef"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.elf",
-        "bytes": 1220360,
-        "sha256": "e141ba399e8b56c911e005de880aea500215d39f9e5f0e41168adcc1d3a3520c"
+        "bytes": 1220860,
+        "sha256": "17e9fd9d4b70a2e1dd99878dfb4037be30ceb13a33e2a1290243b6616bfa3739"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
@@ -400,26 +401,26 @@
       {
         "target": "explorer_ZE_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.map",
-        "bytes": 597154,
-        "sha256": "9154acb4585ea35a6477a33723f75365488dd09b373274f5f13abe21d9f257d7"
+        "bytes": 597307,
+        "sha256": "586dbe109f0954971d8660d62a8098dea4a21055768e7a254c5e04b0a5f6ac53"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.elf",
-        "bytes": 1476976,
-        "sha256": "e33082a6e19302f8db4070b63ac488ae1c4e7423aff80d146bec6c3bce8e0b64"
+        "bytes": 1484372,
+        "sha256": "a4405a2c627190238059169dde5c31ef028af08d5b550e612da5b65dd9407abc"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.bin",
-        "bytes": 40792,
-        "sha256": "e9400f97349d81df02c7abead816f595b4057be31807f3c494780d1e359be6ff"
+        "bytes": 41248,
+        "sha256": "204dbe5f5313775e993219aa0099df901dee6dbbdb9989e769ed023f34d6dfbf"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.map",
-        "bytes": 586552,
-        "sha256": "981ec0bd1e759585874d38be7772e1a7bfe8c700b59d9b9bb61ce87f2ba081d4"
+        "bytes": 586839,
+        "sha256": "0d577fe7765d033f5a52822c37c04ff09f39aae05931a5d8662fd12f52e64497"
       }
     ],
     "validated_source_hashes": {
@@ -444,7 +445,7 @@
       "include/ota/pubkey.h": "67b5b989f439d9869fb13b25be70dd571988f6297907a9f17be1147b1e88802b",
       "include/ota/signature.h": "62aa856f4fb9778dbdd5c90029b802ea7510306f766777d19c8e22a07c5fd61e",
       "include/ota/spi_nor.h": "2c1ca1733f313aadc9ecd5eadaa82a8f74567a65ef388b898644a9b573c864b6",
-      "include/ota/uds.h": "b8bdb48322300d0af71f0e1b21e5861d673e108b6e374166ba73f9ecf492cbb3",
+      "include/ota/uds.h": "ed59dabc89015f48238278ca5b3027bb7775af98f33cd7372ee7950992986077",
       "include/ota/watchdog_policy.h": "9c2aa995a01dd523170e923dabfc410b52fec93f0f0b0bdd985b1b533b981181",
       "Makefile": "98478e9e3ec6eafbe1ab5cf3bb5413eae6d8d64fc56ba8f7cb4c8d5e6cd35916",
       "mdk/app.uvprojx": "6fdf89172ac9c947aa6fcba08d705f113aad16639e9d93d10ac58322998eb74b",
@@ -487,7 +488,7 @@
       "src/core/isotp.c": "4db8e74761947d442570b3f844e596430e89218d373c5f47e41cabb93f7d74f5",
       "src/core/metadata.c": "48494d05b895f852a6e0ea7363a8ff93322cc306e5bb821a11d822046d72db32",
       "src/core/signature.c": "15d55f8ce2e29d61368671aa292bb239b6e80cd2113f8ff58242eff99b9488b2",
-      "src/core/uds.c": "6687ce110c23e15e966752cf51289883d8d67f737c6bffad8a4da2b6874f786c",
+      "src/core/uds.c": "d5abd86b69f8ecbe703b96150cca414638c9b08cc194289b7a14c23330db173e",
       "src/core/watchdog_policy.c": "60e34b515494e54df2769fe5bd1f2ad52a84692f4829b45d2cd3f8088d1c5450",
       "src/driver/spi_nor.c": "f13cbfa3c0ddc4dd40ac69a6f42c4878229cc5902e701930b0f4291a0abfc3bd",
       "src/port/host/flash_ram.c": "7592fbe03e1fbe0940ab00f96a36c80c817e07525d06595d80637dacd6214803",
@@ -496,9 +497,10 @@
       "tests/bench.h": "a11c14e67d5443182d26aa8fe3a5745fff9e1d3e1dc9f282d9be15e07352aff6",
       "tests/test_boot.c": "8b18fb158900a3088a112d354896b21917b186be7c9f55c88686daef5dc9a439",
       "tests/test_crc.c": "00659830d334b05f6e5bee90d9d05dd4855db07b5423cd310f2bdf07ce487ae9",
+      "tests/test_dtc.c": "dc9af9cc990149626837b05ba6f6c2b5eb371b64ddab527070904a13e9b64e6f",
       "tests/test_input_edges.c": "5722ce95b6aba9d6db63ab5196f7516624d36ff864690a07afd647be59a7d12a",
       "tests/test_isotp.c": "71450d608cb671472833a20142dd99bdb757b2bac3918f8cb9a5a22d35e7af37",
-      "tests/test_main.c": "f82f3ea0446c18c59a835e9e3ed49d73e4728edd7c4a29f4ec08af68884c4187",
+      "tests/test_main.c": "5b0e180623d6363bc47bdeaa2636e1bbbe2d424d121c48e3c17d1189dd245471",
       "tests/test_protocol_edges.c": "e2ed4dd84cd9e31c206b56c2c458a80d94d04a1268daed367c5d734fe075dfe7",
       "tests/test_signature.c": "56bda0398b25e96a963bc8d2ed2daf2707315487491e0dc19cb4b9407fdc2073",
       "tests/test_uart_codec.c": "e29f62626aa693cbfe1a027278d9e3273083178609945dd6db2bdeaf5e44b872",

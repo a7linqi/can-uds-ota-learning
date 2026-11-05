@@ -28,7 +28,7 @@ test_serial_transport_send_and_recv (test_uart_transport.UartWireTests.test_seri
 test_standard_frame_matches_c_vector (test_uart_transport.UartWireTests.test_standard_frame_matches_c_vector) ... ok
 
 ----------------------------------------------------------------------
-Ran 28 tests in 0.294s
+Ran 28 tests in 0.323s
 
 OK
 
