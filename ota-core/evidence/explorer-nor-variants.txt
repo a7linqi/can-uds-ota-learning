@@ -14,13 +14,13 @@ In file included from D:\Project\Can-learning\ota-core\platform\stm32f407\board\
 D:\Project\Can-learning\ota-core\platform\stm32f407\board\explorer_reference/explorer_reference.h:27:2: error: "OTA_EXPLORER_NOR_SELFTEST requires OTA_EXPLORER_NOR_SELFTEST_ADDR"
 #error "OTA_EXPLORER_NOR_SELFTEST requires OTA_EXPLORER_NOR_SELFTEST_ADDR"
  ^
-D:\Project\Can-learning\ota-core\platform\stm32f407\board\explorer_reference\explorer_reference.c:189:34: error: use of undeclared identifier 'OTA_EXPLORER_NOR_SELFTEST_ADDR'
+D:\Project\Can-learning\ota-core\platform\stm32f407\board\explorer_reference\explorer_reference.c:238:34: error: use of undeclared identifier 'OTA_EXPLORER_NOR_SELFTEST_ADDR'
     if(nor_spi_erase_sector(&nor,OTA_EXPLORER_NOR_SELFTEST_ADDR)) return -1;
                                  ^
-D:\Project\Can-learning\ota-core\platform\stm32f407\board\explorer_reference\explorer_reference.c:190:34: error: use of undeclared identifier 'OTA_EXPLORER_NOR_SELFTEST_ADDR'
+D:\Project\Can-learning\ota-core\platform\stm32f407\board\explorer_reference\explorer_reference.c:239:34: error: use of undeclared identifier 'OTA_EXPLORER_NOR_SELFTEST_ADDR'
     if(nor_spi_program_page(&nor,OTA_EXPLORER_NOR_SELFTEST_ADDR,pattern,sizeof pattern)) return -2;
                                  ^
-D:\Project\Can-learning\ota-core\platform\stm32f407\board\explorer_reference\explorer_reference.c:191:30: error: use of undeclared identifier 'OTA_EXPLORER_NOR_SELFTEST_ADDR'
+D:\Project\Can-learning\ota-core\platform\stm32f407\board\explorer_reference\explorer_reference.c:240:30: error: use of undeclared identifier 'OTA_EXPLORER_NOR_SELFTEST_ADDR'
     result=nor_spi_read(&nor,OTA_EXPLORER_NOR_SELFTEST_ADDR,back,sizeof back);
                              ^
 4 errors generated.

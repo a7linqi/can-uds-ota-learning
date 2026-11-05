@@ -8,6 +8,14 @@
 #include "ota/spi_nor.h"
 #include <string.h>
 
+/* Test-only switch. It exists so the trial-then-rollback path can be driven on
+ * real hardware: an application that boots, answers diagnostics and still
+ * refuses to confirm itself until the loader gives up. Never define it in an
+ * image that ships. */
+#ifndef OTA_EXPLORER_APP_SICK
+#define OTA_EXPLORER_APP_SICK 0
+#endif
+
 static CAN_HandleTypeDef can1;
 static UART_HandleTypeDef uart1;
 static I2C_HandleTypeDef i2c1;
@@ -74,6 +82,47 @@ static void gpio_init(void)
     gpio.Pin=GPIO_PIN_8|GPIO_PIN_9;gpio.Alternate=GPIO_AF4_I2C1;
     gpio.Mode=GPIO_MODE_AF_OD;gpio.Pull=GPIO_NOPULL;
     HAL_GPIO_Init(GPIOB,&gpio); /* External pull-ups are in both reference diagrams. */
+}
+
+/* An EEPROM that was mid-byte when the MCU reset keeps SDA low, and
+ * HAL_I2C_Init cannot undo that: a START has to pull SDA low, the line is
+ * already low, so the peripheral waits for a bus it can never take. Nine
+ * clocks with SDA released let the slave finish the byte it thought it was
+ * sending, and the STOP that follows returns the bus to idle.
+ *
+ * Measured, not theoretical. 2026-11-05: a reset landing inside an EEPROM
+ * write left the board reporting "EEPROM read failed" and "storage not ready"
+ * on every following boot -- the NOR probe stayed healthy throughout, so the
+ * whole OTA stack was down for the want of one I2C transaction. */
+static void i2c_bus_clear(void)
+{
+    GPIO_InitTypeDef gpio;
+    uint32_t i,d;
+    gpio.Pin=GPIO_PIN_8|GPIO_PIN_9;
+    gpio.Mode=GPIO_MODE_OUTPUT_OD;
+    gpio.Pull=GPIO_NOPULL;
+    gpio.Speed=GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOB,&gpio);
+    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_SET);  /* release SDA */
+    for(i=0u;i<9u;i++) {
+        HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
+        for(d=0u;d<400u;d++) __NOP();
+        HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);
+        for(d=0u;d<400u;d++) __NOP();
+    }
+    /* STOP: SDA rises while SCL is high. */
+    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_RESET);
+    for(d=0u;d<400u;d++) __NOP();
+    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_RESET);
+    for(d=0u;d<400u;d++) __NOP();
+    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8,GPIO_PIN_SET);
+    for(d=0u;d<400u;d++) __NOP();
+    HAL_GPIO_WritePin(GPIOB,GPIO_PIN_9,GPIO_PIN_SET);
+    for(d=0u;d<400u;d++) __NOP();
+    /* Hand the pins back to the alternate function the peripheral expects. */
+    gpio.Mode=GPIO_MODE_AF_OD;
+    gpio.Alternate=GPIO_AF4_I2C1;
+    HAL_GPIO_Init(GPIOB,&gpio);
 }
 
 static int peripherals_init(void)
@@ -245,7 +294,11 @@ int ota_user_generated_init(void)
     if(ota_explorer_probe.device_id!=0x413u || ota_explorer_probe.flash_bytes!=FLASH_TOTAL_SIZE)
         return -1;
     if(HAL_Init()!=HAL_OK || clock_init()) return -1;
-    gpio_init();if(peripherals_init()) return -1;
+    gpio_init();
+    /* Before the peripheral is configured: a bus held by a slave would make
+     * every I2C transaction fail for the rest of this boot. */
+    i2c_bus_clear();
+    if(peripherals_init()) return -1;
     initialized=1;read_storage_identity();nor_open();
     ota_user_log(OTA_EXPLORER_UPDATE_CAPABLE?
         "ATK Explorer reference pins; UPDATE-CAPABLE build":
@@ -335,7 +388,18 @@ void ota_user_heartbeat(void) { if(initialized) HAL_GPIO_TogglePin(GPIOF,GPIO_PI
  * than the linker script pretending to. A diagnostic image is pinned to the
  * loader forever; a loader may jump; an application claims health. */
 int ota_user_force_loader(void) { return OTA_EXPLORER_BOOT_ROLE==1 ? 0 : 1; }
-int ota_user_app_healthy(void) { return OTA_EXPLORER_BOOT_ROLE==2 ? 1 : 0; }
+int ota_user_app_healthy(void)
+{
+#if OTA_EXPLORER_APP_SICK
+    /* Runs, answers the status DID, and never confirms itself. The trial
+     * counter therefore runs out and the loader has to restore the previous
+     * image -- the only way to exercise rollback on silicon without cutting
+     * power in the middle of a write. */
+    return 0;
+#else
+    return OTA_EXPLORER_BOOT_ROLE==2 ? 1 : 0;
+#endif
+}
 int ota_user_is_application(void) { return OTA_EXPLORER_BOOT_ROLE==2 ? 1 : 0; }
 void ota_user_can_rx(const can_frame_t *frame) { ota_bootloader_can_rx(frame); }
 int ota_user_quiesce_peripherals(void)

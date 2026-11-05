@@ -311,3 +311,49 @@ CH340 的 DTR/RTS 接了 NRST。实测：读状态得 seq 59 / `role=application
 时序（同一 loader 二进制）：`34` 擦除 13.82–14.26 s、`36` 每帧 0.05–0.34 s、`37` 验签 0.53 s、
 `31` 安装 0.48 s。中途有一次 `36` 变慢到 0.43–2.47 s/帧，定位为 `--handoff` 里临时改了
 `ser.timeout` 未恢复（0.2 s vs 默认 0.01 s），修复后复原，与固件无关。
+
+## 2026-11-05 傍晚：I2C 总线锁死与 TRIAL 回滚
+
+### 关串口会复位，复位会锁死 EEPROM 的 I2C 总线
+
+CH340 的 DTR/RTS 接了 NRST，所以"关串口 = 复位"。
+如果这次复位正好落在 EEPROM 写的中途，24C02 会停在半传输状态并持续拉低 SDA。
+此时 `HAL_I2C_Init` **无法**恢复：START 条件本身就是"SCL 高时把 SDA 拉低"，
+而 SDA 已被从机拉低，主机永远产生不了 START。
+
+表现为整机降级——复位横幅里 NOR 一切正常，只有一行 `EEPROM read failed`，
+随后 `loader: storage not ready, staying in the loader`，状态 DID 回 NRC `0x72`。
+**这个状态跨复位持续存在**，不是"偶发一次"。
+
+修复是 `i2c_bus_clear()`：在 `gpio_init()` 之后、`peripherals_init()` 之前，
+把 PB8/PB9 切成开漏 GPIO，释放 SDA，在 SCL 上打 9 个时钟让从机吐完当前字节，
+再发一个 STOP，最后交回 AF4。
+
+实测（同一块板、同一个器件、同一条串口）：
+
+| 判据 | 修复前 | 修复后 |
+|---|---|---|
+| 横幅 | `EEPROM read failed` | `EEPROM 256-byte read complete` |
+| `eeprom_crc32` | `0x00000000` | `0x316AB2D3` |
+| loader | `storage not ready` | `handing off to the app at 08010000` |
+
+NOR 的 `jedec_id=0x00EF4018` 与 `nor_read_crc32=0xA4199799` 前后一致，
+排除了"重启碰巧好了"。**全程没有断电。**
+
+### TRIAL 失败会从备份区回滚
+
+`MAX_BOOT_ATTEMPTS=3`。loader 每次启动看到 `TRIAL` 就先递增计数写盘再跳 App；
+App 自己调 `boot_accept_app_health()` 完成确认（`31 01 00 01` 只是校验待装包，不能代替确认）。
+三次机会用尽后走 `RESTORING`，从外部 NOR 备份区还原升级前那一版。
+
+实机序列（读状态会关串口复位，所以每读一次就推进一次）：
+
+| state | attempts | active | pending | seq |
+|---|---|---|---|---|
+| TRIAL | 2 | 11 | 12 | 95 |
+| TRIAL | 3 | 11 | 12 | 96 |
+| （无响应，正在擦写内部 Flash） | | | | |
+| IDLE | 0 | 11 | 0 | 98 |
+
+读回 `0x08010000` 共 44288 B，`sha256 bed181e9…`、`crc32 0x5F966357`，
+与升级前的 v11 镜像**逐字节相同**。随后装 v13 成功，证明回滚后系统可继续升级。
