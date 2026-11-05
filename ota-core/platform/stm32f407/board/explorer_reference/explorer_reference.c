@@ -286,8 +286,15 @@ void ota_user_config(ota_board_config_t *config)
         config->eeprom_page_bytes=8u;
     }
     /* A successful probe proves the bus, not the wear policy or the restore
-     * plan. The update engine therefore stays refused in this bring-up build. */
+     * plan. Only a build that also declares OTA_EXPLORER_UPDATE_CAPABLE may
+     * translate the probe into an authorization for the update engine. */
+#if OTA_EXPLORER_UPDATE_CAPABLE
+    config->storage_verified=(uint8_t)(nor.ready && nor.capacity_bytes>=EXT_FLASH_TOTAL_SIZE &&
+        config->nor_page_bytes>0u && config->nor_erase_bytes==EXT_ERASE_SIZE &&
+        config->eeprom_bytes==EEPROM_TOTAL_SIZE && config->eeprom_page_bytes==EEPROM_PAGE_SIZE);
+#else
     config->storage_verified=0u;
+#endif
 }
 CAN_HandleTypeDef *ota_user_can(void) { return &can1; }
 UART_HandleTypeDef *ota_user_uart(void) { return &uart1; }

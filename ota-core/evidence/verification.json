@@ -1,6 +1,6 @@
 {
   "status": "passed",
-  "duration_s": 159.766,
+  "duration_s": 165.734,
   "validated_source_hashes": {
     "firmware/app/main.c": "69e2aaac35467c979e3cce9e0761416141e8582be5cbd4fd7eb3c5b3d0ee7d18",
     "firmware/bootloader/main.c": "09dc13059eb1ea2aac3025ca565b5395f57bc3327415deb18bfd2ebf704cf2b4",
@@ -31,8 +31,8 @@
     "mdk/explorer_readonly.uvprojx": "c253639a8f851e301e500da9a49186898236bc4f6891f991e846feeeac552036",
     "platform/stm32f407/board/board_unconfigured.c": "f875f31250ebbd3a961b5e5a00cc394c79810036357eb2458d7f082ab54f43cb",
     "platform/stm32f407/board/explorer_reference/explorer_interrupts.c": "40f251b4492ef036172b692faf1b209a675d4eb444095d7cb943017402f995ea",
-    "platform/stm32f407/board/explorer_reference/explorer_reference.c": "f1d160a915d083a1c4742db94c5d81ffc2fc9888e581e67a36bb6df745785713",
-    "platform/stm32f407/board/explorer_reference/explorer_reference.h": "fdfc0d80fc9486ef6f095da1afd050a996eb1a6a964b97dda71b755865764b2c",
+    "platform/stm32f407/board/explorer_reference/explorer_reference.c": "15900519de0c65a82066e7968a405945bbc1927a76b51dafdc5899733769868d",
+    "platform/stm32f407/board/explorer_reference/explorer_reference.h": "b9e907fb2a0736f46fed4be368d788468ac37a7e985edbe8b30bea5a43e803a3",
     "platform/stm32f407/board/explorer_reference/stm32f4xx_hal_conf.h": "1607b14b6305ccb3f1c35c23a2adc319a6a7024ace94fc3d352d4f3d5a2f2066",
     "platform/stm32f407/examples/board_hal_binding.c": "201990a31dd2c76a635419274872667112dc79874c4c282d0bbf0c19b5151f0c",
     "platform/stm32f407/examples/board_hal_user.h": "19a0933271a2f89feaa47f459a1f2c104ffffa774d2e9bc8d062989c4b96158c",
@@ -52,7 +52,7 @@
     "requirements-serial.txt": "e32e3dbbb4c7b0aec253ef49d68c4137f4377af237c6324f9cb42ba7376b7091",
     "requirements-virtual.txt": "233bac8ade29c29c87e651a7f9e82775f1d3a0a4d2039982c1feaee923d14af0",
     "run_driver_checks.py": "8571fd531f6668c625b2f2aac02fa152043ac7913f0649a13c55d8aa89e40eaa",
-    "run_explorer_checks.py": "d781ded09e02abae55f438610ed546f7d7c815635c2fd915eeeaaef4f3d061c7",
+    "run_explorer_checks.py": "7202b1f4b4b992194ef271ef5008a3907dfa36afced10fb58562066da140a127",
     "run_firmware_checks.py": "ba603dbf3899beb8d76ba045c6cd7b8b4c57b024c69d5cf90150b6a03893997d",
     "run_pc_checks.py": "7cd83c547362020de41f5d68d40a6f751d636664634d9a621df9e74c65327424",
     "run_stm32_checks.py": "01a316a0ee9e3af54f0ddc7e70a7144a5a57aacb5d5eb348411f86c961810d76",
@@ -360,7 +360,11 @@
       "write hooks off",
       "self-test at 0xFFF000",
       "self-test in image slot rejected",
-      "self-test without address rejected"
+      "self-test without address rejected",
+      "update-capable build accepted",
+      "engine switch alone rejected",
+      "board switch alone rejected",
+      "update-capable without write hooks rejected"
     ],
     "physical_mode_loopback_entry_rejected": true,
     "hardware_verified": false,
@@ -441,8 +445,8 @@
       {
         "target": "explorer_ZG_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.elf",
-        "bytes": 1238044,
-        "sha256": "73c4024adfe3addbdd65d9630644f2116c81d8e882b19932a0b76799b0a87a0b"
+        "bytes": 1238080,
+        "sha256": "0f39ea958d259227f7e40f20b64f01b125f8751f6a4b703c536bf1aa85895610"
       },
       {
         "target": "explorer_ZG_loopback_READONLY",
@@ -454,13 +458,13 @@
         "target": "explorer_ZG_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.map",
         "bytes": 609227,
-        "sha256": "bae5bbac5735ec6f711dbb419a573c0ed016e18e5a28ef1583e94f3080c5b0fd"
+        "sha256": "b4e0cf30fc709916304011f93963be0d1849faf76722517dffbdc05e610f0bd3"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.elf",
-        "bytes": 1501672,
-        "sha256": "bb50c39638bfe05efd0a1533e03f50acda1cb2a61884625bc8d8715f22f1c43f"
+        "bytes": 1501712,
+        "sha256": "d4d8db490bf22e8cd8a38d039aada86698773e87fccf0eb6595c61ec4e07ab02"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
@@ -472,13 +476,13 @@
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.map",
         "bytes": 598406,
-        "sha256": "2cc4b9815cd3be2c15761ec5f9fb30c98cb919f15fad54ff0b56f644f45ff717"
+        "sha256": "d8c4894a6308fb0cfa62d661ceb7f725f9b17d7e6ea1dd38471f55ed998cc12f"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.elf",
-        "bytes": 1238044,
-        "sha256": "b7012c0376868f90dc653058f315068a174c90503b892fb6fba5f8a9a9e347a2"
+        "bytes": 1238084,
+        "sha256": "ad5067a862a91e70eeb6d92e32531baba82e836622cd6d651d59fc8b3b31f37f"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
@@ -490,13 +494,13 @@
         "target": "explorer_ZE_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.map",
         "bytes": 609227,
-        "sha256": "7b3c7f51886225c03dfab7ebf939fc03d6bcab130b4341c339d96fea2c0b1b2b"
+        "sha256": "70eaaf0a7efbe925e5150e9457769803289e3ed7dd31ca28ef85880af24b9609"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.elf",
-        "bytes": 1501664,
-        "sha256": "29818e8d63c80fe4c689c98cc0c634765d43d1eef1f21b58ab67405c0537f2ef"
+        "bytes": 1501704,
+        "sha256": "5dda0856e4d20c6c18358e5a237bcc8c993b0d4939d3acd2597738cb414c730a"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
@@ -508,7 +512,7 @@
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.map",
         "bytes": 598406,
-        "sha256": "6071fb3bfa6e55a3d4f614d2b05db9cf2ea08948dc48093f31598e1b59ea65fa"
+        "sha256": "ef46e8cb7df3c32bab82eeb1795ca902f1d6bacbd0adb2a30f25bf85c2ab4481"
       }
     ],
     "validated_source_hashes": {
@@ -541,8 +545,8 @@
       "mdk/explorer_readonly.uvprojx": "c253639a8f851e301e500da9a49186898236bc4f6891f991e846feeeac552036",
       "platform/stm32f407/board/board_unconfigured.c": "f875f31250ebbd3a961b5e5a00cc394c79810036357eb2458d7f082ab54f43cb",
       "platform/stm32f407/board/explorer_reference/explorer_interrupts.c": "40f251b4492ef036172b692faf1b209a675d4eb444095d7cb943017402f995ea",
-      "platform/stm32f407/board/explorer_reference/explorer_reference.c": "f1d160a915d083a1c4742db94c5d81ffc2fc9888e581e67a36bb6df745785713",
-      "platform/stm32f407/board/explorer_reference/explorer_reference.h": "fdfc0d80fc9486ef6f095da1afd050a996eb1a6a964b97dda71b755865764b2c",
+      "platform/stm32f407/board/explorer_reference/explorer_reference.c": "15900519de0c65a82066e7968a405945bbc1927a76b51dafdc5899733769868d",
+      "platform/stm32f407/board/explorer_reference/explorer_reference.h": "b9e907fb2a0736f46fed4be368d788468ac37a7e985edbe8b30bea5a43e803a3",
       "platform/stm32f407/board/explorer_reference/stm32f4xx_hal_conf.h": "1607b14b6305ccb3f1c35c23a2adc319a6a7024ace94fc3d352d4f3d5a2f2066",
       "platform/stm32f407/examples/board_hal_binding.c": "201990a31dd2c76a635419274872667112dc79874c4c282d0bbf0c19b5151f0c",
       "platform/stm32f407/examples/board_hal_user.h": "19a0933271a2f89feaa47f459a1f2c104ffffa774d2e9bc8d062989c4b96158c",
@@ -562,7 +566,7 @@
       "requirements-serial.txt": "e32e3dbbb4c7b0aec253ef49d68c4137f4377af237c6324f9cb42ba7376b7091",
       "requirements-virtual.txt": "233bac8ade29c29c87e651a7f9e82775f1d3a0a4d2039982c1feaee923d14af0",
       "run_driver_checks.py": "8571fd531f6668c625b2f2aac02fa152043ac7913f0649a13c55d8aa89e40eaa",
-      "run_explorer_checks.py": "d781ded09e02abae55f438610ed546f7d7c815635c2fd915eeeaaef4f3d061c7",
+      "run_explorer_checks.py": "7202b1f4b4b992194ef271ef5008a3907dfa36afced10fb58562066da140a127",
       "run_firmware_checks.py": "ba603dbf3899beb8d76ba045c6cd7b8b4c57b024c69d5cf90150b6a03893997d",
       "run_pc_checks.py": "7cd83c547362020de41f5d68d40a6f751d636664634d9a621df9e74c65327424",
       "run_stm32_checks.py": "01a316a0ee9e3af54f0ddc7e70a7144a5a57aacb5d5eb348411f86c961810d76",

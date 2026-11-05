@@ -1,6 +1,6 @@
 # 一条命令验证当前源码
 
-2026-11-05 当前源码矩阵（`--gcc` 全量重跑）：每容量 3385 个 C 断言（ZG/ZE 一致）、420 个模型断电场景、PC 45 项、SPI NOR 720 项（31 个传输注入点）、python-can virtual 7 项、Python 工具 28 项、固件入口 35+35+51 项、STM32 适配器主机模型 232/298 项；四套 GNU 只读镜像完整链接（ZG 回环 16176 B、ZG 串口台架 43912 B、ZE 回环 16172 B、ZE 串口台架 43912 B），参考 BSP 每目标编译 46 个 ARM C 对象。NOR 写路径新增 4 个编译变体：写钩子关闭、自检指向槽外扇区必须成功；自检指向镜像槽、自检缺地址必须被 `#error` 拒绝。快照 130 个源码哈希，`status=passed`，159.8 s。`keil_target_linked=false`、`hardware_verified=false`：以上都不是实机结果。
+2026-11-05 当前源码矩阵（`--gcc` 全量重跑）：每容量 3385 个 C 断言（ZG/ZE 一致）、420 个模型断电场景、PC 45 项、SPI NOR 720 项（31 个传输注入点）、python-can virtual 7 项、Python 工具 28 项、固件入口 35+35+51 项、STM32 适配器主机模型 232/298 项；四套 GNU 只读镜像完整链接（ZG 回环 16176 B、ZG 串口台架 43912 B、ZE 回环 16172 B、ZE 串口台架 43912 B），参考 BSP 每目标编译 46 个 ARM C 对象。NOR 写路径与更新闸门共 8 个编译变体：写钩子关闭、自检指向槽外扇区、双开关同时打开必须成功；自检指向镜像槽、自检缺地址、只开 `OTA_ENABLE_FLASHING`、只开 `OTA_EXPLORER_UPDATE_CAPABLE`、开了更新但关掉写钩子必须被 `#error` 拒绝。快照 130 个源码哈希，`status=passed`，165.7 s。`keil_target_linked=false`、`hardware_verified=false`：以上都不是实机结果；实机进度另见 [参考板文档](EXPLORER_REFERENCE.md)。
 
 v0.13 的完整矩阵已通过，详见 [核心复核记录](CORE_REVIEW_20261102.md)：每容量 3138 个 C 断言、420 个模型断电场景，Python 工具 22 项、实际 python-can virtual 后端 7 项、Python 包到 C 校验 8 组。四套参考目标各编译 43 个 ARM C 对象，GNU 各 45 个对象并完成 ELF/BIN/MAP 链接检查。实物 SWD 识别已单独记录，项目固件尚未上板运行。
 

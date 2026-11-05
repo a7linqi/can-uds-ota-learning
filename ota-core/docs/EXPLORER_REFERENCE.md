@@ -73,7 +73,7 @@ ZG 对应 1 MiB，ZE 对应 512 KiB。两个入口均从 0x08000000 开始，链
 
 这四个目标只有一份 main、一份 ST startup、一份 ST SystemInit 和一套 HAL 中断回调；不链接 `board_unconfigured.c` 或 `system_minimal.c`。已有默认 Bootloader/App 工程保持未配置 BSP，不能把两个工程的板级文件混在一起。
 
-本环境已用 64 位 GNU Arm GCC 完成四个只读目标的汇编、链接、ELF/BIN 与地址检查。Keil ARMASM/armlink 仍受 Windows DLL 重定位错误影响，因此完整 GNU 构建不等同于 Keil 工程已成功链接；需要 Keil AXF 时，在可用的 Keil 环境继续验证。两种构建方式均不代表实物已运行通过。
+本环境已用 64 位 GNU Arm GCC 完成四个只读目标的汇编、链接、ELF/BIN 与地址检查。Keil ARMASM/armlink 仍受 Windows DLL 重定位错误影响，因此完整 GNU 构建不等同于 Keil 工程已成功链接；需要 Keil AXF 时，在可用的 Keil 环境继续验证。两种构建方式本身都不代表实物已运行；只读目标已于 2026-11-05 上板冷启动验证（见下文实测），写入与断电路径仍未验证。
 
 ## GNU 完整固件与复现
 
@@ -103,6 +103,28 @@ python tools/build_explorer_gnu.py --gcc "你的arm-none-eabi-gcc路径" --dfp "
 3. 回环入口成功时，`ota_explorer_loopback_stage=3`、`ota_explorer_loopback_passed=16`；错误阶段 E1～E6 分别对应初始化、CAN 启动、发送、邮箱等待、接收等待或内容不符。内部回环成功不能证明收发器、跳线和外部总线正确。
 4. 再运行只读诊断入口，接 USB-CAN，按 [PC 工具说明](PC_TOOL.md)显式指定真实接口和通道，执行 `info`、`status`。此阶段 `storage_verified=0` 是预期状态，即使读取到 NOR ID 和 EEPROM 也不会开放下载/安装。
 
-三项更新门控全部为 0；在参考 BSP 下打开任意一项会编译失败。回环入口若被配为物理 CAN 模式也会编译失败，避免将测试帧发到外部总线。
+### 2026-11-05 上板实测（只读目标）
+
+ZG 串口台架镜像（43912 B）下载到 `0x08000000` 后一次冷启动，COM9 115200 抓到：
+
+```
+device_id=0x00000413      flash_bytes=0x00100000
+hclk_hz=0x0A037A00        pclk1_hz=0x0280DE80
+jedec_id=0x00EF4018       nor_status=0x00000000
+nor_bytes=0x01000000      nor_read_crc32=0x0D968558
+NOR driver probe+dry read ok
+NOR program/erase hooks compiled in, update engine still gated
+eeprom_crc32=0x29058C73
+```
+
+`0x0D968558` 与离线金标 `pass1.bin` 前 256 字节的 CRC32 相同，因此这条不是驱动自报，而是"器件内容与离线快照同段一致"。EEPROM 的 `0x29058C73` 与 2026-11-02 记录一致（内容 00..FF）。日志尾部明确写了写钩子已编入、但更新引擎仍被门控。
+
+上板前已把内部 Flash 前 64 KiB 存为 `stages/board-lab/evidence/internal-flash-backup/20261105/internal-64k-before-explorer.bin`（65536 B，sha256 `cb367229…`）。
+
+## 双开关
+
+更新引擎的 `OTA_ENABLE_FLASHING` 与板级的 `OTA_EXPLORER_UPDATE_CAPABLE` 必须同时为 1：只开产品开关会命中 "Reference board is read-only"，只开板级开关会命中 "half-open build"，开了更新但关掉写钩子同样被拒。`run_explorer_checks.py` 把这两种单开情形都当作必须失败的编译变体（现共 8 个变体）。`storage_verified` 仅在 `OTA_EXPLORER_UPDATE_CAPABLE=1` 时才由运行时探测结果推出。
+
+三项更新门控在只读目标下全部为 0；在参考 BSP 下打开任意一项会编译失败。回环入口若被配为物理 CAN 模式也会编译失败，避免将测试帧发到外部总线。
 
 后续工作：核对实际 PCB/MCU/NOR 标记 → 保存原有内部 Flash、NOR、EEPROM 备份 → 上电确认驱动探测的 JEDEC/容量与手工读数一致 → 在一个槽外扇区做一次可恢复的擦写自检 → 才考虑把 `storage_verified` 置 1 并验证刷写、安装恢复及断电行为。签名与实机吞吐仍未完成。

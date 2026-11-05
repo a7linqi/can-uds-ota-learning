@@ -34,8 +34,27 @@
 #error "The write self-test needs the NOR write hooks compiled in"
 #endif
 #endif
-#if OTA_ENABLE_FLASHING || OTA_ENABLE_BOOT_HANDOFF || OTA_ENABLE_WATCHDOG
-#error "Explorer reference bring-up targets are read-only; all update gates must stay off"
+/* Two independent gates, both required, both explicit:
+ *   OTA_ENABLE_FLASHING          - the product engine accepts 0x34/0x36/0x37
+ *   OTA_EXPLORER_UPDATE_CAPABLE  - this board image may write the physical chip
+ * Setting only the product switch is the mistake this file exists to catch, so
+ * it stays a compile error; the reverse (board capable, engine off) is a
+ * half-open build and is rejected as well. Boot handoff and the watchdog remain
+ * unsupported here and keep their own unconditional refusal. */
+#ifndef OTA_EXPLORER_UPDATE_CAPABLE
+#define OTA_EXPLORER_UPDATE_CAPABLE 0
+#endif
+#if OTA_ENABLE_FLASHING && !OTA_EXPLORER_UPDATE_CAPABLE
+#error "Reference board is read-only: OTA_EXPLORER_UPDATE_CAPABLE=1 is required before OTA_ENABLE_FLASHING"
+#endif
+#if OTA_EXPLORER_UPDATE_CAPABLE && !OTA_ENABLE_FLASHING
+#error "OTA_EXPLORER_UPDATE_CAPABLE=1 without OTA_ENABLE_FLASHING=1 is a half-open build"
+#endif
+#if OTA_EXPLORER_UPDATE_CAPABLE && OTA_EXPLORER_NOR_WRITE != 1
+#error "An update-capable build needs the NOR write hooks compiled in"
+#endif
+#if OTA_ENABLE_BOOT_HANDOFF || OTA_ENABLE_WATCHDOG
+#error "Explorer reference bring-up targets have no application handoff or watchdog yet"
 #endif
 #if OTA_EXPLORER_CAN_LOOPBACK != 0 && OTA_EXPLORER_CAN_LOOPBACK != 1
 #error "Select silent internal loopback (1) or normal physical CAN (0)"

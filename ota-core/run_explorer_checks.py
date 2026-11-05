@@ -96,11 +96,13 @@ def main():
         print(entries[-1], flush=True)
     # A mismatched target must be rejected at compile time, not silently enable writes.
     checks = []
-    for flag in ("OTA_ENABLE_FLASHING", "OTA_ENABLE_BOOT_HANDOFF", "OTA_ENABLE_WATCHDOG"):
+    for flag, needle in (("OTA_ENABLE_FLASHING", "read-only"),
+                         ("OTA_ENABLE_BOOT_HANDOFF", "no application handoff"),
+                         ("OTA_ENABLE_WATCHDOG", "no application handoff")):
         rejected = [x for x in common if not x.startswith("-D" + flag + "=")]
         rejected += ["-D" + flag + "=1", "-fsyntax-only", str(board / "explorer_reference.c")]
         run = subprocess.run(rejected, cwd=ROOT, capture_output=True, text=True, timeout=30)
-        assert run.returncode != 0 and "read-only" in run.stderr, (flag, run.stderr)
+        assert run.returncode != 0 and needle in run.stderr, (flag, run.stderr)
         checks.append(flag)
     rejected = [x for x in common if not x.startswith("-DOTA_EXPLORER_CAN_LOOPBACK=")]
     rejected += ["-DOTA_EXPLORER_CAN_LOOPBACK=0", "-fsyntax-only", str(ROOT / "firmware/explorer_loopback/main.c")]
@@ -127,6 +129,24 @@ def main():
     variant(["-DOTA_EXPLORER_NOR_SELFTEST=1"], False, "requires OTA_EXPLORER_NOR_SELFTEST_ADDR")
     variants = ["write hooks off", "self-test at 0xFFF000", "self-test in image slot rejected",
                 "self-test without address rejected"]
+    # Opening the update engine needs BOTH switches. The board must declare itself
+    # update-capable by hand, and neither half alone may compile.
+    engine = [x for x in base if not x.startswith("-DOTA_ENABLE_") and not x.startswith("-DOTA_EXPLORER_UPDATE_CAPABLE")]
+    def engine_variant(extra, expected_ok, needle=""):
+        command = engine + extra + ["-fsyntax-only", str(board / "explorer_reference.c")]
+        run = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=30)
+        variant_log.append("COMMAND: " + " ".join(command) + "\n" + run.stdout + run.stderr)
+        if (run.returncode == 0) != expected_ok or (needle and needle not in run.stderr):
+            (evidence / "explorer-nor-variant-failure.txt").write_text(
+                "\n".join(variant_log), encoding="utf-8")
+            raise AssertionError((extra, expected_ok, run.returncode, run.stderr))
+    engine_variant(["-DOTA_ENABLE_FLASHING=1", "-DOTA_EXPLORER_UPDATE_CAPABLE=1"], True)
+    engine_variant(["-DOTA_ENABLE_FLASHING=1"], False, "read-only")
+    engine_variant(["-DOTA_EXPLORER_UPDATE_CAPABLE=1"], False, "half-open")
+    engine_variant(["-DOTA_ENABLE_FLASHING=1", "-DOTA_EXPLORER_UPDATE_CAPABLE=1",
+                    "-DOTA_EXPLORER_NOR_WRITE=0"], False, "NOR write hooks")
+    variants += ["update-capable build accepted", "engine switch alone rejected",
+                 "board switch alone rejected", "update-capable without write hooks rejected"]
     (evidence / "explorer-nor-variants.txt").write_text("\n".join(variant_log), encoding="utf-8")
     report = dict(targets=entries, forbidden_gates_rejected=checks, nor_variant_compiles=variants,
                   physical_mode_loopback_entry_rejected=True, hardware_verified=False, target_linked=False)

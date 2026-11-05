@@ -42,7 +42,11 @@
     "write hooks off",
     "self-test at 0xFFF000",
     "self-test in image slot rejected",
-    "self-test without address rejected"
+    "self-test without address rejected",
+    "update-capable build accepted",
+    "engine switch alone rejected",
+    "board switch alone rejected",
+    "update-capable without write hooks rejected"
   ],
   "physical_mode_loopback_entry_rejected": true,
   "hardware_verified": false,
