@@ -4,15 +4,15 @@
       "target": "explorer_ZG_loopback_READONLY",
       "flash_bytes": 1048576,
       "can_loopback": true,
-      "c_objects": 43,
+      "c_objects": 46,
       "startup_assembled": false,
       "linked": false
     },
     {
-      "target": "explorer_ZG_diagnostics_READONLY",
+      "target": "explorer_ZG_uart_READONLY",
       "flash_bytes": 1048576,
       "can_loopback": false,
-      "c_objects": 43,
+      "c_objects": 46,
       "startup_assembled": false,
       "linked": false
     },
@@ -20,15 +20,15 @@
       "target": "explorer_ZE_loopback_READONLY",
       "flash_bytes": 524288,
       "can_loopback": true,
-      "c_objects": 43,
+      "c_objects": 46,
       "startup_assembled": false,
       "linked": false
     },
     {
-      "target": "explorer_ZE_diagnostics_READONLY",
+      "target": "explorer_ZE_uart_READONLY",
       "flash_bytes": 524288,
       "can_loopback": false,
-      "c_objects": 43,
+      "c_objects": 46,
       "startup_assembled": false,
       "linked": false
     }
@@ -37,6 +37,12 @@
     "OTA_ENABLE_FLASHING",
     "OTA_ENABLE_BOOT_HANDOFF",
     "OTA_ENABLE_WATCHDOG"
+  ],
+  "nor_variant_compiles": [
+    "write hooks off",
+    "self-test at 0xFFF000",
+    "self-test in image slot rejected",
+    "self-test without address rejected"
   ],
   "physical_mode_loopback_entry_rejected": true,
   "hardware_verified": false,

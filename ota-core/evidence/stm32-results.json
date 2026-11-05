@@ -57,5 +57,35 @@
     "linked": true,
     "executed": false,
     "hardware": false
+  },
+  "arm_objects": [
+    {
+      "flash_kib": 1024,
+      "image": "bootloader",
+      "objects": 29,
+      "exit": 0
+    },
+    {
+      "flash_kib": 1024,
+      "image": "app",
+      "objects": 29,
+      "exit": 0
+    },
+    {
+      "flash_kib": 512,
+      "image": "bootloader",
+      "objects": 29,
+      "exit": 0
+    },
+    {
+      "flash_kib": 512,
+      "image": "app",
+      "objects": 29,
+      "exit": 0
+    }
+  ],
+  "hal_reference_syntax": {
+    "exit": 0,
+    "linked": false
   }
 }

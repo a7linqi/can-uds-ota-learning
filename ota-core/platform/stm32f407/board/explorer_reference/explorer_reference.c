@@ -1,14 +1,18 @@
 /* Original project glue, not copied ATK example code.
  * Sources and physical-board limitations: docs/EXPLORER_REFERENCE.md.
- * No persistent storage writes, application handoff or watchdog enable. */
+ * The SPI NOR protocol driver is wired for probe/read and, with
+ * OTA_EXPLORER_NOR_WRITE, for page program and 4 KiB erase. Init issues no
+ * write command, storage_verified stays 0 and no handoff/watchdog runs. */
 #include "explorer_reference.h"
 #include "ota/crc32.h"
+#include "ota/spi_nor.h"
 #include <string.h>
 
 static CAN_HandleTypeDef can1;
 static UART_HandleTypeDef uart1;
 static I2C_HandleTypeDef i2c1;
 static SPI_HandleTypeDef spi1;
+static nor_spi_t nor;
 static int initialized,uart_ready,uart_binary;
 ota_explorer_probe_t ota_explorer_probe;
 
@@ -106,12 +110,95 @@ static int peripherals_init(void)
     return HAL_I2C_Init(&i2c1)==HAL_OK?0:-1;
 }
 
+/* The driver refuses to run on a bus profile it cannot time or mode-check.
+ * This mirrors examples/w25q128_hal_user.c; only one of the two may own the
+ * ota_user_nor_* hooks, so the guard is repeated here instead of linked. */
+static int spi_profile_ok(SPI_HandleTypeDef *h)
+{
+    uint32_t peripheral,divider;
+    if(!h || h->Init.Mode!=SPI_MODE_MASTER || h->Init.Direction!=SPI_DIRECTION_2LINES ||
+       h->Init.DataSize!=SPI_DATASIZE_8BIT || h->Init.FirstBit!=SPI_FIRSTBIT_MSB ||
+       h->Init.NSS!=SPI_NSS_SOFT || h->Init.TIMode!=SPI_TIMODE_DISABLE ||
+       h->Init.CRCCalculation!=SPI_CRCCALCULATION_DISABLE) return 0;
+    if(!((h->Init.CLKPolarity==SPI_POLARITY_LOW && h->Init.CLKPhase==SPI_PHASE_1EDGE) ||
+         (h->Init.CLKPolarity==SPI_POLARITY_HIGH && h->Init.CLKPhase==SPI_PHASE_2EDGE))) return 0;
+    if(h->Init.BaudRatePrescaler&~SPI_CR1_BR) return 0;
+    if(h->Instance==SPI1) peripheral=HAL_RCC_GetPCLK2Freq();
+    else if(h->Instance==SPI2 || h->Instance==SPI3) peripheral=HAL_RCC_GetPCLK1Freq();
+    else return 0;
+    divider=2u<<((h->Init.BaudRatePrescaler&SPI_CR1_BR)>>3);
+    return peripheral && peripheral/divider<=10000000u;
+}
+static int nor_select(void *user,int active)
+{ (void)user; return ota_user_nor_select(active); }
+static uint32_t nor_now_ms(void *user) { (void)user; return HAL_GetTick(); }
+static int nor_wait_ms(void *user,uint32_t ms) { (void)user; HAL_Delay(ms); return 0; }
+static int nor_service(void *user) { (void)user; return ota_firmware_service(); }
+static int nor_transfer(void *user,const uint8_t *tx,uint8_t *rx,uint32_t n,uint32_t timeout_ms)
+{
+    SPI_HandleTypeDef *h=ota_user_spi();
+    uint8_t dummy[32];
+    uint32_t start=HAL_GetTick();
+    (void)user;
+    if(!h || (!tx && !rx) || !n || !timeout_ms) return -1;
+    memset(dummy,0xFF,sizeof dummy); /* read phases clock out FF, never a stale buffer */
+    while(n) {
+        uint32_t elapsed=HAL_GetTick()-start;
+        uint16_t k=(uint16_t)(n>sizeof dummy?sizeof dummy:n);
+        if(elapsed>=timeout_ms) return -1;
+        if(rx) {
+            if(HAL_SPI_TransmitReceive(h,(uint8_t *)(tx?tx:dummy),rx,k,
+                                       (uint16_t)(timeout_ms-elapsed))!=HAL_OK) return -1;
+        } else if(HAL_SPI_Transmit(h,(uint8_t *)tx,k,(uint16_t)(timeout_ms-elapsed))!=HAL_OK) return -1;
+        if(tx) tx+=k;
+        if(rx) rx+=k;
+        n-=k;
+    }
+    return 0;
+}
+/* Probe is read-only: BUSY clear, RDID, status register 2. No WREN, no reset,
+ * no status write, so a probe can never change the fitted chip. */
+static void nor_open(void)
+{
+    nor_spi_bus_t bus;
+    uint8_t sample[256];
+    ota_explorer_probe.nor_status=-1;
+    ota_explorer_probe.nor_read_status=-1;
+    if(!spi_profile_ok(ota_user_spi())) return;
+    memset(&nor,0,sizeof nor);
+    memset(&bus,0,sizeof bus);
+    bus.select=nor_select; bus.transfer=nor_transfer; bus.now_ms=nor_now_ms;
+    bus.wait_ms=nor_wait_ms; bus.service=nor_service;
+    if(nor_spi_init(&nor,&bus,0)) return;
+    ota_explorer_probe.nor_status=nor_spi_probe(&nor);
+    if(ota_explorer_probe.nor_status) return;
+    ota_explorer_probe.nor_bytes=nor.capacity_bytes;
+    if(nor_spi_read(&nor,0u,sample,sizeof sample)) return;
+    ota_explorer_probe.nor_read_status=0;
+    ota_explorer_probe.nor_read_crc32=crc32_calc(sample,sizeof sample);
+}
+#if OTA_EXPLORER_NOR_SELFTEST
+/* Destructive and off by default. The sector must be 4 KiB aligned, outside
+ * both image slots, and recorded with a restore plan before it is enabled. */
+static int nor_write_selftest(void)
+{
+    static const uint8_t pattern[16]={0x4Fu,0x54u,0x41u,0x2Du,0x57u,0x52u,0x49u,0x54u,
+                                      0x45u,0x2Du,0x54u,0x45u,0x53u,0x54u,0x21u,0x00u};
+    uint8_t back[16];
+    int result;
+    if(nor_spi_erase_sector(&nor,OTA_EXPLORER_NOR_SELFTEST_ADDR)) return -1;
+    if(nor_spi_program_page(&nor,OTA_EXPLORER_NOR_SELFTEST_ADDR,pattern,sizeof pattern)) return -2;
+    result=nor_spi_read(&nor,OTA_EXPLORER_NOR_SELFTEST_ADDR,back,sizeof back);
+    if(result) return result;
+    return memcmp(back,pattern,sizeof pattern)?-3:0;
+}
+#endif
 static void read_storage_identity(void)
 {
     uint8_t command[4]={0x9Fu,0xFFu,0xFFu,0xFFu},result[4]={0u,0u,0u,0u};
     HAL_StatusTypeDef status;
-    /* RDID is the only NOR opcode emitted by this BSP. No WREN, reset,
-     * status-register write, page program or erase command is sent. */
+    /* Manual RDID kept as an independent cross-check of the driver probe.
+     * Neither path sends WREN, reset, status write, page program or erase. */
     HAL_GPIO_WritePin(GPIOB,GPIO_PIN_14,GPIO_PIN_RESET);
     status=HAL_SPI_TransmitReceive(&spi1,command,result,sizeof command,20u);
     HAL_GPIO_WritePin(GPIOB,GPIO_PIN_14,GPIO_PIN_SET);
@@ -151,8 +238,8 @@ int ota_user_generated_init(void)
         return -1;
     if(HAL_Init()!=HAL_OK || clock_init()) return -1;
     gpio_init();if(peripherals_init()) return -1;
-    initialized=1;read_storage_identity();
-    ota_user_log("ATK Explorer reference pins; storage writes disabled");
+    initialized=1;read_storage_identity();nor_open();
+    ota_user_log("ATK Explorer reference pins; update engine disabled");
     ota_user_log(OTA_EXPLORER_CAN_LOOPBACK?"CAN: silent internal loopback":"CAN: normal physical 500 kbit/s");
     log_hex("device_id",ota_explorer_probe.device_id);
     log_hex("flash_bytes",ota_explorer_probe.flash_bytes);
@@ -162,12 +249,44 @@ int ota_user_generated_init(void)
     ota_user_log(ota_explorer_probe.jedec_status?"NOR RDID failed":"NOR RDID read; fitted chip profile unconfirmed");
     ota_user_log(ota_explorer_probe.eeprom_status?"EEPROM read failed":"EEPROM 256-byte read complete");
     log_hex("eeprom_crc32",ota_explorer_probe.eeprom_crc32);
+    log_hex("nor_status",(uint32_t)ota_explorer_probe.nor_status);
+    if(ota_explorer_probe.nor_status) {
+        ota_user_log("NOR driver probe failed; storage hooks stay closed");
+    } else {
+        log_hex("nor_bytes",ota_explorer_probe.nor_bytes);
+        log_hex("nor_read_crc32",ota_explorer_probe.nor_read_crc32);
+        if(nor.jedec_id!=ota_explorer_probe.jedec_id)
+            ota_user_log("NOR driver and manual JEDEC disagree; investigate");
+        ota_user_log(ota_explorer_probe.nor_read_status?
+            "NOR driver read failed":"NOR driver probe+dry read ok");
+#if OTA_EXPLORER_NOR_WRITE
+        ota_user_log("NOR program/erase hooks compiled in, update engine still gated");
+#else
+        ota_user_log("NOR program/erase hooks compiled out");
+#endif
+    }
+#if OTA_EXPLORER_NOR_SELFTEST
+    log_hex("nor_selftest",(uint32_t)nor_write_selftest());
+    ota_user_log("NOR self-test sector is now modified; restore it per the drill log");
+#endif
     return 0;
 }
 void ota_user_config(ota_board_config_t *config)
 {
     memset(config,0,sizeof *config);config->board_verified=(uint8_t)initialized;
-    /* Even successful ID/EEPROM reads cannot authorize the update engine. */
+    /* Reported so a later stage can flip storage_verified with measured proof,
+     * not so this build can start installing: see docs/EXPLORER_REFERENCE.md. */
+    if(nor.ready) {
+        config->nor_bytes=nor.capacity_bytes;
+        config->nor_page_bytes=NOR_PAGE_BYTES;
+        config->nor_erase_bytes=NOR_SECTOR_BYTES;
+    }
+    if(ota_explorer_probe.eeprom_status==0) {
+        config->eeprom_bytes=sizeof ota_explorer_probe.eeprom;
+        config->eeprom_page_bytes=8u;
+    }
+    /* A successful probe proves the bus, not the wear policy or the restore
+     * plan. The update engine therefore stays refused in this bring-up build. */
     config->storage_verified=0u;
 }
 CAN_HandleTypeDef *ota_user_can(void) { return &can1; }
@@ -203,9 +322,20 @@ int ota_user_quiesce_peripherals(void)
        HAL_I2C_DeInit(&i2c1)!=HAL_OK || HAL_UART_DeInit(&uart1)!=HAL_OK) return -1;
     uart_ready=0;uart_binary=0;return 0;
 }
-/* An explicit supported chip driver and measured timing are a later stage. */
+/* The driver owns WREN/WEL, WIP polling, readback and the protected-state
+ * refusal. It never runs unless probe succeeded and storage_verified allowed
+ * the caller to exist at all; a fault inside the driver clears ready. */
+#if OTA_EXPLORER_NOR_WRITE
+int ota_user_nor_read(uint32_t a,uint8_t *p,uint32_t n)
+{ return nor.ready?nor_spi_read(&nor,a,p,n):-1; }
+int ota_user_nor_erase_4k(uint32_t a)
+{ return nor.ready?nor_spi_erase_sector(&nor,a):-1; }
+int ota_user_nor_page_program(uint32_t a,const uint8_t *p,uint32_t n)
+{ return nor.ready?nor_spi_program_page(&nor,a,p,n):-1; }
+#else
 int ota_user_nor_read(uint32_t a,uint8_t *p,uint32_t n)
 { (void)a;(void)p;(void)n;return -1; }
 int ota_user_nor_erase_4k(uint32_t a) { (void)a;return -1; }
 int ota_user_nor_page_program(uint32_t a,const uint8_t *p,uint32_t n)
 { (void)a;(void)p;(void)n;return -1; }
+#endif

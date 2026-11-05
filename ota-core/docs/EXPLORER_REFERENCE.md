@@ -37,7 +37,7 @@
 
 V3 的 I²C1（PB8/PB9）总线不止接 24C02，还接 **ST480MC 触摸控制器**和 **ES8388 音频 Codec**。读 EEPROM 时需确认 7 位地址 0x50 不与这两者冲突，且不要在未初始化时误触这两个从设备。V3 的以太网 PHY 为 **YT8512C（RMII）**、音频为 **ES8388（I2S）**，均与 V2 的 LAN8720 / WM8978 不同。
 
-V3 手册的变更表明确列出 NOR 可换为 NM25Q128/BY25Q128、CAN 收发器可换为 SIT1050。现有 W25Q128JV 驱动不能因为容量相同就直接获得兼容声明。这份 BSP 只发送 NOR `0x9F` 读 ID，不接入擦除、编程或状态寄存器写入。
+V3 手册的变更表明确列出 NOR 可换为 NM25Q128/BY25Q128、CAN 收发器可换为 SIT1050。现有 W25Q128JV 驱动不能因为容量相同就直接获得兼容声明。这份 BSP 已把 `src/driver/spi_nor.c` 接进三个 `ota_user_nor_*` 钩子：启动时只做 `0x9F` 读 ID、读状态寄存器 2 和一次 256 字节干读，不发 WREN、不复位、不写状态寄存器；页编程与 4 KiB 擦除的钩子已编译进来，但升级引擎仍被 `storage_verified=0` 整体拒绝，因此本轮代码路径不会自动改写任何扇区。要真正写一次，必须显式打开 `OTA_EXPLORER_NOR_SELFTEST=1` 并指定 `OTA_EXPLORER_NOR_SELFTEST_ADDR`（4 KiB 对齐且在两块镜像槽之外），否则编译失败。
 
 ## 接线与时钟
 
@@ -85,10 +85,10 @@ python tools/build_explorer_gnu.py --gcc "你的arm-none-eabi-gcc路径" --dfp "
 
 | 只读目标 | BIN 长度（字节） | 初始 SP | Reset 向量 |
 |---|---:|---|---|
-| ZG 回环 | 12736 | 0x20020000 | 0x08002765 |
-| ZG 诊断 | 22248 | 0x20020000 | 0x08004C51 |
-| ZE 回环 | 12740 | 0x20020000 | 0x08002769 |
-| ZE 诊断 | 22256 | 0x20020000 | 0x08004C59 |
+| ZG 回环 | 16176 | 0x20020000 | 0x080033C9 |
+| ZG 串口台架 | 43912 | 0x20020000 | 0x080096DD |
+| ZE 回环 | 16172 | 0x20020000 | 0x080033C5 |
+| ZE 串口台架 | 43912 | 0x20020000 | 0x080096DD |
 
 这组数值对应本轮源代码与工具链。构建脚本检查 ELF32 ARM 格式、入口与 Reset 向量一致、Thumb 位、向量表起点、所有加载段、BIN 内容、64 KiB Flash 边界及主 SRAM 范围；链接脚本为栈保留 4 KiB。它没有测量真实运行时栈峰值。
 
@@ -98,11 +98,11 @@ python tools/build_explorer_gnu.py --gcc "你的arm-none-eabi-gcc路径" --dfp "
 
 ## 上板后看什么
 
-1. 初始化成功后，串口打印 MCU ID、Flash 容量、配置时钟、NOR JEDEC ID、EEPROM 读取状态及 CRC32。芯片 ID 无效、全 FF/全 00、读超时都保留为失败，不自动重置/解锁器件。
-2. `ota_explorer_probe` 保存探测结果及 256 字节 EEPROM 读回。读回位于 RAM，尚未导出为备份文件；不要把一次读取等同于已完成持久备份。
+1. 初始化成功后，串口打印 MCU ID、Flash 容量、配置时钟、NOR JEDEC ID、EEPROM 读取状态及 CRC32。芯片 ID 无效、全 FF/全 00、读超时都保留为失败，不自动重置/解锁器件。随后打印 `nor_status`、`nor_bytes`、`nor_read_crc32`：前两者来自驱动探测，`nor_read_crc32` 是偏移 0 处 256 字节干读的校验和；驱动与手工 `0x9F` 读到不同 JEDEC 时会单独报一行。
+2. `ota_explorer_probe` 保存探测结果及 256 字节 EEPROM 读回。读回位于 RAM，尚未导出为备份文件；不要把一次读取等同于已完成持久备份。探针通过也**不**说明擦写可用——它只证明片选、时钟、模式、ID 和读通路，擦写要等下一步实测。
 3. 回环入口成功时，`ota_explorer_loopback_stage=3`、`ota_explorer_loopback_passed=16`；错误阶段 E1～E6 分别对应初始化、CAN 启动、发送、邮箱等待、接收等待或内容不符。内部回环成功不能证明收发器、跳线和外部总线正确。
 4. 再运行只读诊断入口，接 USB-CAN，按 [PC 工具说明](PC_TOOL.md)显式指定真实接口和通道，执行 `info`、`status`。此阶段 `storage_verified=0` 是预期状态，即使读取到 NOR ID 和 EEPROM 也不会开放下载/安装。
 
 三项更新门控全部为 0；在参考 BSP 下打开任意一项会编译失败。回环入口若被配为物理 CAN 模式也会编译失败，避免将测试帧发到外部总线。
 
-后续工作：核对实际 PCB/MCU/NOR 标记 → 保存原有内部 Flash、NOR、EEPROM 备份 → 按实际器件补存储驱动与时限 → 验证刷写、安装恢复及断电行为。签名、实机吞吐和断电数据仍未完成。
+后续工作：核对实际 PCB/MCU/NOR 标记 → 保存原有内部 Flash、NOR、EEPROM 备份 → 上电确认驱动探测的 JEDEC/容量与手工读数一致 → 在一个槽外扇区做一次可恢复的擦写自检 → 才考虑把 `storage_verified` 置 1 并验证刷写、安装恢复及断电行为。签名与实机吞吐仍未完成。

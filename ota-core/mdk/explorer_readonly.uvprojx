@@ -538,6 +538,16 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>SPI NOR chip driver</GroupName>
+          <Files>
+            <File>
+              <FileName>spi_nor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\driver\spi_nor.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>Firmware entry</GroupName>
           <Files>
             <File>
@@ -1175,6 +1185,16 @@
               <FileName>board_hal_binding.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\platform\stm32f407\examples\board_hal_binding.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>SPI NOR chip driver</GroupName>
+          <Files>
+            <File>
+              <FileName>spi_nor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\driver\spi_nor.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1820,6 +1840,16 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>SPI NOR chip driver</GroupName>
+          <Files>
+            <File>
+              <FileName>spi_nor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\driver\spi_nor.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>Firmware entry</GroupName>
           <Files>
             <File>
@@ -2457,6 +2487,16 @@
               <FileName>board_hal_binding.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\platform\stm32f407\examples\board_hal_binding.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>SPI NOR chip driver</GroupName>
+          <Files>
+            <File>
+              <FileName>spi_nor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\driver\spi_nor.c</FilePath>
             </File>
           </Files>
         </Group>

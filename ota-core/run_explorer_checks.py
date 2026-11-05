@@ -106,7 +106,29 @@ def main():
     rejected += ["-DOTA_EXPLORER_CAN_LOOPBACK=0", "-fsyntax-only", str(ROOT / "firmware/explorer_loopback/main.c")]
     run = subprocess.run(rejected, cwd=ROOT, capture_output=True, text=True, timeout=30)
     assert run.returncode != 0 and "physical CAN" in run.stderr
-    report = dict(targets=entries, forbidden_gates_rejected=checks,
+    # The NOR write hooks are a capability, not an authorization: check that both
+    # builds compile and that the destructive self-test cannot be pointed at an
+    # image slot or run without an explicit sector address.
+    base = [x for x in common if not x.startswith("-DOTA_EXPLORER_NOR_")]
+    variants, variant_log = [], []
+    def variant(extra, expected_ok, needle=""):
+        command = base + extra + ["-fsyntax-only", str(board / "explorer_reference.c")]
+        run = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=30)
+        variant_log.append("COMMAND: " + " ".join(command) + "\n" + run.stdout + run.stderr)
+        ok = run.returncode == 0
+        if ok != expected_ok or (needle and needle not in run.stderr):
+            (evidence / "explorer-nor-variant-failure.txt").write_text(
+                "\n".join(variant_log), encoding="utf-8")
+            raise AssertionError((extra, expected_ok, run.returncode, run.stderr))
+    variant(["-DOTA_EXPLORER_NOR_WRITE=0"], True)
+    variant(["-DOTA_EXPLORER_NOR_SELFTEST=1", "-DOTA_EXPLORER_NOR_SELFTEST_ADDR=0x00FFF000u"], True)
+    variant(["-DOTA_EXPLORER_NOR_SELFTEST=1", "-DOTA_EXPLORER_NOR_SELFTEST_ADDR=0x00001000u"],
+            False, "outside the new/old image slots")
+    variant(["-DOTA_EXPLORER_NOR_SELFTEST=1"], False, "requires OTA_EXPLORER_NOR_SELFTEST_ADDR")
+    variants = ["write hooks off", "self-test at 0xFFF000", "self-test in image slot rejected",
+                "self-test without address rejected"]
+    (evidence / "explorer-nor-variants.txt").write_text("\n".join(variant_log), encoding="utf-8")
+    report = dict(targets=entries, forbidden_gates_rejected=checks, nor_variant_compiles=variants,
                   physical_mode_loopback_entry_rejected=True, hardware_verified=False, target_linked=False)
     (evidence / "explorer-results.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     print("Explorer reference BSP and installed ST HAL C objects passed; hardware/link validation pending.")

@@ -1,5 +1,12 @@
 # Engineering checkpoint
 
+NOR write path wired into the reference BSP (2026-11-05, Asia/Shanghai):
+- `platform/stm32f407/board/explorer_reference/explorer_reference.c` now implements `nor_spi_bus_t` over SPI1 (software /CS on PB14, FF dummy reads, per-call remaining-time budget, `service` = `ota_firmware_service()`), calls `nor_spi_init` + `nor_spi_probe` + one 256-byte dry read at init, and keeps the manual `0x9F` read as an independent JEDEC cross-check.
+- `src/driver/spi_nor.c` is now part of the four explorer targets (regenerated via `tools/generate_explorer_mdk.py`). Page program and 4 KiB erase hooks are compiled in under `OTA_EXPLORER_NOR_WRITE` (default 1); `ota_user_config()` still reports `storage_verified=0`, so the update engine stays refused and boot issues no WREN, no reset and no status-register write.
+- The only way to write a sector is `OTA_EXPLORER_NOR_SELFTEST=1` plus `OTA_EXPLORER_NOR_SELFTEST_ADDR`; the header rejects (a) a missing address, (b) a non-4 KiB-aligned address, (c) an address inside either image slot, (d) self-test without the write hooks. The self-test erases one sector, programs 16 bytes and reads them back, so it must not be enabled without a recorded restore plan.
+- Verification this run: C 3385 checks / 420 power-cut scenarios per capacity, 0 failures; PC 45; SPI NOR 720; python-can virtual 7; tools 28; firmware 35+35+51; explorer BSP 46 ARM C objects per target; four GNU images linked (16176 / 43912 / 16172 / 43912 bytes); 4 NOR-variant compiles with 2 expected `#error` rejections; snapshot 130 hashes, `status=passed`, 159.8 s.
+- **Not executed on hardware**: no NOR program/erase on the real chip, no UART/JEDEC log from this build, and the full 512-block NOR restore drill is still running. `hardware_verified=false`, `keil_target_linked=false`.
+
 UART bench transport stage (2026-11-04, Asia/Shanghai):
 - Added a transport-neutral `ota_stm32_link_t`; `stm32_diag.c` no longer calls the CAN queue directly. `stm32_can.c` and `stm32_uart.c` implement the same link.
 - Added `src/core/can_uart.c`: classic CAN frames encoded as `A5 5A | ver | dlc | id[4] | data | crc16`, with resynchronisation and CRC rejection. This is a bench protocol, not a vehicle bus protocol.

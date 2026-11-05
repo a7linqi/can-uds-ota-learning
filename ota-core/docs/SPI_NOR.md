@@ -2,7 +2,17 @@
 
 `src/driver/spi_nor.c` 是与引脚无关的 C99 驱动。当前仅实现 W25Q128JV-IQ/JQ、JEDEC `EF 40 18` 配置，容量 16 MiB；本工程存储端口仍只允许访问其中分配给新旧镜像的前 2 MiB。ID 相同不足以识别全部芯片代际，必须核对实物丝印、供电和对应数据手册，不默认兼容 FV、DTR 或其他容量型号。
 
-默认 Keil 项目只包含驱动源码，没有把它接到未配置的 BSP，也没有启用写入。
+默认 Keil 项目只包含驱动源码；未配置的 `board_unconfigured.c` 仍把三个钩子返回失败，参考 BSP `explorer_reference.c` 已把驱动接进来（见下）。
+
+## 参考 BSP 里的接法
+
+`platform/stm32f407/board/explorer_reference/explorer_reference.c` 用 SPI1 的 HAL 句柄实现 `nor_spi_bus_t`：片选走 `ota_user_nor_select()`，传输按整次调用的剩余时间限时，读阶段用 FF dummy，`service` 指向 `ota_firmware_service()`，因此长擦写的等待间隙仍能回 CAN 的等待应答。
+
+启动路径只做只读动作：校验 SPI 主机/8 位/双线/软件 NSS/MSB/mode 0 或 3/不超过 10 MHz，`nor_spi_probe()`（等 BUSY 清、读 ID、读状态寄存器 2），再在偏移 0 干读 256 字节算 CRC32。它不发 WREN、不复位、不写状态寄存器；手工 `0x9F` 与驱动各读一次，两个 JEDEC 不一致会单独报错。
+
+页编程与 4 KiB 擦除的钩子由 `OTA_EXPLORER_NOR_WRITE`（默认 1）控制是否编译，但**能力不等于授权**：`ota_user_config()` 仍然把 `storage_verified` 置 0，升级引擎整体被拒绝，所以这四个固件跑起来不会自己改写任何扇区。
+
+要故意写一次，必须打开 `OTA_EXPLORER_NOR_SELFTEST=1` 并给出 `OTA_EXPLORER_NOR_SELFTEST_ADDR`。头文件在编译期强制：地址必须 4 KiB 对齐、必须落在两块镜像槽之外、必须同时打开写钩子，否则直接 `#error`。自检做的是“擦扇区 → 写 16 字节 → 读回比对”，跑完该扇区内容就被改写，必须事先记好恢复办法。`run_explorer_checks.py` 对这四种组合各做一次编译，其中两种必须失败。
 
 ## 接口与行为
 

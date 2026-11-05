@@ -19,7 +19,19 @@
     "execution": "TinyCC native in-memory C"
   },
   "cortex_m4_syntax": {
-    "performed_this_run": false,
+    "capacities_bytes": [
+      1048576,
+      524288
+    ],
+    "exit_codes": [
+      0,
+      0
+    ],
+    "flags": [
+      "-Wall",
+      "-Wextra",
+      "-Werror"
+    ],
     "target_linked": false
   }
 }

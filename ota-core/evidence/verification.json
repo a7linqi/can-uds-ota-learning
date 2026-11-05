@@ -1,6 +1,6 @@
 {
   "status": "passed",
-  "duration_s": 84.703,
+  "duration_s": 159.766,
   "validated_source_hashes": {
     "firmware/app/main.c": "69e2aaac35467c979e3cce9e0761416141e8582be5cbd4fd7eb3c5b3d0ee7d18",
     "firmware/bootloader/main.c": "09dc13059eb1ea2aac3025ca565b5395f57bc3327415deb18bfd2ebf704cf2b4",
@@ -28,11 +28,11 @@
     "Makefile": "98478e9e3ec6eafbe1ab5cf3bb5413eae6d8d64fc56ba8f7cb4c8d5e6cd35916",
     "mdk/app.uvprojx": "6fdf89172ac9c947aa6fcba08d705f113aad16639e9d93d10ac58322998eb74b",
     "mdk/bootloader.uvprojx": "b2d27c8fc95b95f4e380305a640cc536b377bc21a2fb21aeb50f5c2decfb5814",
-    "mdk/explorer_readonly.uvprojx": "d99651d05546e0111eae040a238cea6e9eb0b4f404744f142d851792fa9192d3",
+    "mdk/explorer_readonly.uvprojx": "c253639a8f851e301e500da9a49186898236bc4f6891f991e846feeeac552036",
     "platform/stm32f407/board/board_unconfigured.c": "f875f31250ebbd3a961b5e5a00cc394c79810036357eb2458d7f082ab54f43cb",
     "platform/stm32f407/board/explorer_reference/explorer_interrupts.c": "40f251b4492ef036172b692faf1b209a675d4eb444095d7cb943017402f995ea",
-    "platform/stm32f407/board/explorer_reference/explorer_reference.c": "cb087a470922e6382b14063230c2638067081d31c5af13bf62f1b8e2437e0546",
-    "platform/stm32f407/board/explorer_reference/explorer_reference.h": "316a38c0a282adabfc53490da23afc28181d0fab67da0a5daf6a9981bea1a01c",
+    "platform/stm32f407/board/explorer_reference/explorer_reference.c": "f1d160a915d083a1c4742db94c5d81ffc2fc9888e581e67a36bb6df745785713",
+    "platform/stm32f407/board/explorer_reference/explorer_reference.h": "fdfc0d80fc9486ef6f095da1afd050a996eb1a6a964b97dda71b755865764b2c",
     "platform/stm32f407/board/explorer_reference/stm32f4xx_hal_conf.h": "1607b14b6305ccb3f1c35c23a2adc319a6a7024ace94fc3d352d4f3d5a2f2066",
     "platform/stm32f407/examples/board_hal_binding.c": "201990a31dd2c76a635419274872667112dc79874c4c282d0bbf0c19b5151f0c",
     "platform/stm32f407/examples/board_hal_user.h": "19a0933271a2f89feaa47f459a1f2c104ffffa774d2e9bc8d062989c4b96158c",
@@ -52,7 +52,7 @@
     "requirements-serial.txt": "e32e3dbbb4c7b0aec253ef49d68c4137f4377af237c6324f9cb42ba7376b7091",
     "requirements-virtual.txt": "233bac8ade29c29c87e651a7f9e82775f1d3a0a4d2039982c1feaee923d14af0",
     "run_driver_checks.py": "8571fd531f6668c625b2f2aac02fa152043ac7913f0649a13c55d8aa89e40eaa",
-    "run_explorer_checks.py": "1ea557b0ba522d9263b92b1305c1edf3a7a3d21fd2b59e9a93600b01056ccf9b",
+    "run_explorer_checks.py": "d781ded09e02abae55f438610ed546f7d7c815635c2fd915eeeaaef4f3d061c7",
     "run_firmware_checks.py": "ba603dbf3899beb8d76ba045c6cd7b8b4c57b024c69d5cf90150b6a03893997d",
     "run_pc_checks.py": "7cd83c547362020de41f5d68d40a6f751d636664634d9a621df9e74c65327424",
     "run_stm32_checks.py": "01a316a0ee9e3af54f0ddc7e70a7144a5a57aacb5d5eb348411f86c961810d76",
@@ -119,7 +119,7 @@
     "tools/demo_recovery.py": "1cb00b84d2109e20b063466449e928a0ca3f90859eb48ff9f76f279b929d582a",
     "tools/demo_roundtrip.py": "cf689ec3369f8f2c9332691da8bf4c5d5e80c8c9e672b78793c7c7918d1bb917",
     "tools/ed25519.py": "069a20544c4e707f2c050ab680bdc57157a0766ddc34c93baf09530e0f0c53c4",
-    "tools/generate_explorer_mdk.py": "df44e7009a43388c791405427d86e8c360ff641a83d43dd807cff8155382c175",
+    "tools/generate_explorer_mdk.py": "64617e3f93af299d78a56fcdc84061553126520ecf85e03760c845d54635e7af",
     "tools/generate_mdk.py": "74e43f961f7c0ad3559005bd594b7b9b445f197e8272058c090fd770ffb5d775",
     "tools/make_image.py": "6a4af28383dbc1a60b472a0fe8e3f23e50cd974aa097af722bb2680bade6f762",
     "tools/package_project.py": "bd0f58ceb79abdecf64de2979a6261ec4dd35c0bd76f0b45d952514e473793dc",
@@ -129,7 +129,7 @@
     "tools/pc/uds_client.py": "04fd0aea9c147e80b43ad64702e3776ed8a2c1f14a3ce98c7464e55025fd47d1",
     "tools/source_snapshot.py": "6656641d5d2723b3ebfb7a97c301acb380af9872e4197b0d189c1a30646ee647",
     "tools/templates/target_option.xml": "4866fd38cff9c16db1d9eb8266642804eee919d6aa182c1a84b579eb2882b7b9",
-    "tools/uds_gui.py": "d9496dc7916278fa667d0cf5a63ec4d7da84cda21f9c6dbdc3d27aff13ed1711",
+    "tools/uds_gui.py": "ed0c5db7e61f5a03823521700017481f8efba7087d3f5ab75f8b8ffee961ab30",
     "tools/uds_tool.py": "518967886bb6c86f35f98c8cd7124080217305b2ad08f850be4e75f5e0e4a858",
     "verify_project.py": "a431abd25e6dc7044e4b12de7f7e0b12bbc1c717d8ffe1b64ea6d6fa700f7c2c"
   },
@@ -158,7 +158,19 @@
       "execution": "TinyCC native in-memory C"
     },
     "cortex_m4_syntax": {
-      "performed_this_run": false,
+      "capacities_bytes": [
+        1048576,
+        524288
+      ],
+      "exit_codes": [
+        0,
+        0
+      ],
+      "flags": [
+        "-Wall",
+        "-Wextra",
+        "-Werror"
+      ],
       "target_linked": false
     }
   },
@@ -272,12 +284,88 @@
       "linked": true,
       "executed": false,
       "hardware": false
+    },
+    "arm_objects": [
+      {
+        "flash_kib": 1024,
+        "image": "bootloader",
+        "objects": 29,
+        "exit": 0
+      },
+      {
+        "flash_kib": 1024,
+        "image": "app",
+        "objects": 29,
+        "exit": 0
+      },
+      {
+        "flash_kib": 512,
+        "image": "bootloader",
+        "objects": 29,
+        "exit": 0
+      },
+      {
+        "flash_kib": 512,
+        "image": "app",
+        "objects": 29,
+        "exit": 0
+      }
+    ],
+    "hal_reference_syntax": {
+      "exit": 0,
+      "linked": false
     }
   },
   "explorer": {
-    "performed_this_run": false,
+    "targets": [
+      {
+        "target": "explorer_ZG_loopback_READONLY",
+        "flash_bytes": 1048576,
+        "can_loopback": true,
+        "c_objects": 46,
+        "startup_assembled": false,
+        "linked": false
+      },
+      {
+        "target": "explorer_ZG_uart_READONLY",
+        "flash_bytes": 1048576,
+        "can_loopback": false,
+        "c_objects": 46,
+        "startup_assembled": false,
+        "linked": false
+      },
+      {
+        "target": "explorer_ZE_loopback_READONLY",
+        "flash_bytes": 524288,
+        "can_loopback": true,
+        "c_objects": 46,
+        "startup_assembled": false,
+        "linked": false
+      },
+      {
+        "target": "explorer_ZE_uart_READONLY",
+        "flash_bytes": 524288,
+        "can_loopback": false,
+        "c_objects": 46,
+        "startup_assembled": false,
+        "linked": false
+      }
+    ],
+    "forbidden_gates_rejected": [
+      "OTA_ENABLE_FLASHING",
+      "OTA_ENABLE_BOOT_HANDOFF",
+      "OTA_ENABLE_WATCHDOG"
+    ],
+    "nor_variant_compiles": [
+      "write hooks off",
+      "self-test at 0xFFF000",
+      "self-test in image slot rejected",
+      "self-test without address rejected"
+    ],
+    "physical_mode_loopback_entry_rejected": true,
     "hardware_verified": false,
-    "target_linked": false
+    "target_linked": false,
+    "performed_this_run": true
   },
   "gnu_readonly_targets": {
     "status": "passed",
@@ -286,141 +374,141 @@
     "targets": [
       {
         "target": "explorer_ZG_loopback_READONLY",
-        "objects": 47,
+        "objects": 48,
         "linked": true,
         "image": {
           "flash_base": "0x8000000",
-          "flash_bytes": 14076,
+          "flash_bytes": 16176,
           "flash_limit": "0x8010000",
-          "ram_bytes_with_reserved_stack": 5376,
+          "ram_bytes_with_reserved_stack": 5448,
           "initial_sp": "0x20020000",
-          "reset_vector": "0x8002ca1",
-          "elf_entry": "0x8002ca1"
+          "reset_vector": "0x80033c9",
+          "elf_entry": "0x80033c9"
         },
         "hardware_verified": false,
-        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  14064\t     12\t   5364\t  19440\t   4bf0\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZG_loopback_READONLY\\explorer_ZG_loopback_READONLY.elf"
+        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  16164\t     12\t   5436\t  21612\t   546c\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZG_loopback_READONLY\\explorer_ZG_loopback_READONLY.elf"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
-        "objects": 47,
+        "objects": 48,
         "linked": true,
         "image": {
           "flash_base": "0x8000000",
-          "flash_bytes": 41240,
+          "flash_bytes": 43912,
           "flash_limit": "0x8010000",
-          "ram_bytes_with_reserved_stack": 13136,
+          "ram_bytes_with_reserved_stack": 13200,
           "initial_sp": "0x20020000",
-          "reset_vector": "0x8008d75",
-          "elf_entry": "0x8008d75"
+          "reset_vector": "0x80096dd",
+          "elf_entry": "0x80096dd"
         },
         "hardware_verified": false,
-        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  41228\t     12\t  13124\t  54364\t   d45c\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZG_uart_READONLY\\explorer_ZG_uart_READONLY.elf"
+        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  43900\t     12\t  13188\t  57100\t   df0c\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZG_uart_READONLY\\explorer_ZG_uart_READONLY.elf"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
-        "objects": 47,
+        "objects": 48,
         "linked": true,
         "image": {
           "flash_base": "0x8000000",
-          "flash_bytes": 14080,
+          "flash_bytes": 16172,
           "flash_limit": "0x8010000",
-          "ram_bytes_with_reserved_stack": 5376,
+          "ram_bytes_with_reserved_stack": 5448,
           "initial_sp": "0x20020000",
-          "reset_vector": "0x8002ca5",
-          "elf_entry": "0x8002ca5"
+          "reset_vector": "0x80033c5",
+          "elf_entry": "0x80033c5"
         },
         "hardware_verified": false,
-        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  14068\t     12\t   5364\t  19444\t   4bf4\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZE_loopback_READONLY\\explorer_ZE_loopback_READONLY.elf"
+        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  16160\t     12\t   5436\t  21608\t   5468\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZE_loopback_READONLY\\explorer_ZE_loopback_READONLY.elf"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
-        "objects": 47,
+        "objects": 48,
         "linked": true,
         "image": {
           "flash_base": "0x8000000",
-          "flash_bytes": 41248,
+          "flash_bytes": 43912,
           "flash_limit": "0x8010000",
-          "ram_bytes_with_reserved_stack": 13136,
+          "ram_bytes_with_reserved_stack": 13200,
           "initial_sp": "0x20020000",
-          "reset_vector": "0x8008d7d",
-          "elf_entry": "0x8008d7d"
+          "reset_vector": "0x80096dd",
+          "elf_entry": "0x80096dd"
         },
         "hardware_verified": false,
-        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  41236\t     12\t  13124\t  54372\t   d464\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZE_uart_READONLY\\explorer_ZE_uart_READONLY.elf"
+        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  43900\t     12\t  13188\t  57100\t   df0c\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZE_uart_READONLY\\explorer_ZE_uart_READONLY.elf"
       }
     ],
     "artifacts": [
       {
         "target": "explorer_ZG_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.elf",
-        "bytes": 1220856,
-        "sha256": "830ff7a542c3cd0c7e91f7f0c85b6642510231e57574893f987c1f465040753a"
+        "bytes": 1238044,
+        "sha256": "73c4024adfe3addbdd65d9630644f2116c81d8e882b19932a0b76799b0a87a0b"
       },
       {
         "target": "explorer_ZG_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.bin",
-        "bytes": 14076,
-        "sha256": "c6b7e89227d695588269112e3eb695188a1e2bbcb49c93963bbf56d912cb7ab2"
+        "bytes": 16176,
+        "sha256": "2f0cce9e02594fe1c9806674bb5f7f2206dd8bc431819eda21388e2f1bcadd74"
       },
       {
         "target": "explorer_ZG_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.map",
-        "bytes": 597307,
-        "sha256": "4f5b12ac1a1ea94168a1894bdebfd3dd00990369d4b47e644f24da97c22d22ab"
+        "bytes": 609227,
+        "sha256": "bae5bbac5735ec6f711dbb419a573c0ed016e18e5a28ef1583e94f3080c5b0fd"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.elf",
-        "bytes": 1484364,
-        "sha256": "60b318982f515e043a15582ba6f7790dcf1c357a36fd6048e86b1229a949a1d4"
+        "bytes": 1501672,
+        "sha256": "bb50c39638bfe05efd0a1533e03f50acda1cb2a61884625bc8d8715f22f1c43f"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.bin",
-        "bytes": 41240,
-        "sha256": "82e7c4b4a7194fee98f58765be49d55dbe841f018757263b247f2941366c12b0"
+        "bytes": 43912,
+        "sha256": "796c5cdcefd95e077ab00fa49a2c21c981fd56d29288d73a35b2b31737e027a6"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.map",
-        "bytes": 586839,
-        "sha256": "80eb6c77237a187414dfe75f78973e60efc406e5cf32b79623316d9cdc182cef"
+        "bytes": 598406,
+        "sha256": "2cc4b9815cd3be2c15761ec5f9fb30c98cb919f15fad54ff0b56f644f45ff717"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.elf",
-        "bytes": 1220860,
-        "sha256": "17e9fd9d4b70a2e1dd99878dfb4037be30ceb13a33e2a1290243b6616bfa3739"
+        "bytes": 1238044,
+        "sha256": "b7012c0376868f90dc653058f315068a174c90503b892fb6fba5f8a9a9e347a2"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.bin",
-        "bytes": 14080,
-        "sha256": "086a893c09deb00e5718919af169764ebe9b5dc3942b620f9b1860e421bb7c95"
+        "bytes": 16172,
+        "sha256": "ef7452d62b1251d1770a3b0325de21f5f6292d958280b35928d833f11a08e0a8"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.map",
-        "bytes": 597307,
-        "sha256": "586dbe109f0954971d8660d62a8098dea4a21055768e7a254c5e04b0a5f6ac53"
+        "bytes": 609227,
+        "sha256": "7b3c7f51886225c03dfab7ebf939fc03d6bcab130b4341c339d96fea2c0b1b2b"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.elf",
-        "bytes": 1484372,
-        "sha256": "a4405a2c627190238059169dde5c31ef028af08d5b550e612da5b65dd9407abc"
+        "bytes": 1501664,
+        "sha256": "29818e8d63c80fe4c689c98cc0c634765d43d1eef1f21b58ab67405c0537f2ef"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.bin",
-        "bytes": 41248,
-        "sha256": "204dbe5f5313775e993219aa0099df901dee6dbbdb9989e769ed023f34d6dfbf"
+        "bytes": 43912,
+        "sha256": "01b63937b3f3fcce4e20e7cb169ed6596200d3da29c87b598770966ea12653e2"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.map",
-        "bytes": 586839,
-        "sha256": "0d577fe7765d033f5a52822c37c04ff09f39aae05931a5d8662fd12f52e64497"
+        "bytes": 598406,
+        "sha256": "6071fb3bfa6e55a3d4f614d2b05db9cf2ea08948dc48093f31598e1b59ea65fa"
       }
     ],
     "validated_source_hashes": {
@@ -450,11 +538,11 @@
       "Makefile": "98478e9e3ec6eafbe1ab5cf3bb5413eae6d8d64fc56ba8f7cb4c8d5e6cd35916",
       "mdk/app.uvprojx": "6fdf89172ac9c947aa6fcba08d705f113aad16639e9d93d10ac58322998eb74b",
       "mdk/bootloader.uvprojx": "b2d27c8fc95b95f4e380305a640cc536b377bc21a2fb21aeb50f5c2decfb5814",
-      "mdk/explorer_readonly.uvprojx": "d99651d05546e0111eae040a238cea6e9eb0b4f404744f142d851792fa9192d3",
+      "mdk/explorer_readonly.uvprojx": "c253639a8f851e301e500da9a49186898236bc4f6891f991e846feeeac552036",
       "platform/stm32f407/board/board_unconfigured.c": "f875f31250ebbd3a961b5e5a00cc394c79810036357eb2458d7f082ab54f43cb",
       "platform/stm32f407/board/explorer_reference/explorer_interrupts.c": "40f251b4492ef036172b692faf1b209a675d4eb444095d7cb943017402f995ea",
-      "platform/stm32f407/board/explorer_reference/explorer_reference.c": "cb087a470922e6382b14063230c2638067081d31c5af13bf62f1b8e2437e0546",
-      "platform/stm32f407/board/explorer_reference/explorer_reference.h": "316a38c0a282adabfc53490da23afc28181d0fab67da0a5daf6a9981bea1a01c",
+      "platform/stm32f407/board/explorer_reference/explorer_reference.c": "f1d160a915d083a1c4742db94c5d81ffc2fc9888e581e67a36bb6df745785713",
+      "platform/stm32f407/board/explorer_reference/explorer_reference.h": "fdfc0d80fc9486ef6f095da1afd050a996eb1a6a964b97dda71b755865764b2c",
       "platform/stm32f407/board/explorer_reference/stm32f4xx_hal_conf.h": "1607b14b6305ccb3f1c35c23a2adc319a6a7024ace94fc3d352d4f3d5a2f2066",
       "platform/stm32f407/examples/board_hal_binding.c": "201990a31dd2c76a635419274872667112dc79874c4c282d0bbf0c19b5151f0c",
       "platform/stm32f407/examples/board_hal_user.h": "19a0933271a2f89feaa47f459a1f2c104ffffa774d2e9bc8d062989c4b96158c",
@@ -474,7 +562,7 @@
       "requirements-serial.txt": "e32e3dbbb4c7b0aec253ef49d68c4137f4377af237c6324f9cb42ba7376b7091",
       "requirements-virtual.txt": "233bac8ade29c29c87e651a7f9e82775f1d3a0a4d2039982c1feaee923d14af0",
       "run_driver_checks.py": "8571fd531f6668c625b2f2aac02fa152043ac7913f0649a13c55d8aa89e40eaa",
-      "run_explorer_checks.py": "1ea557b0ba522d9263b92b1305c1edf3a7a3d21fd2b59e9a93600b01056ccf9b",
+      "run_explorer_checks.py": "d781ded09e02abae55f438610ed546f7d7c815635c2fd915eeeaaef4f3d061c7",
       "run_firmware_checks.py": "ba603dbf3899beb8d76ba045c6cd7b8b4c57b024c69d5cf90150b6a03893997d",
       "run_pc_checks.py": "7cd83c547362020de41f5d68d40a6f751d636664634d9a621df9e74c65327424",
       "run_stm32_checks.py": "01a316a0ee9e3af54f0ddc7e70a7144a5a57aacb5d5eb348411f86c961810d76",
@@ -541,7 +629,7 @@
       "tools/demo_recovery.py": "1cb00b84d2109e20b063466449e928a0ca3f90859eb48ff9f76f279b929d582a",
       "tools/demo_roundtrip.py": "cf689ec3369f8f2c9332691da8bf4c5d5e80c8c9e672b78793c7c7918d1bb917",
       "tools/ed25519.py": "069a20544c4e707f2c050ab680bdc57157a0766ddc34c93baf09530e0f0c53c4",
-      "tools/generate_explorer_mdk.py": "df44e7009a43388c791405427d86e8c360ff641a83d43dd807cff8155382c175",
+      "tools/generate_explorer_mdk.py": "64617e3f93af299d78a56fcdc84061553126520ecf85e03760c845d54635e7af",
       "tools/generate_mdk.py": "74e43f961f7c0ad3559005bd594b7b9b445f197e8272058c090fd770ffb5d775",
       "tools/make_image.py": "6a4af28383dbc1a60b472a0fe8e3f23e50cd974aa097af722bb2680bade6f762",
       "tools/package_project.py": "bd0f58ceb79abdecf64de2979a6261ec4dd35c0bd76f0b45d952514e473793dc",
@@ -551,7 +639,7 @@
       "tools/pc/uds_client.py": "04fd0aea9c147e80b43ad64702e3776ed8a2c1f14a3ce98c7464e55025fd47d1",
       "tools/source_snapshot.py": "6656641d5d2723b3ebfb7a97c301acb380af9872e4197b0d189c1a30646ee647",
       "tools/templates/target_option.xml": "4866fd38cff9c16db1d9eb8266642804eee919d6aa182c1a84b579eb2882b7b9",
-      "tools/uds_gui.py": "d9496dc7916278fa667d0cf5a63ec4d7da84cda21f9c6dbdc3d27aff13ed1711",
+      "tools/uds_gui.py": "ed0c5db7e61f5a03823521700017481f8efba7087d3f5ab75f8b8ffee961ab30",
       "tools/uds_tool.py": "518967886bb6c86f35f98c8cd7124080217305b2ad08f850be4e75f5e0e4a858",
       "verify_project.py": "a431abd25e6dc7044e4b12de7f7e0b12bbc1c717d8ffe1b64ea6d6fa700f7c2c"
     },

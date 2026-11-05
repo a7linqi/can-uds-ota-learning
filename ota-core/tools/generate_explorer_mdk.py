@@ -124,6 +124,9 @@ def generate(dfp, cmsis, uart=False):
                 "Ed25519 (vendored)": ed25519,
                 "Read-only Explorer BSP": [board / "explorer_reference.c", board / "explorer_interrupts.c",
                                            ROOT / "platform/stm32f407/examples/board_hal_binding.c"],
+                # Protocol-only chip driver: probe/read always, program/erase
+                # compiled in, update engine still gated by storage_verified.
+                "SPI NOR chip driver": [ROOT / "src/driver/spi_nor.c"],
                 "Firmware entry": [ROOT / ("firmware/explorer_loopback/main.c" if loopback
                                            else "firmware/bootloader/main.c")],
                 "Installed ST HAL and SystemInit": vendor,
