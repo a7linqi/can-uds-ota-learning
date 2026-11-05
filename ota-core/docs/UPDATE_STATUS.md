@@ -26,7 +26,7 @@ python tools/uds_tool.py status --backend can --interface gs_usb --channel "你�
 | 36 | 4 | 编译配置的内部 Flash 总字节数 |
 | 40 | 1 | `programming_allowed`：此刻写服务是否放行 |
 | 41 | 1 | `job_error`：上一个长作业是否失败收尾 |
-| 42 | 1 | `pending_in_flight`：总线上还有一个 `7F xx 78` 未发完 |
+| 42 | 1 | `requests_dropped`（饱和到 255）：因已有请求在跑而被丢弃的帧数 |
 | 43 | 1 | bit7 = 本镜像是 App（0 表示 Bootloader）；bit0-6 = 服务间隔超限次数 |
 
 容量字段来自固件配置；STM32 存储端口还必须独立验证实际芯片容量。状态查询不会代替这一步。

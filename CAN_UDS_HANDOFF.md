@@ -11,7 +11,7 @@
 ### 先建立共同基线
 
 - 在同一台电脑打开 `D:\Project\Can`，先读本文件，再按第 6 节阅读工程入口、当前状态、BSP 说明与验证记录。源码和可复现证据优先于旧聊天中的进度百分比；遇到冲突应指出并核对。
-- 当前核心、主机验证和四套 GNU 只读固件构建已经完成；实板升级集成、实机验收及升级包签名尚未完成。不要从早期 Python demo 或 236 项检查版本重新开始。
+- 核心、主机验证、四套 GNU 只读固件构建、升级包签名（Ed25519）与实板完整升级链均已完成；连续三轮实机升级后读回内部 Flash 与构建产物逐字节相同。不要从早期 Python demo 或 236 项检查版本重新开始。
 - 修改前保留可回退基线；已有 `deliverables/ota-core-v0.12.zip`。若使用 Git，可在分支上推进；同一份工作目录同一时间只由一个 harness 修改，另一套用于只读审查。不要覆盖用户或其他工具尚未交接的改动。
 - 不要用“软件 90%”替代交付清单。对每个模块分别说明：实现状态、模型验证状态、目标构建状态、实机验证状态。
 
@@ -144,9 +144,9 @@ V3 手册明确允许 NM25Q128/BY25Q128 等 NOR 替换。现有可选写入驱�
 | 目标 | BIN 字节数 | Flash 起点 |
 |---|---:|---|
 | explorer_ZG_loopback_READONLY | 16176 | 0x08000000 |
-| explorer_ZG_uart_READONLY | 44224 | 0x08000000 |
+| explorer_ZG_uart_READONLY | 44240 | 0x08000000 |
 | explorer_ZE_loopback_READONLY | 16172 | 0x08000000 |
-| explorer_ZE_uart_READONLY | 44224 | 0x08000000 |
+| explorer_ZE_uart_READONLY | 44240 | 0x08000000 |
 
 这些是独立的只读上板固件，链接区域为内部前 64 KiB。它们不是 0x08010000 的 App 升级 payload。完整产物在 `ota-core/firmware-builds/`；正常工作目录的构建产物在 `build/gnu-explorer/`。
 
@@ -221,10 +221,23 @@ python tools/package_project.py --include-firmware --output "工程目录外的�
 2. **真实 CAN 总线**：板级 UDS 目前走 UART 上的 CAN 帧封装（`A5 5A | ver | dlc | id | data | crc16`），USB-CAN 适配器未到货，所以没有总线仲裁、错误帧、总线负载数据。
 3. **硬件 IWDG**：看门狗策略只跑了虚拟模型。
 4. 实物丝印未拍照确认（PCB 修订版/MCU 完整型号/NOR 型号），书面证据指向 V3 + ZGT6；未上电读取。
-5. `hardware_verified=false`、`keil_target_linked=false` 保持保守，它们描述的是机器可读矩阵，不是"没上过板"。
+5. `hardware_verified=false`、`keil_target_linked=false` 是机器可读矩阵的字段，不是"没上过板"：上板结果记录在本文件第 8 节与 `stages/board-lab/STAGE_D_EVIDENCE.md`。
 6. EEPROM 偶发读失败（6 次复位里 2 次 `eeprom_status=1`），两次都安全停在 loader，根因未定位。
 
-**下一轮最该做的两件事**：把板子插上跑 `stages/board-lab/host/uds_gate_probe.py`，确认 44 字节状态记录与 `role` 位在实物上成立（App→loader 入口已在实机验证过，但那时还没有遥测字节）；然后做一次真实拔电中断。
+**2026-11-05 深夜补记（板子在线）**：状态遥测、门控探针与"可重复升级"三项已在实物上补齐。
+
+- 硅片：`Device ID 0x413`、`NVM 1 MBytes`、`Rev 2.0`、3.24 V；串口是 CH340 的 **COM9**。
+- 状态 DID 44 字节在实物成立：loader 侧 `role=loader`/`allowed=1`，App 侧 `role=application`/`allowed=0`。
+- 第 42 字节 `pending_in_flight` **恒为 1**（读它的请求本身就是延迟服务），已换成 `requests_dropped`。
+- `31 01 00 01` **不能**当门控探针（校验的是待装包，没包时任何门控都回 `0x22`）；
+  改用 `36 01 00`：门控开 → `0x24`，门控关 → `0x22`，实机两侧都测过。
+- **关闭串口会复位板子**（CH340 DTR/RTS 接 NRST）：seq 59→61、角色 application→loader，而全程没发复位指令。
+  跨进程"先留状态再跑下一个脚本"因此不成立；`uds_stage_d.py` 新增 `--handoff`，单会话内完成交棒与下载。
+- 连续升级：v8（从"元数据过时"状态起）、v9/v10/v11（从运行中的 App 起）全部成功；
+  读回 `0x08010000` 44288 B，`sha256 bed181e9ea2b4089`、`crc32 0x5F966357`，与构建产物逐字节相同。
+- 时序：`34` 13.82–14.26 s、`36` 每帧 0.05–0.34 s、`37` 0.53 s、`31` 0.48 s。
+
+**下一轮最该做的一件事**：真实拔电中断升级（拔 USB 会让 CH340 消失，属于另一类中断模型，需要独立设计观察手段）。
 
 用户希望持续推进、少重复确认，重视 C 实现和真实硬件。软件可先审查、构建和验证；涉及当前未知的物理器件参数时，应明确未知项，不能用猜测把状态写成已验证。
 

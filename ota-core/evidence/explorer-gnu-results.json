@@ -25,15 +25,15 @@
       "linked": true,
       "image": {
         "flash_base": "0x8000000",
-        "flash_bytes": 44224,
+        "flash_bytes": 44240,
         "flash_limit": "0x8010000",
         "ram_bytes_with_reserved_stack": 13216,
         "initial_sp": "0x20020000",
-        "reset_vector": "0x8009815",
-        "elf_entry": "0x8009815"
+        "reset_vector": "0x8009825",
+        "elf_entry": "0x8009825"
       },
       "hardware_verified": false,
-      "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  44212\t     12\t  13204\t  57428\t   e054\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZG_uart_READONLY\\explorer_ZG_uart_READONLY.elf"
+      "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  44228\t     12\t  13204\t  57444\t   e064\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZG_uart_READONLY\\explorer_ZG_uart_READONLY.elf"
     },
     {
       "target": "explorer_ZE_loopback_READONLY",
@@ -57,15 +57,15 @@
       "linked": true,
       "image": {
         "flash_base": "0x8000000",
-        "flash_bytes": 44224,
+        "flash_bytes": 44240,
         "flash_limit": "0x8010000",
         "ram_bytes_with_reserved_stack": 13216,
         "initial_sp": "0x20020000",
-        "reset_vector": "0x8009815",
-        "elf_entry": "0x8009815"
+        "reset_vector": "0x8009825",
+        "elf_entry": "0x8009825"
       },
       "hardware_verified": false,
-      "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  44212\t     12\t  13204\t  57428\t   e054\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZE_uart_READONLY\\explorer_ZE_uart_READONLY.elf"
+      "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  44228\t     12\t  13204\t  57444\t   e064\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZE_uart_READONLY\\explorer_ZE_uart_READONLY.elf"
     }
   ],
   "artifacts": [
@@ -85,25 +85,25 @@
       "target": "explorer_ZG_loopback_READONLY",
       "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.map",
       "bytes": 610228,
-      "sha256": "2a05aa4119b3b95f3511d637f3ba9c84cdd1b354414b58985b6b85991043b7ce"
+      "sha256": "d49a82aebfcf33550ffc5b1ff18e87071bd231daeab47d5339a963e4a849d11b"
     },
     {
       "target": "explorer_ZG_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.elf",
-      "bytes": 1504740,
-      "sha256": "fea87df6f5678123f7d86cdbc23f7a26c8e85a2473f3135deaa379f982ce8ae4"
+      "bytes": 1504756,
+      "sha256": "36cec3231f79e90a52016f5a4bbed76ee0ce56507fa1d1734919b74b92512735"
     },
     {
       "target": "explorer_ZG_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.bin",
-      "bytes": 44224,
-      "sha256": "a0002873a24427be948d7f1f3fcf7c22eb78bad4a90e6845ab61c21f275df59f"
+      "bytes": 44240,
+      "sha256": "2c7f2d32fb30a9cd15cbd81a6f815c6d00e940642b1ae5351098e769a5fb1547"
     },
     {
       "target": "explorer_ZG_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.map",
       "bytes": 599664,
-      "sha256": "067c9a5eb4c6144b9eb2a81c9f4d5321c98283364e346b2ae5e80b15cb240c39"
+      "sha256": "ccee6a2f82d7ba80f3e788587c96f59450e27d1979c131af12f4365a097ddf82"
     },
     {
       "target": "explorer_ZE_loopback_READONLY",
@@ -121,25 +121,25 @@
       "target": "explorer_ZE_loopback_READONLY",
       "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.map",
       "bytes": 610228,
-      "sha256": "84882ab7ae63eafac7e2a8216996811310b873e6d3c85bbc2ad03517b471fd4c"
+      "sha256": "a71187af773f39b3b1e86cd7fb45ea2ba5dba9aa8ba0477dbff1ee943835b4b7"
     },
     {
       "target": "explorer_ZE_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.elf",
-      "bytes": 1504732,
-      "sha256": "1964da1e809d746b93e8d171808480e81de6667dd538edb4ac1ea4804f7b30ea"
+      "bytes": 1504748,
+      "sha256": "fd126ed847843c75c8fed92a2c90381d89dcfa7be30919c6ac91c8f7a31f07f7"
     },
     {
       "target": "explorer_ZE_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.bin",
-      "bytes": 44224,
-      "sha256": "4f06c95ce4f5cd5ba924de303738babb47f04d8ad52f7e4701e63649b360ad1c"
+      "bytes": 44240,
+      "sha256": "39100787c9e33f96af531422379c0349fd3eddf6e6af60f562d340c4b29fb9bc"
     },
     {
       "target": "explorer_ZE_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.map",
       "bytes": 599664,
-      "sha256": "52dd3fb72733d2522c9c2da9573691d845962eab1b3391c1d0a2692dcfb18f71"
+      "sha256": "ec56419afc12961dfcfb5fe0d3bfed4ee2833409e064faa0c76aedc008135abe"
     }
   ],
   "validated_source_hashes": {
@@ -188,7 +188,7 @@
     "platform/stm32f407/include/ota_stm32.h": "5d57897a88b76ae345282abd2600250b72f9fd909d860a7ca40cf43568194b0a",
     "platform/stm32f407/src/stm32_arch.c": "c35f20bd80fdbb6f7c93ffba536f3988e34069751fb41a8688abb5c04ba7b91c",
     "platform/stm32f407/src/stm32_can.c": "769c0641d98b32b0cebe631c33a383eea6d17a9887295b52b8b04d2e25b74072",
-    "platform/stm32f407/src/stm32_diag.c": "30193823ec4334c62d73966b201e8f2fba38c404c7d27f7b51e14c7c13ae67f5",
+    "platform/stm32f407/src/stm32_diag.c": "e5d2517515a0f5b723f31017e6312d4c68d05e373472bb3d083ff2365b49c0cd",
     "platform/stm32f407/src/stm32_eeprom.c": "20000b75e45eeceb0eb73513acb3faece2bb6f221d515f2088ccab9120610c46",
     "platform/stm32f407/src/stm32_handoff.c": "41505a014c9cdf094ef137229cca15b1dcb58272102757fbb50ed141af511881",
     "platform/stm32f407/src/stm32_internal_flash.c": "fb664375c57105c58d1039e47c8cd5500dfe4c3b64590449428e91a264b79647",
@@ -273,7 +273,7 @@
     "tools/pc/__init__.py": "d74f5684789fa22b23b00051575d11cd5846be5ce18f6dc6127e23a0aba202f5",
     "tools/pc/isotp_client.py": "7be08a3bfa82bb3407d5117d88e216e674cc91336031120eb85a4b1883fa5415",
     "tools/pc/transport.py": "e6fb758c2918fdcd8bf700b7b88fce74c4c7c9a21ab3d8167266fd6c4e597fc3",
-    "tools/pc/uds_client.py": "a33d49488367bbe9e3a96fc19911dfe4b92b69fcf165382de768f5f30b22aee8",
+    "tools/pc/uds_client.py": "ddaf9ba49a561ff0d6ba047434dce6fdfc817b511e59d0a2bf8172c0d91ec209",
     "tools/source_snapshot.py": "6656641d5d2723b3ebfb7a97c301acb380af9872e4197b0d189c1a30646ee647",
     "tools/templates/target_option.xml": "4866fd38cff9c16db1d9eb8266642804eee919d6aa182c1a84b579eb2882b7b9",
     "tools/uds_gui.py": "ed0c5db7e61f5a03823521700017481f8efba7087d3f5ab75f8b8ffee961ab30",

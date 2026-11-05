@@ -30,7 +30,7 @@
         "record_bytes": 44,
         "programming_allowed": false,
         "job_error": false,
-        "pending_in_flight": false,
+        "requests_dropped": 0,
         "role": "loader",
         "service_deadline_misses": 0
       }
@@ -61,7 +61,7 @@
         "record_bytes": 44,
         "programming_allowed": false,
         "job_error": false,
-        "pending_in_flight": false,
+        "requests_dropped": 0,
         "role": "loader",
         "service_deadline_misses": 0
       }
@@ -92,7 +92,7 @@
         "record_bytes": 44,
         "programming_allowed": false,
         "job_error": false,
-        "pending_in_flight": false,
+        "requests_dropped": 0,
         "role": "loader",
         "service_deadline_misses": 0
       }
@@ -123,7 +123,7 @@
         "record_bytes": 44,
         "programming_allowed": false,
         "job_error": false,
-        "pending_in_flight": false,
+        "requests_dropped": 0,
         "role": "loader",
         "service_deadline_misses": 0
       }
@@ -154,7 +154,7 @@
         "record_bytes": 44,
         "programming_allowed": false,
         "job_error": false,
-        "pending_in_flight": false,
+        "requests_dropped": 0,
         "role": "loader",
         "service_deadline_misses": 0
       }
@@ -185,7 +185,7 @@
         "record_bytes": 44,
         "programming_allowed": false,
         "job_error": false,
-        "pending_in_flight": false,
+        "requests_dropped": 0,
         "role": "loader",
         "service_deadline_misses": 0
       }

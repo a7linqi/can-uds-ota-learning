@@ -98,7 +98,14 @@ int ota_stm32_diag_poll(ota_stm32_diag_t *d)
     uint32_t accepted=0u;
     d->uds.diag[0]=d->programming_allowed;
     d->uds.diag[1]=d->job_error;
-    d->uds.diag[2]=d->pending_in_flight;
+    /* Byte 42 must not be pending_in_flight. The status DID itself is deferred,
+     * so by the time its payload is built that flag is already 1 for the very
+     * request being answered: the byte would read 1 on every query and carry no
+     * information. Measured on the board 2026-11-05 -- it did exactly that.
+     * requests_dropped is not self-referential: it counts frames the ECU threw
+     * away because a request was already outstanding, so 0 is the honest value
+     * for a single tester and non-zero proves two talkers collided. */
+    d->uds.diag[2]=(uint8_t)(d->requests_dropped>255u?255u:d->requests_dropped);
     d->uds.diag[3]=(uint8_t)((ota_bsp_is_application()?0x80u:0u) |
                              (d->service_deadline_misses & 0x7Fu));
     if(!d->io.poll || d->io.poll(d->io.port.user)) return -1;

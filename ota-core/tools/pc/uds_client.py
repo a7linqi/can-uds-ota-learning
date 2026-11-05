@@ -130,7 +130,7 @@ class UdsClient:
             # are indistinguishable from the host: the application is built
             # without OTA_ENABLE_FLASHING, or a loader job closed the gate.
             result.update(programming_allowed=bool(data[40]),job_error=bool(data[41]),
-                          pending_in_flight=bool(data[42]),
+                          requests_dropped=data[42],
                           role=("application" if data[43]&0x80 else "loader"),
                           service_deadline_misses=data[43]&0x7F)
         else:
