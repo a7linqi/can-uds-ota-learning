@@ -118,6 +118,34 @@ static void successful_io(void)
     CHECK(!nor_spi_program_page(&D,NOR_CAPACITY_BYTES-1u,data,1u));
     CHECK(C.memory[NOR_CAPACITY_BYTES-1u]==data[0]);
 }
+static void cross_page_write(void)
+{
+    uint8_t data[512],out[512];
+    uint32_t i;
+    fresh(); CHECK(!nor_spi_probe(&D));
+    for(i=0;i<sizeof data;i++) data[i]=(uint8_t)(i*7u+3u);
+    /* 510 bytes at 0 is exactly the UDS 0x36 payload limit and spans two pages. */
+    CHECK(!nor_spi_write(&D,0u,data,510u) && C.writes==2u);
+    CHECK(!nor_spi_read(&D,0u,out,510u) && !memcmp(out,data,510u));
+    /* An unaligned start splits too instead of wrapping over offset 0x100. */
+    fresh(); CHECK(!nor_spi_probe(&D));
+    CHECK(!nor_spi_write(&D,200u,data,100u) && C.writes==2u);
+    CHECK(!nor_spi_read(&D,200u,out,100u) && !memcmp(out,data,100u));
+    /* A chunk that stops on the boundary stays one program command. */
+    fresh(); CHECK(!nor_spi_probe(&D));
+    CHECK(!nor_spi_write(&D,0x100u,data,256u) && C.writes==1u);
+    /* Bounds are decided before the first byte goes out. */
+    fresh(); CHECK(!nor_spi_probe(&D));
+    CHECK(nor_spi_write(&D,0u,data,0u)==NOR_ERR_ARGUMENT);
+    CHECK(nor_spi_write(&D,NOR_CAPACITY_BYTES,data,1u)==NOR_ERR_ARGUMENT);
+    CHECK(nor_spi_write(&D,NOR_CAPACITY_BYTES-1u,data,2u)==NOR_ERR_ARGUMENT);
+    CHECK(!C.writes && !C.erases);
+    /* A dirty second page fails after page 0 was already programmed: a partial
+     * write is the honest result, so the return value must not say "ok". */
+    fresh(); CHECK(!nor_spi_probe(&D));
+    C.memory[256]=0x00u;
+    CHECK(nor_spi_write(&D,0u,data,300u)==NOR_ERR_ERASE_REQUIRED && C.writes==1u);
+}
 static void bounds_and_protection(void)
 {
     uint8_t data[256],out[2];
@@ -197,13 +225,10 @@ static int bridge_write(void *user,uint32_t off,const uint8_t *data,uint32_t n)
 {
     (void)user;
     if(off>EXT_FLASH_TOTAL_SIZE || n>EXT_FLASH_TOTAL_SIZE-off) return -1;
-    while(n) {
-        uint32_t count=256u-off%256u;
-        if(count>n) count=n;
-        if(nor_spi_program_page(&D,off,data,count)) return -1;
-        off+=count; data+=count; n-=count;
-    }
-    return 0;
+    /* Deliberately the same call the real BSP hook makes: an earlier version of
+     * this file opened-coded the page split, which made the test stricter than
+     * the firmware and hid the fact that the BSP hook could not take 512 bytes. */
+    return nor_spi_write(&D,off,data,n);
 }
 static int bridge_erase(void *user,uint32_t off,uint32_t n)
 {
@@ -278,7 +303,7 @@ int main(void)
 {
     setvbuf(stdout,0,_IONBF,0);
     init_sign_key();
-    successful_io(); bounds_and_protection(); faults(); core_integration();
+    successful_io(); cross_page_write(); bounds_and_protection(); faults(); core_integration();
     printf("SPI NOR protocol: %d checks, %d failures\n",checks,failures);
     return failures?1:0;
 }

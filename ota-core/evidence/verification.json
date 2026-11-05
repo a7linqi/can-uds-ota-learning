@@ -1,6 +1,6 @@
 {
   "status": "passed",
-  "duration_s": 155.031,
+  "duration_s": 153.421,
   "validated_source_hashes": {
     "build-temp/bench_seq.py": "713c7bea38e4bf10ae5afb34f13a2bdc1b446926b55f35005a4f0c7c8a056b5c",
     "build-temp/build_update_variant.py": "f54bf97ce210e1c6e6e86f9d23002a7b5dcbf7a4842f8df8f1d3380cc0729230",
@@ -24,7 +24,7 @@
     "include/ota/ota_port.h": "c839449762eb1eff66ec8b3055090ecf4814c13d0240b0d0224207349639d587",
     "include/ota/pubkey.h": "67b5b989f439d9869fb13b25be70dd571988f6297907a9f17be1147b1e88802b",
     "include/ota/signature.h": "62aa856f4fb9778dbdd5c90029b802ea7510306f766777d19c8e22a07c5fd61e",
-    "include/ota/spi_nor.h": "2c1ca1733f313aadc9ecd5eadaa82a8f74567a65ef388b898644a9b573c864b6",
+    "include/ota/spi_nor.h": "835c1afe3f44620db87e8169472eaccc9306125d696a0ea15c24a44a0e7ac47b",
     "include/ota/uds.h": "ed59dabc89015f48238278ca5b3027bb7775af98f33cd7372ee7950992986077",
     "include/ota/watchdog_policy.h": "9c2aa995a01dd523170e923dabfc410b52fec93f0f0b0bdd985b1b533b981181",
     "Makefile": "98478e9e3ec6eafbe1ab5cf3bb5413eae6d8d64fc56ba8f7cb4c8d5e6cd35916",
@@ -33,12 +33,12 @@
     "mdk/explorer_readonly.uvprojx": "c253639a8f851e301e500da9a49186898236bc4f6891f991e846feeeac552036",
     "platform/stm32f407/board/board_unconfigured.c": "f875f31250ebbd3a961b5e5a00cc394c79810036357eb2458d7f082ab54f43cb",
     "platform/stm32f407/board/explorer_reference/explorer_interrupts.c": "40f251b4492ef036172b692faf1b209a675d4eb444095d7cb943017402f995ea",
-    "platform/stm32f407/board/explorer_reference/explorer_reference.c": "71788007d505cb168ca03d8a0d3f00c8d35b2ad3e69b9129020be8ba270c1b0d",
+    "platform/stm32f407/board/explorer_reference/explorer_reference.c": "cccabed3981877d56c47fa2fc832fa171532d85d0d2cc9ea73c115e6f6c38d3b",
     "platform/stm32f407/board/explorer_reference/explorer_reference.h": "b9e907fb2a0736f46fed4be368d788468ac37a7e985edbe8b30bea5a43e803a3",
     "platform/stm32f407/board/explorer_reference/stm32f4xx_hal_conf.h": "1607b14b6305ccb3f1c35c23a2adc319a6a7024ace94fc3d352d4f3d5a2f2066",
     "platform/stm32f407/examples/board_hal_binding.c": "201990a31dd2c76a635419274872667112dc79874c4c282d0bbf0c19b5151f0c",
     "platform/stm32f407/examples/board_hal_user.h": "19a0933271a2f89feaa47f459a1f2c104ffffa774d2e9bc8d062989c4b96158c",
-    "platform/stm32f407/examples/w25q128_hal_user.c": "4bc13496ca0c76efa01c92023486d49a78d6310f037f80dfecc691fc4575e10d",
+    "platform/stm32f407/examples/w25q128_hal_user.c": "57e5b43ec8857b22894e88176636a815a7953fc06550f9e7ca541773754b8997",
     "platform/stm32f407/include/ota_board.h": "9fd1b344479f3bcd147105c087e028af66bd208738b32e79539229690668ac69",
     "platform/stm32f407/include/ota_stm32.h": "5d57897a88b76ae345282abd2600250b72f9fd909d860a7ca40cf43568194b0a",
     "platform/stm32f407/src/stm32_arch.c": "c35f20bd80fdbb6f7c93ffba536f3988e34069751fb41a8688abb5c04ba7b91c",
@@ -70,7 +70,7 @@
     "src/core/signature.c": "15d55f8ce2e29d61368671aa292bb239b6e80cd2113f8ff58242eff99b9488b2",
     "src/core/uds.c": "d5abd86b69f8ecbe703b96150cca414638c9b08cc194289b7a14c23330db173e",
     "src/core/watchdog_policy.c": "60e34b515494e54df2769fe5bd1f2ad52a84692f4829b45d2cd3f8088d1c5450",
-    "src/driver/spi_nor.c": "f13cbfa3c0ddc4dd40ac69a6f42c4878229cc5902e701930b0f4291a0abfc3bd",
+    "src/driver/spi_nor.c": "93fff6fd100f05fdabcc53e15f8066fcd9bfe61ac16e4c22cb8473ef804f1fe2",
     "src/port/host/flash_ram.c": "7592fbe03e1fbe0940ab00f96a36c80c817e07525d06595d80637dacd6214803",
     "src/port/host/flash_ram.h": "f4452bfe846f79839146ed6771356e89f0aa605fbcfae960b01b8c5d4dd21f73",
     "tests/bench.c": "0e20f665454cf9b01c0a4fb488ff3c707e95fcbff169ccab45edac1df91fadcb",
@@ -89,7 +89,7 @@
     "tests/test_uds_bounds.c": "db1d6f05b5fc8a92735c5d0c6056ccc281d926eb6034f7162e797c595be677b6",
     "tests/test_util.h": "0523a750b96b3a600ec89889d6be2b8197bbe95a740b93534bdf01f43812da8b",
     "tests/test_watchdog.c": "294759724a3ca24d696b6e789892c98db83c66a8c836005ba88914a020fd7d82",
-    "tests_driver/test_spi_nor.c": "da8cd5e19db4b7871c47b35707f9bfdfb692d40cdded89d57761a9f938739c0d",
+    "tests_driver/test_spi_nor.c": "c0e1c161d152d3fd572b8a951433702fa6768357392f5e818df4754ca44185c5",
     "tests_firmware/test_app.c": "a45f8a55b6827ce6ed91a3e5ed0274111a35c7e709e1270f80a296ecfc8a9480",
     "tests_firmware/test_explorer_loopback.c": "10380806fc06e4b933b7875a303163451441d7108895db8766d55da88ff27b2a",
     "tests_pc/test_pc.py": "8a9301a8eb41afacbb398332f9877eca3e3d900efd68089fbdebfb2661438403",
@@ -186,7 +186,7 @@
     "hardware_verified": false
   },
   "nor": {
-    "checks": 720,
+    "checks": 740,
     "failures": 0,
     "chip_profile": "W25Q128JV-IQ/JQ EF4018",
     "evidence": "SPI command fixture",
@@ -400,15 +400,15 @@
         "linked": true,
         "image": {
           "flash_base": "0x8000000",
-          "flash_bytes": 43912,
+          "flash_bytes": 43984,
           "flash_limit": "0x8010000",
           "ram_bytes_with_reserved_stack": 13200,
           "initial_sp": "0x20020000",
-          "reset_vector": "0x80096dd",
-          "elf_entry": "0x80096dd"
+          "reset_vector": "0x8009725",
+          "elf_entry": "0x8009725"
         },
         "hardware_verified": false,
-        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  43900\t     12\t  13188\t  57100\t   df0c\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZG_uart_READONLY\\explorer_ZG_uart_READONLY.elf"
+        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  43972\t     12\t  13188\t  57172\t   df54\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZG_uart_READONLY\\explorer_ZG_uart_READONLY.elf"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
@@ -432,23 +432,23 @@
         "linked": true,
         "image": {
           "flash_base": "0x8000000",
-          "flash_bytes": 43912,
+          "flash_bytes": 43984,
           "flash_limit": "0x8010000",
           "ram_bytes_with_reserved_stack": 13200,
           "initial_sp": "0x20020000",
-          "reset_vector": "0x80096dd",
-          "elf_entry": "0x80096dd"
+          "reset_vector": "0x8009725",
+          "elf_entry": "0x8009725"
         },
         "hardware_verified": false,
-        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  43900\t     12\t  13188\t  57100\t   df0c\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZE_uart_READONLY\\explorer_ZE_uart_READONLY.elf"
+        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  43972\t     12\t  13188\t  57172\t   df54\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZE_uart_READONLY\\explorer_ZE_uart_READONLY.elf"
       }
     ],
     "artifacts": [
       {
         "target": "explorer_ZG_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.elf",
-        "bytes": 1238084,
-        "sha256": "3b806fb5654daba92d73a42e235057006ca47a5d34059fb6f2a1a3993e0d840b"
+        "bytes": 1238592,
+        "sha256": "c5e1c2e2daf845b1c33817a4e890afcb0d56786ed289dd17349f8f7e5830d64e"
       },
       {
         "target": "explorer_ZG_loopback_READONLY",
@@ -459,32 +459,32 @@
       {
         "target": "explorer_ZG_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.map",
-        "bytes": 609227,
-        "sha256": "adf24707cb21601d26cd14e60384bfb582e4873900a0a376097eaf9cb28cf07c"
+        "bytes": 609383,
+        "sha256": "83d62723d1bcf8e45868851bf272cc8ff9e7d2c1a355abfb928ac838c661b79c"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.elf",
-        "bytes": 1501712,
-        "sha256": "7eb4e49821587d29c2e2d9d13ca811c7c5645e1c184626ed0fa6159d3d16a353"
+        "bytes": 1502264,
+        "sha256": "bd23a23061b4f2fc0beef20e73c72d0a8636656e6e3de5903aedda28ae95ef1b"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.bin",
-        "bytes": 43912,
-        "sha256": "796c5cdcefd95e077ab00fa49a2c21c981fd56d29288d73a35b2b31737e027a6"
+        "bytes": 43984,
+        "sha256": "3ea9db36a5fecf86e779a9085f5934769b8ce5e292d9c09b1609663850a86d2d"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.map",
-        "bytes": 598406,
-        "sha256": "bb9937c3e13e083c87be308082a7946920db0f029e7764643252eeaf966b1aa9"
+        "bytes": 598655,
+        "sha256": "45604c209bb3f7b75bc88eae1d1b4692ae08c0c37f5d16931e936f2e245a8d69"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.elf",
-        "bytes": 1238084,
-        "sha256": "08f0f353aaa04a6bebc9a4935dadf1279995b8b45b021c759ba79c10ae0be430"
+        "bytes": 1238592,
+        "sha256": "3d6d68ec7cd0355c8cb45be693b4a48616928f21697f2f7733831ec6871f7f6b"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
@@ -495,26 +495,26 @@
       {
         "target": "explorer_ZE_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.map",
-        "bytes": 609227,
-        "sha256": "1a377ae7c1632a64e9fbd824654308cea99bdb7a9b017708b91ca1764106ffff"
+        "bytes": 609383,
+        "sha256": "bf1d9095c2f1f684783f0516558e935c847d7f56ebda215094fd4424bb0e1799"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.elf",
-        "bytes": 1501704,
-        "sha256": "f18d70d97a5df9a6b40b1c8771c8f56dbeff563126090c9a20ed957fc1179b2b"
+        "bytes": 1502260,
+        "sha256": "2893f0015bb33587b60dd040cd40df383d7374545a0a3274b3b20778be7e427c"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.bin",
-        "bytes": 43912,
-        "sha256": "01b63937b3f3fcce4e20e7cb169ed6596200d3da29c87b598770966ea12653e2"
+        "bytes": 43984,
+        "sha256": "6ba25569ad3b0e5f4d58bda484bf01aff248d20262d344545d3074b690444a85"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.map",
-        "bytes": 598406,
-        "sha256": "b988db550945f282e7b8869a9325f5e78e6efa9d2b0f95395a54fde84bed21a1"
+        "bytes": 598655,
+        "sha256": "7cdb33e23adb77169302895c02a3bd812f310f657a88a7e1e8f3abe2d39c44d6"
       }
     ],
     "validated_source_hashes": {
@@ -540,7 +540,7 @@
       "include/ota/ota_port.h": "c839449762eb1eff66ec8b3055090ecf4814c13d0240b0d0224207349639d587",
       "include/ota/pubkey.h": "67b5b989f439d9869fb13b25be70dd571988f6297907a9f17be1147b1e88802b",
       "include/ota/signature.h": "62aa856f4fb9778dbdd5c90029b802ea7510306f766777d19c8e22a07c5fd61e",
-      "include/ota/spi_nor.h": "2c1ca1733f313aadc9ecd5eadaa82a8f74567a65ef388b898644a9b573c864b6",
+      "include/ota/spi_nor.h": "835c1afe3f44620db87e8169472eaccc9306125d696a0ea15c24a44a0e7ac47b",
       "include/ota/uds.h": "ed59dabc89015f48238278ca5b3027bb7775af98f33cd7372ee7950992986077",
       "include/ota/watchdog_policy.h": "9c2aa995a01dd523170e923dabfc410b52fec93f0f0b0bdd985b1b533b981181",
       "Makefile": "98478e9e3ec6eafbe1ab5cf3bb5413eae6d8d64fc56ba8f7cb4c8d5e6cd35916",
@@ -549,12 +549,12 @@
       "mdk/explorer_readonly.uvprojx": "c253639a8f851e301e500da9a49186898236bc4f6891f991e846feeeac552036",
       "platform/stm32f407/board/board_unconfigured.c": "f875f31250ebbd3a961b5e5a00cc394c79810036357eb2458d7f082ab54f43cb",
       "platform/stm32f407/board/explorer_reference/explorer_interrupts.c": "40f251b4492ef036172b692faf1b209a675d4eb444095d7cb943017402f995ea",
-      "platform/stm32f407/board/explorer_reference/explorer_reference.c": "71788007d505cb168ca03d8a0d3f00c8d35b2ad3e69b9129020be8ba270c1b0d",
+      "platform/stm32f407/board/explorer_reference/explorer_reference.c": "cccabed3981877d56c47fa2fc832fa171532d85d0d2cc9ea73c115e6f6c38d3b",
       "platform/stm32f407/board/explorer_reference/explorer_reference.h": "b9e907fb2a0736f46fed4be368d788468ac37a7e985edbe8b30bea5a43e803a3",
       "platform/stm32f407/board/explorer_reference/stm32f4xx_hal_conf.h": "1607b14b6305ccb3f1c35c23a2adc319a6a7024ace94fc3d352d4f3d5a2f2066",
       "platform/stm32f407/examples/board_hal_binding.c": "201990a31dd2c76a635419274872667112dc79874c4c282d0bbf0c19b5151f0c",
       "platform/stm32f407/examples/board_hal_user.h": "19a0933271a2f89feaa47f459a1f2c104ffffa774d2e9bc8d062989c4b96158c",
-      "platform/stm32f407/examples/w25q128_hal_user.c": "4bc13496ca0c76efa01c92023486d49a78d6310f037f80dfecc691fc4575e10d",
+      "platform/stm32f407/examples/w25q128_hal_user.c": "57e5b43ec8857b22894e88176636a815a7953fc06550f9e7ca541773754b8997",
       "platform/stm32f407/include/ota_board.h": "9fd1b344479f3bcd147105c087e028af66bd208738b32e79539229690668ac69",
       "platform/stm32f407/include/ota_stm32.h": "5d57897a88b76ae345282abd2600250b72f9fd909d860a7ca40cf43568194b0a",
       "platform/stm32f407/src/stm32_arch.c": "c35f20bd80fdbb6f7c93ffba536f3988e34069751fb41a8688abb5c04ba7b91c",
@@ -586,7 +586,7 @@
       "src/core/signature.c": "15d55f8ce2e29d61368671aa292bb239b6e80cd2113f8ff58242eff99b9488b2",
       "src/core/uds.c": "d5abd86b69f8ecbe703b96150cca414638c9b08cc194289b7a14c23330db173e",
       "src/core/watchdog_policy.c": "60e34b515494e54df2769fe5bd1f2ad52a84692f4829b45d2cd3f8088d1c5450",
-      "src/driver/spi_nor.c": "f13cbfa3c0ddc4dd40ac69a6f42c4878229cc5902e701930b0f4291a0abfc3bd",
+      "src/driver/spi_nor.c": "93fff6fd100f05fdabcc53e15f8066fcd9bfe61ac16e4c22cb8473ef804f1fe2",
       "src/port/host/flash_ram.c": "7592fbe03e1fbe0940ab00f96a36c80c817e07525d06595d80637dacd6214803",
       "src/port/host/flash_ram.h": "f4452bfe846f79839146ed6771356e89f0aa605fbcfae960b01b8c5d4dd21f73",
       "tests/bench.c": "0e20f665454cf9b01c0a4fb488ff3c707e95fcbff169ccab45edac1df91fadcb",
@@ -605,7 +605,7 @@
       "tests/test_uds_bounds.c": "db1d6f05b5fc8a92735c5d0c6056ccc281d926eb6034f7162e797c595be677b6",
       "tests/test_util.h": "0523a750b96b3a600ec89889d6be2b8197bbe95a740b93534bdf01f43812da8b",
       "tests/test_watchdog.c": "294759724a3ca24d696b6e789892c98db83c66a8c836005ba88914a020fd7d82",
-      "tests_driver/test_spi_nor.c": "da8cd5e19db4b7871c47b35707f9bfdfb692d40cdded89d57761a9f938739c0d",
+      "tests_driver/test_spi_nor.c": "c0e1c161d152d3fd572b8a951433702fa6768357392f5e818df4754ca44185c5",
       "tests_firmware/test_app.c": "a45f8a55b6827ce6ed91a3e5ed0274111a35c7e709e1270f80a296ecfc8a9480",
       "tests_firmware/test_explorer_loopback.c": "10380806fc06e4b933b7875a303163451441d7108895db8766d55da88ff27b2a",
       "tests_pc/test_pc.py": "8a9301a8eb41afacbb398332f9877eca3e3d900efd68089fbdebfb2661438403",

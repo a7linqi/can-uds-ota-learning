@@ -138,6 +138,26 @@ int nor_spi_program_page(nor_spi_t *d,uint32_t address,const uint8_t *data,uint3
     if(result) return result;
     return memcmp(previous,data,n) ? fault(d,NOR_ERR_VERIFY) : 0;
 }
+/* The UDS download path appends request-sized chunks, and 0x34 advertises
+ * UDS_MAX_DOWNLOAD_BLOCK (512) as maxNumberOfBlockLength. A 510-byte chunk
+ * spans a page boundary, and 0x02 wraps inside the page instead of advancing
+ * into the next one, so a single program command would silently overwrite the
+ * page start. Split here rather than reject: the length the ECU advertises has
+ * to be a length the ECU can actually accept. */
+int nor_spi_write(nor_spi_t *d,uint32_t address,const uint8_t *data,uint32_t n)
+{
+    uint32_t chunk;
+    int result;
+    if(!data || !valid(d,address,n)) return NOR_ERR_ARGUMENT;
+    while(n) {
+        chunk=NOR_PAGE_BYTES-(address%NOR_PAGE_BYTES);
+        if(chunk>n) chunk=n;
+        result=nor_spi_program_page(d,address,data,chunk);
+        if(result) return result;
+        address+=chunk; data+=chunk; n-=chunk;
+    }
+    return 0;
+}
 int nor_spi_erase_sector(nor_spi_t *d,uint32_t address)
 {
     uint8_t command[4],readback[256];

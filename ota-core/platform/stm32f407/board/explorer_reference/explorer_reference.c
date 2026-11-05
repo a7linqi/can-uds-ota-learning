@@ -335,14 +335,18 @@ int ota_user_quiesce_peripherals(void)
 }
 /* The driver owns WREN/WEL, WIP polling, readback and the protected-state
  * refusal. It never runs unless probe succeeded and storage_verified allowed
- * the caller to exist at all; a fault inside the driver clears ready. */
+ * the caller to exist at all; a fault inside the driver clears ready.
+ * The program hook takes nor_spi_write, not nor_spi_program_page: UDS 0x34
+ * advertises a 512-byte block, so 0x36 hands down up to 510 bytes at a time and
+ * that crosses the 256-byte page boundary. 0x02 wraps inside a page rather than
+ * advancing, so a single command would quietly overwrite the page start. */
 #if OTA_EXPLORER_NOR_WRITE
 int ota_user_nor_read(uint32_t a,uint8_t *p,uint32_t n)
 { return nor.ready?nor_spi_read(&nor,a,p,n):-1; }
 int ota_user_nor_erase_4k(uint32_t a)
 { return nor.ready?nor_spi_erase_sector(&nor,a):-1; }
 int ota_user_nor_page_program(uint32_t a,const uint8_t *p,uint32_t n)
-{ return nor.ready?nor_spi_program_page(&nor,a,p,n):-1; }
+{ return nor.ready?nor_spi_write(&nor,a,p,n):-1; }
 #else
 int ota_user_nor_read(uint32_t a,uint8_t *p,uint32_t n)
 { (void)a;(void)p;(void)n;return -1; }

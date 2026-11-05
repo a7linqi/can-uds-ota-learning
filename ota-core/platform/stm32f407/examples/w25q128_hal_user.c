@@ -64,4 +64,4 @@ int ota_user_nor_read(uint32_t address,uint8_t *out,uint32_t n)
 int ota_user_nor_erase_4k(uint32_t address)
 { return nor_spi_erase_sector(&chip,address); }
 int ota_user_nor_page_program(uint32_t address,const uint8_t *data,uint32_t n)
-{ return nor_spi_program_page(&chip,address,data,n); }
+{ return nor_spi_write(&chip,address,data,n); }

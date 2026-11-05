@@ -44,5 +44,9 @@ int nor_spi_init(nor_spi_t *d,const nor_spi_bus_t *bus,const nor_spi_limits_t *l
 int nor_spi_probe(nor_spi_t *d); /* reads only; no reset/unlock/status-register write */
 int nor_spi_read(nor_spi_t *d,uint32_t address,uint8_t *out,uint32_t n);
 int nor_spi_program_page(nor_spi_t *d,uint32_t address,const uint8_t *data,uint32_t n);
+/* Same as program_page but splits on page boundaries, for callers whose chunk
+ * size is decided elsewhere (UDS 0x36). program_page itself stays strict:
+ * a caller that must not cross a page deserves an error, not a surprise. */
+int nor_spi_write(nor_spi_t *d,uint32_t address,const uint8_t *data,uint32_t n);
 int nor_spi_erase_sector(nor_spi_t *d,uint32_t address);
 #endif
