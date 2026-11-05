@@ -2,7 +2,9 @@
 
 当前交付 **v0.13 + 实机写入阶段**：在 C 升级核心、PC 工具、STM32 适配层和探索者参考 BSP 上，完成升级包签名边界及下载/安装/恢复路径复核，补齐实际 python-can 虚拟后端的签名回归。2026-11-02 已通过实物 SWD 识别系列 ID 0x413、1 MiB 内部 Flash，匹配 ZG 容量配置。2026-11-04 新增 CAN-over-UART 台架链路：平台层 `ota_stm32_link_t` 可替换，PC 端 `--backend uart` 复用同一套 ISO-TP/UDS 客户端。
 
-2026-11-05 起实机状态（详见 [参考板文档](docs/EXPLORER_REFERENCE.md)，机器可读的 `evidence/verification.json` 仍保守写 `hardware_verified=false`）：只读镜像在板上冷启动，驱动干读 256 B 的 CRC32 与离线金标同段一致；双开镜像经 `0x34`/`0x36` 真实擦写外部 NOR（1 MiB 槽，4 KiB 载荷跨页下发），判决用器件自算的整片 CRC32 而非主机回执；恢复固件支持按块定向修回，写坏一块到修回约 77 s。**应用跳转、断电中断和真实 CAN 总线仍未执行**：bootloader 尚未安装过 App，USB-CAN 硬件未到位。默认 Bootloader/App 仍使用未配置 BSP。四套 GNU ELF/BIN 已重新构建并验证；Keil 链接器在本环境仍有启动错误。
+2026-11-05 起实机状态（详见 [参考板文档](docs/EXPLORER_REFERENCE.md)，机器可读的 `evidence/verification.json` 仍保守写 `hardware_verified=false`）：只读镜像在板上冷启动，驱动干读 256 B 的 CRC32 与离线金标同段一致；双开镜像经 `0x34`/`0x36` 真实擦写外部 NOR（1 MiB 槽，4 KiB 载荷跨页下发），判决用器件自算的整片 CRC32 而非主机回执；恢复固件支持按块定向修回，写坏一块到修回约 77 s。
+
+同一天下午补完了最后一段，并且是在实物上：loader 通过产品 UDS 路径收下**合法签名的 IMG2**，`0x37` 验签、`0x11` 复位后自行擦写 960 KiB 内部 Flash、安装、进入 TRIAL、跳转到 0x08010000；App 运行 500 ms 后确认健康，元数据转 COMMITTED/IDLE。内部 Flash 读回的 20284 字节与构建产物 SHA256 相同。下载+验签 27.4 s，安装到跳转 8.1 s。重复了一次（version 2）。仍未执行：**真实拔电中断、真实 CAN 总线（USB-CAN 未到货）、从运行中的 App 请求进入编程会话的入口**。默认 Bootloader/App 仍使用未配置 BSP。
 
 ## 从这里运行
 
@@ -43,8 +45,8 @@ TinyCC 自动使用 -run，在编译器进程中执行原生 C；GCC/Clang 会�
 | 项目 | 结果 |
 |---|---|
 | 原始 L1 基线 | 236 个 C 断言，0 失败 |
-| F407ZG / 1 MiB 核心 | 3164 个 C 断言，0 失败 |
-| F407ZE / 512 KiB 核心 | 3164 个 C 断言，0 失败 |
+| F407ZG / 1 MiB 核心 | 3385 个 C 断言，0 失败 |
+| F407ZE / 512 KiB 核心 | 3385 个 C 断言，0 失败 |
 | 每种容量的存储故障场景 | 420 个主机模型场景 |
 | PC→C 与客户端边界 | 45 个 unittest 用例，0 失败 |
 | 实际 python-can 4.6.1 虚拟总线→C | 7 个用例，0 失败；包括签名升级和拒绝路径，不连接 USB-CAN |
@@ -54,6 +56,7 @@ TinyCC 自动使用 -run，在编译器进程中执行原生 C；GCC/Clang 会�
 | Cortex-M4 C 对象 | ZG/ZE × Bootloader/App，4 组各 27 个对象 |
 | Python 打包/签名工具 | 22 个用例；另有 8 组 Python 包→C 校验互操作检查 |
 | UART 台架线格式 | 6 个 unittest 用例；C/Python 使用同一字节向量 |
+| 完整升级链路（实机，UART 台架） | 2 次成功；内部镜像读回 SHA256 与构建产物相同 |
 
 420 个场景包括元数据 69、应用确认 69、下载 76、安装 130、回滚 76。Flash 在每次持久化调用的开始/中间/末尾采样，没有遍历全部镜像的每个字节。断言数、Python 用例数、注入点数不是同一种口径，不能合计成统一“用例数”。这些都不代表物理断电次数。
 

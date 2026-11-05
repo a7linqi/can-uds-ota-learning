@@ -97,8 +97,8 @@ def main():
     # A mismatched target must be rejected at compile time, not silently enable writes.
     checks = []
     for flag, needle in (("OTA_ENABLE_FLASHING", "read-only"),
-                         ("OTA_ENABLE_BOOT_HANDOFF", "no application handoff"),
-                         ("OTA_ENABLE_WATCHDOG", "no application handoff")):
+                         ("OTA_ENABLE_BOOT_HANDOFF", "OTA_EXPLORER_HANDOFF_CAPABLE"),
+                         ("OTA_ENABLE_WATCHDOG", "no watchdog yet")):
         rejected = [x for x in common if not x.startswith("-D" + flag + "=")]
         rejected += ["-D" + flag + "=1", "-fsyntax-only", str(board / "explorer_reference.c")]
         run = subprocess.run(rejected, cwd=ROOT, capture_output=True, text=True, timeout=30)
@@ -147,6 +147,23 @@ def main():
                     "-DOTA_EXPLORER_NOR_WRITE=0"], False, "NOR write hooks")
     variants += ["update-capable build accepted", "engine switch alone rejected",
                  "board switch alone rejected", "update-capable without write hooks rejected"]
+    # Stage D added a loader role. Each of its doors is checked alone, because
+    # the whole point is that no single switch can turn installation on.
+    engine_variant(["-DOTA_ENABLE_FLASHING=1", "-DOTA_EXPLORER_UPDATE_CAPABLE=1",
+                    "-DOTA_ENABLE_BOOT_HANDOFF=1", "-DOTA_EXPLORER_HANDOFF_CAPABLE=1",
+                    "-DOTA_EXPLORER_BOOT_ROLE=1"], True)
+    engine_variant(["-DOTA_ENABLE_FLASHING=1", "-DOTA_EXPLORER_UPDATE_CAPABLE=1",
+                    "-DOTA_ENABLE_BOOT_HANDOFF=1"], False, "OTA_EXPLORER_HANDOFF_CAPABLE")
+    engine_variant(["-DOTA_ENABLE_BOOT_HANDOFF=1", "-DOTA_EXPLORER_HANDOFF_CAPABLE=1"],
+                   False, "must also be able to write the NOR")
+    engine_variant(["-DOTA_ENABLE_FLASHING=1", "-DOTA_EXPLORER_UPDATE_CAPABLE=1",
+                    "-DOTA_ENABLE_BOOT_HANDOFF=1", "-DOTA_EXPLORER_HANDOFF_CAPABLE=1",
+                    "-DOTA_EXPLORER_STORAGE_TRUSTED=0"], False, "does not trust its own storage")
+    engine_variant(["-DOTA_EXPLORER_BOOT_ROLE=3"], False, "BOOT_ROLE must be")
+    engine_variant(["-DOTA_EXPLORER_STORAGE_TRUSTED=1", "-DOTA_EXPLORER_BOOT_ROLE=2"], True)
+    variants += ["loader role accepted", "handoff without the board switch rejected",
+                 "handoff with a closed engine rejected", "handoff trusting nothing rejected",
+                 "unknown boot role rejected", "application role accepted"]
     (evidence / "explorer-nor-variants.txt").write_text("\n".join(variant_log), encoding="utf-8")
     report = dict(targets=entries, forbidden_gates_rejected=checks, nor_variant_compiles=variants,
                   physical_mode_loopback_entry_rejected=True, hardware_verified=False, target_linked=False)

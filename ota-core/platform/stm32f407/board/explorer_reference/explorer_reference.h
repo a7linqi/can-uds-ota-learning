@@ -53,8 +53,45 @@
 #if OTA_EXPLORER_UPDATE_CAPABLE && OTA_EXPLORER_NOR_WRITE != 1
 #error "An update-capable build needs the NOR write hooks compiled in"
 #endif
-#if OTA_ENABLE_BOOT_HANDOFF || OTA_ENABLE_WATCHDOG
-#error "Explorer reference bring-up targets have no application handoff or watchdog yet"
+/* Storage trust and flashing permission are two different questions.
+ *   OTA_EXPLORER_STORAGE_TRUSTED - the probe measured this board's NOR/EEPROM
+ *     and the numbers matched the layout, so metadata and image reads are real
+ *   OTA_EXPLORER_UPDATE_CAPABLE  - this build may hand the engine an erase and
+ *     program path
+ * They were fused while the only image on the board was the bring-up
+ * diagnostic. An application image needs the first without the second: it must
+ * read metadata and commit a TRIAL image, and it has no transport to accept a
+ * download with. Default keeps the old behaviour for every existing target. */
+#ifndef OTA_EXPLORER_STORAGE_TRUSTED
+#define OTA_EXPLORER_STORAGE_TRUSTED OTA_EXPLORER_UPDATE_CAPABLE
+#endif
+/* A handing-off loader is new territory for this reference binding, so it gets
+ * its own switch rather than relaxing the bring-up refusal. */
+#ifndef OTA_EXPLORER_HANDOFF_CAPABLE
+#define OTA_EXPLORER_HANDOFF_CAPABLE 0
+#endif
+#if OTA_ENABLE_BOOT_HANDOFF && !OTA_EXPLORER_HANDOFF_CAPABLE
+#error "Explorer reference targets have no application handoff unless OTA_EXPLORER_HANDOFF_CAPABLE=1"
+#endif
+#if OTA_ENABLE_BOOT_HANDOFF && !OTA_EXPLORER_UPDATE_CAPABLE
+#error "A loader that installs an image must also be able to write the NOR"
+#endif
+#if OTA_ENABLE_BOOT_HANDOFF && !OTA_EXPLORER_STORAGE_TRUSTED
+#error "A loader cannot install anything if it does not trust its own storage"
+#endif
+#if OTA_ENABLE_WATCHDOG
+#error "Explorer reference bring-up targets have no watchdog yet"
+#endif
+/* Which role this image plays at power-on. The binding, not the linker, owns
+ * the two hooks the product asks for.
+ *   0 = bring-up diagnostic: never hands off, never claims health
+ *   1 = loader: boot_select is allowed to reach the application
+ *   2 = application: reports healthy so boot_confirm can commit a TRIAL */
+#ifndef OTA_EXPLORER_BOOT_ROLE
+#define OTA_EXPLORER_BOOT_ROLE 0
+#endif
+#if OTA_EXPLORER_BOOT_ROLE != 0 && OTA_EXPLORER_BOOT_ROLE != 1 && OTA_EXPLORER_BOOT_ROLE != 2
+#error "OTA_EXPLORER_BOOT_ROLE must be 0 (diagnostic), 1 (loader) or 2 (app)"
 #endif
 #if OTA_EXPLORER_CAN_LOOPBACK != 0 && OTA_EXPLORER_CAN_LOOPBACK != 1
 #error "Select silent internal loopback (1) or normal physical CAN (0)"

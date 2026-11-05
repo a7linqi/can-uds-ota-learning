@@ -117,7 +117,7 @@ NOR program/erase hooks compiled in, update engine still gated
 eeprom_crc32=0x29058C73
 ```
 
-`0x0D968558` 与离线金标 `pass1.bin` 前 256 字节的 CRC32 相同，因此这条不是驱动自报，而是"器件内容与离线快照同段一致"。EEPROM 的 `0x29058C73` 与 2026-11-02 记录一致（内容 00..FF）。日志尾部明确写了写钩子已编入、但更新引擎仍被门控。
+`0x0D968558` 与离线金标 `pass1.bin` 前 256 字节的 CRC32 相同，因此这条不是驱动自报，而是"器件内容与离线快照同段一致"。EEPROM 的 `0x29058C73` 当时被当作"与 2026-11-02 记录一致"，**该推断已被推翻**：这个字段是结构指纹，不是内容指纹，见文末阶段 D 一节。日志尾部明确写了写钩子已编入、但更新引擎仍被门控。
 
 上板前已把内部 Flash 前 64 KiB 存为 `stages/board-lab/evidence/internal-flash-backup/20261105/internal-64k-before-explorer.bin`（65536 B，sha256 `cb367229…`）。
 
@@ -187,6 +187,75 @@ eeprom_crc32=0x29058C73
 真实擦写（阶段 B/C）与定向恢复。仅通过 SWD 写入的 NOR 备份 `pass1.bin`（CRC32 `0xA4188821`）
 仍是唯一金标。
 
-后续工作：完整签名包 → `0x31` → `0x11` 的安装路径（阶段 D，会真正进 `TRIAL`/`COMMITTED`）、
-EEPROM 元数据恢复工具（目前 `UPDATE_DOWNLOADING` 无法回退）、断电中断验证、实机吞吐与
-真实 CAN 总线。`storage_verified` 已由运行时探测推出，但签名与断电路径仍未验证。
+后续工作：断电中断验证、实机吞吐与真实 CAN 总线、从运行中的 App 请求进入编程会话的入口。
+`storage_verified` 已由运行时探测推出，签名与安装路径已上板（见下节），断电路径仍未验证。
+
+## 2026-11-05 阶段 D：合法签名包装进内部 Flash 并跳转
+
+前几阶段用的都是故意非法的包，`0x37` 必然拒绝。阶段 D 换成真正的签名包，把最后一段走完。
+
+### 两个镜像
+
+| 镜像 | 链接地址 | 角色宏 | 开关 | 大小 |
+|---|---|---|---|---|
+| loader | `0x08000000`（64 KiB） | `OTA_EXPLORER_BOOT_ROLE=1` | FLASHING=1, UPDATE_CAPABLE=1, STORAGE_TRUSTED=1, BOOT_HANDOFF=1, HANDOFF_CAPABLE=1 | 46836 B |
+| app | `0x08010000`（960 KiB） | `OTA_EXPLORER_BOOT_ROLE=2` | FLASHING=0, UPDATE_CAPABLE=0, STORAGE_TRUSTED=1, BOOT_HANDOFF=0 | 20284 B |
+
+板级文件新增三个开关，默认值保持旧行为，八个既有目标一个字节都没变：
+
+- `OTA_EXPLORER_STORAGE_TRUSTED`："这份探测量到的存储可信"。默认等于 `OTA_EXPLORER_UPDATE_CAPABLE`。
+  与"允许擦写"分开，是因为 App 需要读元数据并提交 TRIAL，却没有传输层去接下载。
+- `OTA_EXPLORER_HANDOFF_CAPABLE`：允许 `OTA_ENABLE_BOOT_HANDOFF=1`。三扇门任一单独打开都仍是 `#error`
+  （没板级开关、没开 FLASHING、没声明存储可信），`run_explorer_checks.py` 现在的 6 个新变体逐个验证这一点。
+- `OTA_EXPLORER_BOOT_ROLE`：0 诊断台（永不跳转）、1 loader（可跳）、2 应用（宣告健康）。
+  两个 hook `ota_user_force_loader` / `ota_user_app_healthy` 由这个宏决定，不再硬编码。
+
+GNU 链接脚本 `firmware/linker/app_boot.ld` 断言向量表就在 `0x08010000`。
+
+### 实测时间线（第二遍，version 2）
+
+| 阶段 | 耗时 |
+|---|---|
+| `34 00 44 08010000 00004F9C` 擦 1 MiB 外部槽 | **13.78 s** |
+| `36` × 40 帧（510×39 + 490） | 13.2 s（每帧 0.31–0.34 s） |
+| `37` 验签 20380 B | 0.22 s |
+| `31 01 00 01` | 0.16 s |
+| `11 01` → 复位，`boot_select` 擦 960 KiB 内部 Flash + 装 20284 B | **8.13 s** |
+| 跳转到 App 并打印首行 | 复位后 8.27 s |
+
+`22 02 00` 在 `0x37` 之后读到 `state=READY`、`pending_version=2`、`pending_size=0x4F3C`、
+`pending_crc=0x32EC9BA9`——与包头的 payload CRC 完全一致。
+
+### 硬证据
+
+- 从 `0x08010000` 读回 20284 字节，SHA256 `654eb54cd009d24dc136b5424b5a7e0c1a306195c9de4e8675d939eadb960ab1`，
+  与 `build-temp/stage-d/app/app.bin` 逐字节相同。
+- 复位后 loader 先跑一次，`0x11` 那次 0.06 s 内做出选择、0.14 s App 已在跑；**INSTALLING 只在第一次出现**。
+- App 运行 500 ms 后 `boot_accept_app_health` → `boot_confirm`，元数据转 `state=IDLE`、
+  `active_version=1`、`active_size=20284`、`active_crc=0x32EC9BA9`、`min_version=1`。
+- 之后每次复位：`loader: selecting boot target` → `loader: handing off` 都在 0.08 s 内，没有重新安装。
+
+### 这一阶段挖出来的两个缺口（未修）
+
+1. **没有从 App 回 loader 的入口**。一旦元数据是 `IDLE` 且内部镜像有效，`boot_select` 每次都直接跳 App；
+   运行中的 App 不提供 UDS 服务，于是第二次升级没有起点。真实产品用"App 收到 `10 02` 置请求标志再复位"
+   或独立唤醒线，这里都还没有。
+2. **`active_size!=0` 但内部镜像已损坏时，READY 永远前进不了**：`create_backup` 先 `active_ok`，
+   失败就 `goto done`，即使待装的新包完全合法。旧版本已经没了，正确做法应该是跳过备份直接安装。
+   这两条都只记录，没有在本轮改动行为。
+
+### 一并推翻的旧结论：`eeprom_crc32` 不是内容指纹
+
+上板日志里 `eeprom_crc32` 在 `UPDATE_DOWNLOADING`、`READY`、`TRIAL`、`IDLE` 四种状态下都是
+`0x316AB2D3`，一度被当成"读到了陈旧快照"。实际原因是 CRC 的一个性质：
+
+> 对固定长度的 m，`CRC32(m ‖ CRC32(m))` 是常数。
+
+两份元数据记录各自带着前 56 字节的 CRC，整块 256 字节的 CRC 于是只反映"两条自洽记录是否存在"。
+主机上枚举 `(9,10)`、`(12,13)`、`(13,14)`、`(21,22)` 四组 seq 全部得到 `0x316AB2D3`；
+改动记录内的 CRC 字段就变成 `0x07318294`。所以 2026-11-02 记的"`0x29058C73` 与上次一致"
+**不构成任何内容一致的证据**，该字段只能回答"结构自洽"。BSP 注释已写明。
+
+另外 6 次复位里有 2 次 `EEPROM read failed`（`eeprom_status=1`，CRC=0）。其中一次紧跟在
+一次 `metadata_save` 之后被 SWD 复位打断，怀疑从机停在半个字节里拉低 SDA；原因未定位，
+但两次都停在 loader（安全方向），没有出现写坏元数据。分块读并未改善，因此未改产品读法。

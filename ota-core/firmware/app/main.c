@@ -5,6 +5,9 @@ static ota_stm32_ports_t storage;
 int ota_firmware_watchdog_service(void) { return 0; }
 int ota_firmware_service(void) { return ota_stm32_storage_service(&storage); }
 void ota_user_uart_rx(uint8_t byte) { (void)byte; }
+/* The board binding fan-outs the CAN FIFO to whichever main is linked in. The
+ * application has no diagnostic transport, but the hook still has to resolve. */
+void ota_bootloader_can_rx(const can_frame_t *frame) { (void)frame; }
 int main(void)
 {
     ota_board_config_t config;

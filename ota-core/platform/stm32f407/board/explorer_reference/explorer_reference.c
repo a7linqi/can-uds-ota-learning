@@ -209,6 +209,14 @@ static void read_storage_identity(void)
         if(!id || id==0xFFFFFFu) ota_explorer_probe.jedec_status=-1;
     }
     memset(ota_explorer_probe.eeprom,0xFF,sizeof ota_explorer_probe.eeprom);
+    /* One 256-byte transfer. Do not read this CRC as a content fingerprint:
+     * both metadata records carry their own CRC, and CRC(m || CRC(m)) is a
+     * constant for a fixed-length m. Four different (seq, state) pairs all
+     * hash to 0x316AB2D3; flipping one record's own CRC byte changes it.
+     * It answers "two self-consistent records are present", nothing more.
+     * It also failed outright on 2 of 6 resets on 2026-11-05 (eeprom_status=1),
+     * cause unknown; a reset issued during an EEPROM write left the bus stuck
+     * for at least one boot. */
     status=HAL_I2C_Mem_Read(&i2c1,0x50u<<1,0u,I2C_MEMADD_SIZE_8BIT,
                            ota_explorer_probe.eeprom,sizeof ota_explorer_probe.eeprom,100u);
     ota_explorer_probe.eeprom_status=status==HAL_OK?0:-1;
@@ -290,9 +298,10 @@ void ota_user_config(ota_board_config_t *config)
         config->eeprom_page_bytes=8u;
     }
     /* A successful probe proves the bus, not the wear policy or the restore
-     * plan. Only a build that also declares OTA_EXPLORER_UPDATE_CAPABLE may
-     * translate the probe into an authorization for the update engine. */
-#if OTA_EXPLORER_UPDATE_CAPABLE
+     * plan. OTA_EXPLORER_STORAGE_TRUSTED is the operator saying this board's
+     * measured geometry may be believed; OTA_EXPLORER_UPDATE_CAPABLE is the
+     * separate permission to erase and program. */
+#if OTA_EXPLORER_STORAGE_TRUSTED
     config->storage_verified=(uint8_t)(nor.ready && nor.capacity_bytes>=EXT_FLASH_TOTAL_SIZE &&
         config->nor_page_bytes>0u && config->nor_erase_bytes==EXT_ERASE_SIZE &&
         config->eeprom_bytes==EEPROM_TOTAL_SIZE && config->eeprom_page_bytes==EEPROM_PAGE_SIZE);
@@ -322,8 +331,11 @@ void ota_user_log(const char *message)
     (void)HAL_UART_Transmit(&uart1,(uint8_t *)end,sizeof end,5u);
 }
 void ota_user_heartbeat(void) { if(initialized) HAL_GPIO_TogglePin(GPIOF,GPIO_PIN_9); }
-int ota_user_force_loader(void) { return 1; }
-int ota_user_app_healthy(void) { return 0; }
+/* The two handoff hooks are board policy, so the board file owns them rather
+ * than the linker script pretending to. A diagnostic image is pinned to the
+ * loader forever; a loader may jump; an application claims health. */
+int ota_user_force_loader(void) { return OTA_EXPLORER_BOOT_ROLE==1 ? 0 : 1; }
+int ota_user_app_healthy(void) { return OTA_EXPLORER_BOOT_ROLE==2 ? 1 : 0; }
 void ota_user_can_rx(const can_frame_t *frame) { ota_bootloader_can_rx(frame); }
 int ota_user_quiesce_peripherals(void)
 {

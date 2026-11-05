@@ -49,9 +49,17 @@ int main(void)
 #endif
     ota_stm32_ports_init(&storage,&config);
 #if OTA_ENABLE_BOOT_HANDOFF
-    if(storage.storage_ready && !ota_bsp_force_loader()) {
-        if(boot_select(&storage.boot,0)==BOOT_TARGET_APP)
+    /* A first install erases the 1 MiB backup slot in the NOR and 960 KiB of
+     * internal flash, so these lines are the only sign of life for ~30 s. */
+    if(!storage.storage_ready)
+        ota_bsp_log("loader: storage not ready, staying in the loader");
+    else if(!ota_bsp_force_loader()) {
+        ota_bsp_log("loader: selecting boot target");
+        if(boot_select(&storage.boot,0)==BOOT_TARGET_APP) {
+            ota_bsp_log("loader: handing off to the app at 08010000");
             (void)ota_stm32_jump_to_app(&storage);
+        }
+        ota_bsp_log("loader: staying in the loader");
     }
 #endif
     /* Bring-up first supports version reads even without storage drivers. */

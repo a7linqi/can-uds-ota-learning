@@ -46,7 +46,13 @@
     "update-capable build accepted",
     "engine switch alone rejected",
     "board switch alone rejected",
-    "update-capable without write hooks rejected"
+    "update-capable without write hooks rejected",
+    "loader role accepted",
+    "handoff without the board switch rejected",
+    "handoff with a closed engine rejected",
+    "handoff trusting nothing rejected",
+    "unknown boot role rejected",
+    "application role accepted"
   ],
   "physical_mode_loopback_entry_rejected": true,
   "hardware_verified": false,
