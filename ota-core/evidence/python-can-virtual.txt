@@ -8,6 +8,6 @@ test_tampered_signature_rejected (test_virtual.RealLibraryIntegration.test_tampe
 test_unsigned_cannot_replace_confirmed_app (test_virtual.RealLibraryIntegration.test_unsigned_cannot_replace_confirmed_app) ... ok
 
 ----------------------------------------------------------------------
-Ran 7 tests in 1.175s
+Ran 7 tests in 1.166s
 
 OK

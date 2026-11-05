@@ -7,13 +7,13 @@
   "hardware_verified": false,
   "signature_implemented": true,
   "1024": {
-    "checks": 3164,
+    "checks": 3328,
     "failures": 0,
     "storage_power_cut_scenarios": 420,
     "execution": "TinyCC native in-memory C"
   },
   "512": {
-    "checks": 3164,
+    "checks": 3328,
     "failures": 0,
     "storage_power_cut_scenarios": 420,
     "execution": "TinyCC native in-memory C"
