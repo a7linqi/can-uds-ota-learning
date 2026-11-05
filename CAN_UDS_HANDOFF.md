@@ -246,6 +246,14 @@ python tools/package_project.py --include-firmware --output "工程目录外的�
 5. `hardware_verified=false`、`keil_target_linked=false` 是机器可读矩阵的字段，不是"没上过板"：上板结果记录在本文件第 8 节与 `stages/board-lab/STAGE_D_EVIDENCE.md`。
 6. EEPROM 偶发读失败：**根因已定位并做了红绿对照（2026-11-05）**。根因是 24C02 在写中途被复位把 SDA 拉死、`HAL_I2C_Init` 无法产生 START；修法是初始化前的 9 时钟 + STOP。统计验证：去掉总线清除的红探针 **26 轮 25 次失败**，产品 loader 在同样的 0–64 ms 延迟扫描下 **40 轮 0 次失败**。证据 `stages/board-lab/EEPROM_STRESS_EVIDENCE.md`、`journal/entries/2026-11-05-eeprom-stress-red-green.md`。剩余边界：只扫了 App 的 `10 02` 写路径，OTA 事务写未单独扫描。
 
+7. **信任锚（RDP）已实机验证（2026-11-05 夜）**：同一段固件在 RDP0 下 SWD 可完整读出（sha256 `7b1e4f0c…`），
+   设 `RDP=1` 后同一命令 `Data read failed` 且不产出文件；RDP1 下板子照常启动、UDS 正常
+   （`IDLE/app/v20/seq 246`）。**注意测量陷阱**：RDP1 + 调试器附着会让内核停在 halt，
+   表现为串口静默，只有整板断电重启才看得出固件仍在运行。解锁 `-rdu` 整片擦除（16.265 s）
+   后重烧 loader + 走一次 v23 OTA 即恢复（内部逐字节 == 构建产物）。证据
+   `stages/board-lab/RDP_TRUST_ANCHOR_EVIDENCE.md`、`ota-core/docs/SECURITY_MODEL.md`。
+   **仍未做**：WRP（挡写）、RDP Level 2、OTP 单调版本计数器（挡降级重放）、故障注入防护。
+
 **2026-11-05 深夜补记（板子在线）**：状态遥测、门控探针与"可重复升级"三项已在实物上补齐。
 
 - 硅片：`Device ID 0x413`、`NVM 1 MBytes`、`Rev 2.0`、3.24 V；串口是 CH340 的 **COM9**。
