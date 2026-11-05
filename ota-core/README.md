@@ -1,6 +1,8 @@
 # 基于 CAN/UDS 的车载诊断与可靠固件更新平台
 
-当前交付 **v0.13 + UART 台架阶段**：在 C 升级核心、PC 工具、STM32 适配层和探索者参考 BSP 上，完成升级包签名边界及下载/安装/恢复路径复核，补齐实际 python-can 虚拟后端的签名回归。2026-11-02 已通过实物 SWD 识别系列 ID 0x413、1 MiB 内部 Flash，匹配 ZG 容量配置。2026-11-04 新增 CAN-over-UART 台架链路：平台层 `ota_stm32_link_t` 可替换，PC 端 `--backend uart` 复用同一套 ISO-TP/UDS 客户端；主机测试通过，**串口实机、真实擦写、跳转和断电均未执行**。默认 Bootloader/App 仍使用未配置 BSP；四个只读参考目标的写入、跳转和看门狗门控关闭。四套 GNU ELF/BIN 已重新构建并验证；Keil 链接器在本环境仍有启动错误。
+当前交付 **v0.13 + 实机写入阶段**：在 C 升级核心、PC 工具、STM32 适配层和探索者参考 BSP 上，完成升级包签名边界及下载/安装/恢复路径复核，补齐实际 python-can 虚拟后端的签名回归。2026-11-02 已通过实物 SWD 识别系列 ID 0x413、1 MiB 内部 Flash，匹配 ZG 容量配置。2026-11-04 新增 CAN-over-UART 台架链路：平台层 `ota_stm32_link_t` 可替换，PC 端 `--backend uart` 复用同一套 ISO-TP/UDS 客户端。
+
+2026-11-05 起实机状态（详见 [参考板文档](docs/EXPLORER_REFERENCE.md)，机器可读的 `evidence/verification.json` 仍保守写 `hardware_verified=false`）：只读镜像在板上冷启动，驱动干读 256 B 的 CRC32 与离线金标同段一致；双开镜像经 `0x34`/`0x36` 真实擦写外部 NOR（1 MiB 槽，4 KiB 载荷跨页下发），判决用器件自算的整片 CRC32 而非主机回执；恢复固件支持按块定向修回，写坏一块到修回约 77 s。**应用跳转、断电中断和真实 CAN 总线仍未执行**：bootloader 尚未安装过 App，USB-CAN 硬件未到位。默认 Bootloader/App 仍使用未配置 BSP。四套 GNU ELF/BIN 已重新构建并验证；Keil 链接器在本环境仍有启动错误。
 
 ## 从这里运行
 
@@ -46,7 +48,7 @@ TinyCC 自动使用 -run，在编译器进程中执行原生 C；GCC/Clang 会�
 | 每种容量的存储故障场景 | 420 个主机模型场景 |
 | PC→C 与客户端边界 | 45 个 unittest 用例，0 失败 |
 | 实际 python-can 4.6.1 虚拟总线→C | 7 个用例，0 失败；包括签名升级和拒绝路径，不连接 USB-CAN |
-| SPI 命令及 C 核心联合验证 | 720 个断言，含 31 个 SPI 传输失败注入点 |
+| SPI 命令及 C 核心联合验证 | 740 个断言，含 31 个 SPI 传输失败注入点和 5 个跨页拆分用例 |
 | STM32 端口，每种容量 | 默认门控 232 个断言；开启门控 298 个断言 |
 | App 真实入口与虚拟看门狗 | ZG/ZE 各 35 个断言、8 个场景 |
 | Cortex-M4 C 对象 | ZG/ZE × Bootloader/App，4 组各 27 个对象 |

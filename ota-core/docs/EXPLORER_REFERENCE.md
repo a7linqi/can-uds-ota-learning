@@ -86,9 +86,9 @@ python tools/build_explorer_gnu.py --gcc "你的arm-none-eabi-gcc路径" --dfp "
 | 只读目标 | BIN 长度（字节） | 初始 SP | Reset 向量 |
 |---|---:|---|---|
 | ZG 回环 | 16176 | 0x20020000 | 0x080033C9 |
-| ZG 串口台架 | 43912 | 0x20020000 | 0x080096DD |
+| ZG 串口台架 | 43984 | 0x20020000 | 0x08009725 |
 | ZE 回环 | 16172 | 0x20020000 | 0x080033C5 |
-| ZE 串口台架 | 43912 | 0x20020000 | 0x080096DD |
+| ZE 串口台架 | 43984 | 0x20020000 | 0x08009725 |
 
 这组数值对应本轮源代码与工具链。构建脚本检查 ELF32 ARM 格式、入口与 Reset 向量一致、Thumb 位、向量表起点、所有加载段、BIN 内容、64 KiB Flash 边界及主 SRAM 范围；链接脚本为栈保留 4 KiB。它没有测量真实运行时栈峰值。
 
@@ -105,7 +105,7 @@ python tools/build_explorer_gnu.py --gcc "你的arm-none-eabi-gcc路径" --dfp "
 
 ### 2026-11-05 上板实测（只读目标）
 
-ZG 串口台架镜像（43912 B）下载到 `0x08000000` 后一次冷启动，COM9 115200 抓到：
+ZG 串口台架镜像（当时 43912 B；加入 `nor_spi_write()` 后重建为 43984 B）下载到 `0x08000000` 后一次冷启动，COM9 115200 抓到：
 
 ```
 device_id=0x00000413      flash_bytes=0x00100000
@@ -125,7 +125,7 @@ eeprom_crc32=0x29058C73
 
 更新引擎的 `OTA_ENABLE_FLASHING` 与板级的 `OTA_EXPLORER_UPDATE_CAPABLE` 必须同时为 1：只开产品开关会命中 "Reference board is read-only"，只开板级开关会命中 "half-open build"，开了更新但关掉写钩子同样被拒。`run_explorer_checks.py` 把这两种单开情形都当作必须失败的编译变体（现共 8 个变体）。`storage_verified` 仅在 `OTA_EXPLORER_UPDATE_CAPABLE=1` 时才由运行时探测结果推出。
 
-双开镜像（43964 B，一次性构建，不在正式目标里）上板后同一条 `22 02 00`：
+双开镜像（当时 43964 B，一次性构建，不在正式目标里；当前源码重建为 44036 B）上板后同一条 `22 02 00`：
 
 | 镜像 | 响应 |
 |---|---|
