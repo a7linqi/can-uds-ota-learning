@@ -72,8 +72,8 @@
     {
       "target": "explorer_ZG_loopback_READONLY",
       "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.elf",
-      "bytes": 1238080,
-      "sha256": "0f39ea958d259227f7e40f20b64f01b125f8751f6a4b703c536bf1aa85895610"
+      "bytes": 1238084,
+      "sha256": "3b806fb5654daba92d73a42e235057006ca47a5d34059fb6f2a1a3993e0d840b"
     },
     {
       "target": "explorer_ZG_loopback_READONLY",
@@ -85,13 +85,13 @@
       "target": "explorer_ZG_loopback_READONLY",
       "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.map",
       "bytes": 609227,
-      "sha256": "b4e0cf30fc709916304011f93963be0d1849faf76722517dffbdc05e610f0bd3"
+      "sha256": "adf24707cb21601d26cd14e60384bfb582e4873900a0a376097eaf9cb28cf07c"
     },
     {
       "target": "explorer_ZG_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.elf",
       "bytes": 1501712,
-      "sha256": "d4d8db490bf22e8cd8a38d039aada86698773e87fccf0eb6595c61ec4e07ab02"
+      "sha256": "7eb4e49821587d29c2e2d9d13ca811c7c5645e1c184626ed0fa6159d3d16a353"
     },
     {
       "target": "explorer_ZG_uart_READONLY",
@@ -103,13 +103,13 @@
       "target": "explorer_ZG_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.map",
       "bytes": 598406,
-      "sha256": "d8c4894a6308fb0cfa62d661ceb7f725f9b17d7e6ea1dd38471f55ed998cc12f"
+      "sha256": "bb9937c3e13e083c87be308082a7946920db0f029e7764643252eeaf966b1aa9"
     },
     {
       "target": "explorer_ZE_loopback_READONLY",
       "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.elf",
       "bytes": 1238084,
-      "sha256": "ad5067a862a91e70eeb6d92e32531baba82e836622cd6d651d59fc8b3b31f37f"
+      "sha256": "08f0f353aaa04a6bebc9a4935dadf1279995b8b45b021c759ba79c10ae0be430"
     },
     {
       "target": "explorer_ZE_loopback_READONLY",
@@ -121,13 +121,13 @@
       "target": "explorer_ZE_loopback_READONLY",
       "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.map",
       "bytes": 609227,
-      "sha256": "70eaaf0a7efbe925e5150e9457769803289e3ed7dd31ca28ef85880af24b9609"
+      "sha256": "1a377ae7c1632a64e9fbd824654308cea99bdb7a9b017708b91ca1764106ffff"
     },
     {
       "target": "explorer_ZE_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.elf",
       "bytes": 1501704,
-      "sha256": "5dda0856e4d20c6c18358e5a237bcc8c993b0d4939d3acd2597738cb414c730a"
+      "sha256": "f18d70d97a5df9a6b40b1c8771c8f56dbeff563126090c9a20ed957fc1179b2b"
     },
     {
       "target": "explorer_ZE_uart_READONLY",
@@ -139,10 +139,12 @@
       "target": "explorer_ZE_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.map",
       "bytes": 598406,
-      "sha256": "ef46e8cb7df3c32bab82eeb1795ca902f1d6bacbd0adb2a30f25bf85c2ab4481"
+      "sha256": "b988db550945f282e7b8869a9325f5e78e6efa9d2b0f95395a54fde84bed21a1"
     }
   ],
   "validated_source_hashes": {
+    "build-temp/bench_seq.py": "713c7bea38e4bf10ae5afb34f13a2bdc1b446926b55f35005a4f0c7c8a056b5c",
+    "build-temp/build_update_variant.py": "f54bf97ce210e1c6e6e86f9d23002a7b5dcbf7a4842f8df8f1d3380cc0729230",
     "firmware/app/main.c": "69e2aaac35467c979e3cce9e0761416141e8582be5cbd4fd7eb3c5b3d0ee7d18",
     "firmware/bootloader/main.c": "09dc13059eb1ea2aac3025ca565b5395f57bc3327415deb18bfd2ebf704cf2b4",
     "firmware/explorer_loopback/main.c": "9d3f178e48fa5fd7db9fc5fa6235e06781308ec9220ddaf51adc43f85ada60d4",
@@ -172,7 +174,7 @@
     "mdk/explorer_readonly.uvprojx": "c253639a8f851e301e500da9a49186898236bc4f6891f991e846feeeac552036",
     "platform/stm32f407/board/board_unconfigured.c": "f875f31250ebbd3a961b5e5a00cc394c79810036357eb2458d7f082ab54f43cb",
     "platform/stm32f407/board/explorer_reference/explorer_interrupts.c": "40f251b4492ef036172b692faf1b209a675d4eb444095d7cb943017402f995ea",
-    "platform/stm32f407/board/explorer_reference/explorer_reference.c": "15900519de0c65a82066e7968a405945bbc1927a76b51dafdc5899733769868d",
+    "platform/stm32f407/board/explorer_reference/explorer_reference.c": "71788007d505cb168ca03d8a0d3f00c8d35b2ad3e69b9129020be8ba270c1b0d",
     "platform/stm32f407/board/explorer_reference/explorer_reference.h": "b9e907fb2a0736f46fed4be368d788468ac37a7e985edbe8b30bea5a43e803a3",
     "platform/stm32f407/board/explorer_reference/stm32f4xx_hal_conf.h": "1607b14b6305ccb3f1c35c23a2adc319a6a7024ace94fc3d352d4f3d5a2f2066",
     "platform/stm32f407/examples/board_hal_binding.c": "201990a31dd2c76a635419274872667112dc79874c4c282d0bbf0c19b5151f0c",

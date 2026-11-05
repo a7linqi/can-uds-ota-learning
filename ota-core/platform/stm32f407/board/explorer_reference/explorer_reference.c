@@ -239,7 +239,9 @@ int ota_user_generated_init(void)
     if(HAL_Init()!=HAL_OK || clock_init()) return -1;
     gpio_init();if(peripherals_init()) return -1;
     initialized=1;read_storage_identity();nor_open();
-    ota_user_log("ATK Explorer reference pins; update engine disabled");
+    ota_user_log(OTA_EXPLORER_UPDATE_CAPABLE?
+        "ATK Explorer reference pins; UPDATE-CAPABLE build":
+        "ATK Explorer reference pins; update engine disabled");
     ota_user_log(OTA_EXPLORER_CAN_LOOPBACK?"CAN: silent internal loopback":"CAN: normal physical 500 kbit/s");
     log_hex("device_id",ota_explorer_probe.device_id);
     log_hex("flash_bytes",ota_explorer_probe.flash_bytes);
@@ -259,7 +261,9 @@ int ota_user_generated_init(void)
             ota_user_log("NOR driver and manual JEDEC disagree; investigate");
         ota_user_log(ota_explorer_probe.nor_read_status?
             "NOR driver read failed":"NOR driver probe+dry read ok");
-#if OTA_EXPLORER_NOR_WRITE
+#if OTA_EXPLORER_NOR_WRITE && OTA_ENABLE_FLASHING && OTA_EXPLORER_UPDATE_CAPABLE
+        ota_user_log("NOR program/erase hooks compiled in, update engine ENABLED");
+#elif OTA_EXPLORER_NOR_WRITE
         ota_user_log("NOR program/erase hooks compiled in, update engine still gated");
 #else
         ota_user_log("NOR program/erase hooks compiled out");
