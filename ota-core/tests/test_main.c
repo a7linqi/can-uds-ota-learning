@@ -16,6 +16,7 @@ void run_watchdog_tests(void);
 void run_boot_tests(void);
 void run_signature_tests(void);
 void run_input_edge_tests(void);
+void run_dtc_tests(void);
 
 int main(void)
 {
@@ -32,6 +33,7 @@ int main(void)
     run_signature_tests();
     run_boot_tests();
     run_input_edge_tests();
+    run_dtc_tests();
 
     printf("\n%d checks, %d failures\n", g_checks, g_failures);
     printf("%d storage power-cut scenarios (host model)\n",g_fault_scenarios);

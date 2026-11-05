@@ -64,6 +64,34 @@ uint32_t uds_calc_key(uint32_t seed)
     return k;
 }
 
+void uds_dtc_record(uds_server_t *s, uint32_t code)
+{
+    uint32_t c;
+    uint8_t i;
+
+    if (s == 0) {
+        return;
+    }
+    c = code & 0xFFFFFFu;
+    for (i = 0u; i < s->dtc_count; i++) {
+        if (s->dtc[i].code == c) {
+            s->dtc[i].status |= UDS_DTC_STATUS_AVAILABILITY;
+            return;
+        }
+    }
+    if (s->dtc_count >= UDS_DTC_MAX) {
+        /* Saturated: keep the oldest codes (they are the ones already being
+         * investigated) and count the loss instead of overwriting silently. */
+        if (s->dtc_dropped < 0xFFu) {
+            s->dtc_dropped++;
+        }
+        return;
+    }
+    s->dtc[s->dtc_count].code = c;
+    s->dtc[s->dtc_count].status = UDS_DTC_STATUS_AVAILABILITY;
+    s->dtc_count++;
+}
+
 static int lockout_active(uds_server_t *s)
 {
     uint32_t now;
@@ -266,6 +294,7 @@ static uint16_t handle_security(uds_server_t *s, const uint8_t *req, uint16_t re
             if (s->key_failures >= 3u) {
                 s->lockout_started_ms = server_now(s);
                 s->lockout_active = 1u;
+                uds_dtc_record(s, UDS_DTC_SECURITY);
                 return nrc_reply(resp, max, 0x27u, NRC_EXCEEDED_ATTEMPTS);
             }
             return nrc_reply(resp, max, 0x27u, NRC_INVALID_KEY);
@@ -302,15 +331,24 @@ static uint16_t handle_request_download(uds_server_t *s,const uint8_t *req,uint1
        size>IMAGE_HEADER_SIZE+IMAGE_MAX_PAYLOAD+OTA_SIGNATURE_SIZE)
         return nrc_reply(resp,max,0x34u,NRC_REQUEST_OUT_OF_RANGE);
     loaded=metadata_load(s->boot->store,&m);
-    if(loaded<0) return nrc_reply(resp,max,0x34u,NRC_GENERAL_PROGRAMMING_FAILURE);
+    if(loaded<0) {
+        uds_dtc_record(s,UDS_DTC_METADATA);
+        return nrc_reply(resp,max,0x34u,NRC_GENERAL_PROGRAMMING_FAILURE);
+    }
     if(!loaded) memset(&m,0,sizeof m);
     if(m.state!=UPDATE_IDLE && m.state!=UPDATE_DOWNLOADING)
         return nrc_reply(resp,max,0x34u,NRC_CONDITIONS_NOT_CORRECT);
     m.state=UPDATE_DOWNLOADING;
     /* Invalidate the old staged package durably BEFORE any erase. */
-    if(metadata_save(s->boot->store,&m) || !s->boot->external.erase ||
-       s->boot->external.erase(s->boot->external.user,DOWNLOAD_OFFSET,EXT_IMAGE_SLOT_SIZE))
+    if(metadata_save(s->boot->store,&m)) {
+        uds_dtc_record(s,UDS_DTC_METADATA);
         return nrc_reply(resp,max,0x34u,NRC_GENERAL_PROGRAMMING_FAILURE);
+    }
+    if(!s->boot->external.erase ||
+       s->boot->external.erase(s->boot->external.user,DOWNLOAD_OFFSET,EXT_IMAGE_SLOT_SIZE)) {
+        uds_dtc_record(s,UDS_DTC_EXT_FLASH);
+        return nrc_reply(resp,max,0x34u,NRC_GENERAL_PROGRAMMING_FAILURE);
+    }
     s->dl_active=1u; s->dl_has_previous=0u; s->dl_offset=DOWNLOAD_OFFSET;
     s->dl_size=size; s->dl_written=0u; s->dl_next_counter=1u;
     resp[0]=0x74u; resp[1]=0x20u;
@@ -343,8 +381,10 @@ static uint16_t handle_transfer_data(uds_server_t *s,const uint8_t *req,uint16_t
         if(counter!=s->dl_next_counter) return nrc_reply(resp,max,0x36u,0x73u);
         if(n>s->dl_size-s->dl_written)
             return nrc_reply(resp,max,0x36u,NRC_REQUEST_OUT_OF_RANGE);
-        if(!p.write || p.write(p.user,s->dl_offset+s->dl_written,req+2,n))
+        if(!p.write || p.write(p.user,s->dl_offset+s->dl_written,req+2,n)) {
+            uds_dtc_record(s,UDS_DTC_EXT_FLASH);
             return nrc_reply(resp,max,0x36u,NRC_GENERAL_PROGRAMMING_FAILURE);
+        }
         s->dl_last_offset=s->dl_written; s->dl_last_size=(uint16_t)n;
         s->dl_previous_counter=counter; s->dl_has_previous=1u;
         s->dl_written+=n;
@@ -369,10 +409,14 @@ static uint16_t handle_transfer_exit(uds_server_t *s,const uint8_t *req,uint16_t
     if(image_read_header(s->boot->external,DOWNLOAD_OFFSET,&h) ||
        h.image_size+IMAGE_HEADER_SIZE+
            ((h.flags&IMAGE_FLAG_SIGNED)?OTA_SIGNATURE_SIZE:0u)!=s->dl_size ||
-       image_validate(s->boot->external,DOWNLOAD_OFFSET,0,0))
+       image_validate(s->boot->external,DOWNLOAD_OFFSET,0,0)) {
+        uds_dtc_record(s,UDS_DTC_PACKAGE);
         return nrc_reply(resp,max,0x37u,NRC_GENERAL_PROGRAMMING_FAILURE);
-    if(metadata_load(s->boot->store,&m)!=1 || m.state!=UPDATE_DOWNLOADING)
+    }
+    if(metadata_load(s->boot->store,&m)!=1 || m.state!=UPDATE_DOWNLOADING) {
+        uds_dtc_record(s,UDS_DTC_METADATA);
         return nrc_reply(resp,max,0x37u,NRC_GENERAL_PROGRAMMING_FAILURE);
+    }
     if(h.version<=m.min_version || h.version<=m.active_version)
         return nrc_reply(resp,max,0x37u,NRC_REQUEST_OUT_OF_RANGE);
     m.state=UPDATE_READY; m.pending_version=h.version;
@@ -403,11 +447,88 @@ static uint16_t handle_routine(uds_server_t *s,const uint8_t *req,uint16_t len,
     if(image_read_header(s->boot->external,DOWNLOAD_OFFSET,&h) ||
        h.version!=m.pending_version || h.image_size!=m.pending_size ||
        h.payload_crc!=m.pending_crc ||
-       image_validate(s->boot->external,DOWNLOAD_OFFSET,0,0))
+       image_validate(s->boot->external,DOWNLOAD_OFFSET,0,0)) {
+        uds_dtc_record(s,UDS_DTC_PACKAGE);
         return nrc_reply(resp,max,0x31u,NRC_GENERAL_PROGRAMMING_FAILURE);
+    }
     if(req[1]&0x80u) return 0u;
     resp[0]=0x71u; resp[1]=1u; resp[2]=0u; resp[3]=1u; resp[4]=0u;
     return 5u;
+}
+
+/* ---- 0x19 ---- */
+static uint16_t handle_read_dtc(uds_server_t *s, const uint8_t *req, uint16_t req_len,
+                                uint8_t *resp, uint16_t max)
+{
+    uint8_t sub, mask, i;
+    uint16_t count = 0u, need, n;
+
+    if (req_len != 3u) {
+        return nrc_reply(resp, max, 0x19u, NRC_INCORRECT_LENGTH);
+    }
+    sub  = (uint8_t)(req[1] & 0x7Fu);
+    mask = req[2];
+    for (i = 0u; i < s->dtc_count; i++) {
+        if ((s->dtc[i].status & mask) != 0u) {
+            count++;
+        }
+    }
+    if (sub == 0x02u) {
+        need = (uint16_t)(3u + 4u * count);
+    } else if (sub == 0x01u) {
+        need = 6u;
+    } else {
+        return nrc_reply(resp, max, 0x19u, NRC_SUBFUNCTION_NOT_SUPPORTED);
+    }
+    /* Capacity before anything else: a record set is never truncated and
+     * resp[max] is never touched. Same rule as the 0x22 fix (NRC 0x14). */
+    if (max < need) {
+        return nrc_reply(resp, max, 0x19u, NRC_RESPONSE_TOO_LONG);
+    }
+    if ((req[1] & 0x80u) != 0u) {
+        return 0u;
+    }
+    resp[0] = 0x59u;
+    resp[1] = sub;
+    resp[2] = UDS_DTC_STATUS_AVAILABILITY;
+    if (sub == 0x01u) {
+        resp[3] = 0x01u;              /* ISO 14229-1 DTC format */
+        resp[4] = (uint8_t)(count >> 8);
+        resp[5] = (uint8_t)count;
+        return 6u;
+    }
+    n = 3u;
+    for (i = 0u; i < s->dtc_count; i++) {
+        if ((s->dtc[i].status & mask) == 0u) {
+            continue;
+        }
+        resp[n++] = s->dtc[i].status;
+        resp[n++] = (uint8_t)(s->dtc[i].code >> 16);
+        resp[n++] = (uint8_t)(s->dtc[i].code >> 8);
+        resp[n++] = (uint8_t)s->dtc[i].code;
+    }
+    return n;
+}
+
+/* ---- 0x14 ---- */
+static uint16_t handle_clear_dtc(uds_server_t *s, const uint8_t *req, uint16_t req_len,
+                                 uint8_t *resp, uint16_t max)
+{
+    if (req_len != 4u) {
+        return nrc_reply(resp, max, 0x14u, NRC_INCORRECT_LENGTH);
+    }
+    /* Only groupOfDTC = FF FF FF exists: the table has no per-group storage,
+     * so pretending to clear a subset would be a lie to the tester.
+     * groupOfDTC is 3 bytes, not 4 -- reading it with get_be32() would pull
+     * in req[4] and reject every legal request. */
+    if ((((uint32_t)req[1] << 16) | ((uint32_t)req[2] << 8) | (uint32_t)req[3])
+        != 0xFFFFFFu) {
+        return nrc_reply(resp, max, 0x14u, NRC_REQUEST_OUT_OF_RANGE);
+    }
+    s->dtc_count = 0u;
+    s->dtc_dropped = 0u;
+    resp[0] = 0x54u;
+    return 1u;
 }
 
 /* ---- 0x3E ---- */
@@ -472,6 +593,10 @@ uint16_t uds_handle(uds_server_t *s, const uint8_t *req, uint16_t req_len,
         result=handle_session(s, req, req_len, resp, resp_max); break;
     case 0x11u:
         result=handle_ecu_reset(s, req, req_len, resp, resp_max); break;
+    case 0x14u:
+        result=handle_clear_dtc(s, req, req_len, resp, resp_max); break;
+    case 0x19u:
+        result=handle_read_dtc(s, req, req_len, resp, resp_max); break;
     case 0x22u:
         result=handle_read_data(s, req, req_len, resp, resp_max); break;
     case 0x27u:
