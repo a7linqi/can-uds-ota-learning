@@ -72,8 +72,8 @@
     {
       "target": "explorer_ZG_loopback_READONLY",
       "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.elf",
-      "bytes": 1240316,
-      "sha256": "23a959fda7dbfc143c824e30e0833349b182d9feb60e95876baaaf70138fec8c"
+      "bytes": 1240388,
+      "sha256": "d8d93f67726f562ad8b80d2dba284c36686133d212ee7890a549591cb91b84d2"
     },
     {
       "target": "explorer_ZG_loopback_READONLY",
@@ -85,13 +85,13 @@
       "target": "explorer_ZG_loopback_READONLY",
       "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.map",
       "bytes": 610983,
-      "sha256": "6cbaf4a24e233e3b8ae8bcab945b30aa4068e021058d98240969aad324ba6ec7"
+      "sha256": "360386d09175c057601d658684163ebd099883650089c310bdac3abff597e81c"
     },
     {
       "target": "explorer_ZG_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.elf",
-      "bytes": 1509880,
-      "sha256": "3a30036f2903577e43527394536d4f81b49fba13407a9ebaa792a865455f012c"
+      "bytes": 1509952,
+      "sha256": "f228341468959761229f241ad264319a8c605a571c7d57bd9f3ff2f8adcb9fec"
     },
     {
       "target": "explorer_ZG_uart_READONLY",
@@ -103,13 +103,13 @@
       "target": "explorer_ZG_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.map",
       "bytes": 600391,
-      "sha256": "398cab7e496de6331eab807df8bfbcd0820ad8e39fb38b9ae735127657b93073"
+      "sha256": "09946c71e7299bd0c1d424a24a780f0bdb01a58de9c1e6aed355e0bca7ed14ea"
     },
     {
       "target": "explorer_ZE_loopback_READONLY",
       "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.elf",
-      "bytes": 1240320,
-      "sha256": "3674cbf907559305aaddec0b64e3d5173cf52adaf7f96738082419b33b90bc46"
+      "bytes": 1240392,
+      "sha256": "0e1ce1895196362f56eadf67eb3b9fb2cd813c5b602787b56903191682d07afd"
     },
     {
       "target": "explorer_ZE_loopback_READONLY",
@@ -121,13 +121,13 @@
       "target": "explorer_ZE_loopback_READONLY",
       "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.map",
       "bytes": 610983,
-      "sha256": "366bd3a9fa850804cec107e7ee99cb052eb86759e6ce92b87b121ef8e4647df3"
+      "sha256": "6664124ee320f63adb6f30fc32a88e802246722831a5c7c174df8820b749c51f"
     },
     {
       "target": "explorer_ZE_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.elf",
-      "bytes": 1509884,
-      "sha256": "f964c81c9c9c859488b74483ef947eb76ec338725e9e140add477c52ad1d9adb"
+      "bytes": 1509956,
+      "sha256": "435118e27f909dd6eed59c4de64aaafb11c5e12fa44a9b90b77c4121e1360143"
     },
     {
       "target": "explorer_ZE_uart_READONLY",
@@ -139,15 +139,16 @@
       "target": "explorer_ZE_uart_READONLY",
       "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.map",
       "bytes": 600431,
-      "sha256": "604d946a5f1b3901b8f6d00c0a28740e6bc3001b002ac8b64c2b0cd0d6d55bf9"
+      "sha256": "4acf9196cfcaff4d03befa127251e421e0e35d982a3fb9d32e02e554085e119f"
     }
   ],
   "validated_source_hashes": {
     "build-temp/bench_seq.py": "713c7bea38e4bf10ae5afb34f13a2bdc1b446926b55f35005a4f0c7c8a056b5c",
-    "build-temp/build_stage_d.py": "a4e5829a0a27087b5c382df3556fe74e2390e3c631527e26c43ac47e99e64eff",
+    "build-temp/build_stage_d.py": "ed7f0c1607addfab73ca94fd5901cd273ce79b46c56c1ca0cb7cdbf8b066382a",
     "build-temp/build_update_variant.py": "f54bf97ce210e1c6e6e86f9d23002a7b5dcbf7a4842f8df8f1d3380cc0729230",
-    "build-temp/stage-d/attack_main.c": "c57cc8981971523fe3e1c778b5660e2615462c0a99abdc038f91d72a90b836df",
+    "build-temp/stage-d/attack_main.c": "8498317864ab1a4ad6543f4a52e8c01d0dc5a6306dabbd64716cbc98a565dd0a",
     "build-temp/stage-d/dump_main.c": "4452ba08c2800af4f6f76188c37842ab98a98fb2a7c5e60fa92ffc6487ff1b12",
+    "build-temp/stage-d/wd_bite_main.c": "3faf0172541bee4b8b41c27729ac2a9c8be0b85e966f708eb060a7d3ed94cfc3",
     "build-temp/stage-d/wipe_meta_main.c": "2d0711cc24f6cb915f5d0fa41d120a1f68ef6458a4009de616bc6dc85a189d28",
     "firmware/app/main.c": "bf171e3b0c367b051fb33497cb8c3eb0b6b4194aa836280c552044408671e47b",
     "firmware/bootloader/main.c": "7b4e5c3f7cd2eb7b7bedffae51955fce043c54827883349057cfca40065091bf",
@@ -179,8 +180,8 @@
     "mdk/explorer_readonly.uvprojx": "c253639a8f851e301e500da9a49186898236bc4f6891f991e846feeeac552036",
     "platform/stm32f407/board/board_unconfigured.c": "40c61b4cdde29d6ce240f83eeeedb3b9b1eeb851f16122f05c6416d46c3162ce",
     "platform/stm32f407/board/explorer_reference/explorer_interrupts.c": "40f251b4492ef036172b692faf1b209a675d4eb444095d7cb943017402f995ea",
-    "platform/stm32f407/board/explorer_reference/explorer_reference.c": "fc217439d4f844e979773093b11c1defda0e2899371fff9822493232cd3de706",
-    "platform/stm32f407/board/explorer_reference/explorer_reference.h": "ff74caefb7a89d8c60bac9bdb8160dcf452a3c0247a376f9718c3596093cfc19",
+    "platform/stm32f407/board/explorer_reference/explorer_reference.c": "1488e28c2744be3ec7529e1265eadd40607f9a85ac22e6dfb02c5ea5db06fea3",
+    "platform/stm32f407/board/explorer_reference/explorer_reference.h": "e72de7981a31a156a9637c78fc8751f596ce993fbe686dea291c8aeb26408e0b",
     "platform/stm32f407/board/explorer_reference/stm32f4xx_hal_conf.h": "1607b14b6305ccb3f1c35c23a2adc319a6a7024ace94fc3d352d4f3d5a2f2066",
     "platform/stm32f407/examples/board_hal_binding.c": "85c61f229c267ed4a012e9a9af9703cc69c130efe869077c84fe4affcb56ef9b",
     "platform/stm32f407/examples/board_hal_user.h": "29065b8e2fa792b19b5a386a4c5c61dd6a050ea1ddfa63a4ee7be4ded1a71f8d",

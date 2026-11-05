@@ -240,11 +240,11 @@ python tools/package_project.py --include-firmware --output "工程目录外的�
    - 空闲态断电（16.5 s 全 USB 消失、电轨塌到 2.87 V 但无 0 V 实测）也另行记录在案。
    - 断电实验的共同诚实边界：无电压采样（判据是串口句柄死亡 + 时间线）；恢复横幅来自
      显式复位而非第一次冷启动；"拔三根线"不等于拨板载开关。
-2. **真实 CAN 总线**：板级 UDS 目前走 UART 上的 CAN 帧封装（`A5 5A | ver | dlc | id | data | crc16`），USB-CAN 适配器未到货，所以没有总线仲裁、错误帧、总线负载数据。
-3. **硬件 IWDG**：看门狗策略只跑了虚拟模型。
+2. **真实 CAN 总线**：板级 UDS 目前走 UART 上的 CAN 帧封装（`A5 5A | ver | dlc | id | data | crc16`），USB-CAN 适配器未到货，所以没有总线仲裁、错误帧、总线负载数据。**静默内部回环**已于 2026-11-02 实机跑过（16 帧、`stage=3`、`passed=16`），它只证明 bxCAN 外设与接收队列，不证明收发器/跳线/总线。
+3. **硬件 IWDG**：**已实机验证（2026-11-05 夜）**。`explorer_reference.h` 的无条件 `#error` 改成显式 opt-in（`OTA_EXPLORER_WATCHDOG_CAPABLE=1`）；实测超时 **32.341 s**（32.341/32.381/32.337，反推 LSI≈32.4 kHz，寄存器 `PR=6`/`RLR=0xFFF`）；正常 OTA（14 s 擦除 + 90 帧 + 安装）零误咬；App 健康时 70 s 持续喂狗；sick 镜像被咬 3 次（32.6/32.6/32.4 s）后 loader 用 8.71 s 回滚到 v20。证据 `stages/board-lab/WATCHDOG_EVIDENCE.md`、`journal/entries/2026-11-05-hardware-watchdog-on-silicon.md`。**产品 Keil 目标仍为 0**，板上跑的是 `build-temp/build_stage_d.py` 的 `loader_wd`/`app_wd` 变体。
 4. 实物丝印未拍照确认（PCB 修订版/MCU 完整型号/NOR 型号），书面证据指向 V3 + ZGT6；未上电读取。
 5. `hardware_verified=false`、`keil_target_linked=false` 是机器可读矩阵的字段，不是"没上过板"：上板结果记录在本文件第 8 节与 `stages/board-lab/STAGE_D_EVIDENCE.md`。
-6. EEPROM 偶发读失败（6 次复位里 2 次 `eeprom_status=1`），两次都安全停在 loader，根因未定位。
+6. EEPROM 偶发读失败：**根因已定位并做了红绿对照（2026-11-05）**。根因是 24C02 在写中途被复位把 SDA 拉死、`HAL_I2C_Init` 无法产生 START；修法是初始化前的 9 时钟 + STOP。统计验证：去掉总线清除的红探针 **26 轮 25 次失败**，产品 loader 在同样的 0–64 ms 延迟扫描下 **40 轮 0 次失败**。证据 `stages/board-lab/EEPROM_STRESS_EVIDENCE.md`、`journal/entries/2026-11-05-eeprom-stress-red-green.md`。剩余边界：只扫了 App 的 `10 02` 写路径，OTA 事务写未单独扫描。
 
 **2026-11-05 深夜补记（板子在线）**：状态遥测、门控探针与"可重复升级"三项已在实物上补齐。
 

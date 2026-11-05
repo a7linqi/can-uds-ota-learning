@@ -79,8 +79,16 @@
 #if OTA_ENABLE_BOOT_HANDOFF && !OTA_EXPLORER_STORAGE_TRUSTED
 #error "A loader cannot install anything if it does not trust its own storage"
 #endif
-#if OTA_ENABLE_WATCHDOG
-#error "Explorer reference bring-up targets have no watchdog yet"
+/* The binding can start and reload the hardware watchdog, but the docs make
+ * "enable only after measuring the real LSI and the longest legitimate
+ * no-service window" a hard rule. Keep an explicit opt-in so a stray
+ * OTA_ENABLE_WATCHDOG=1 in a bring-up target still fails to compile.
+ * Measured on this board 2026-11-05: see docs/WATCHDOG.md. */
+#ifndef OTA_EXPLORER_WATCHDOG_CAPABLE
+#define OTA_EXPLORER_WATCHDOG_CAPABLE 0
+#endif
+#if OTA_ENABLE_WATCHDOG && !OTA_EXPLORER_WATCHDOG_CAPABLE
+#error "Explorer reference targets need OTA_EXPLORER_WATCHDOG_CAPABLE=1 (measured LSI) to enable the watchdog"
 #endif
 /* Which role this image plays at power-on. The binding, not the linker, owns
  * the two hooks the product asks for.

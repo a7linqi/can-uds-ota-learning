@@ -16,6 +16,13 @@
 #define OTA_EXPLORER_APP_SICK 0
 #endif
 
+/* Test-only red probe: skip the I2C bus clear so a reset inside an EEPROM
+ * write reproduces the stuck bus on purpose. Never define in an image that
+ * ships. */
+#ifndef OTA_EXPLORER_NO_I2C_CLEAR
+#define OTA_EXPLORER_NO_I2C_CLEAR 0
+#endif
+
 static CAN_HandleTypeDef can1;
 static UART_HandleTypeDef uart1;
 static I2C_HandleTypeDef i2c1;
@@ -94,6 +101,7 @@ static void gpio_init(void)
  * write left the board reporting "EEPROM read failed" and "storage not ready"
  * on every following boot -- the NOR probe stayed healthy throughout, so the
  * whole OTA stack was down for the want of one I2C transaction. */
+#if !OTA_EXPLORER_NO_I2C_CLEAR
 static void i2c_bus_clear(void)
 {
     GPIO_InitTypeDef gpio;
@@ -124,6 +132,7 @@ static void i2c_bus_clear(void)
     gpio.Alternate=GPIO_AF4_I2C1;
     HAL_GPIO_Init(GPIOB,&gpio);
 }
+#endif
 
 static int peripherals_init(void)
 {
@@ -296,8 +305,15 @@ int ota_user_generated_init(void)
     if(HAL_Init()!=HAL_OK || clock_init()) return -1;
     gpio_init();
     /* Before the peripheral is configured: a bus held by a slave would make
-     * every I2C transaction fail for the rest of this boot. */
+     * every I2C transaction fail for the rest of this boot.
+     *
+     * OTA_EXPLORER_NO_I2C_CLEAR is a red-probe switch: with it set, a reset
+     * that lands inside an EEPROM write reproduces the stuck bus on purpose,
+     * so the stress test can prove it is able to detect the defect at all.
+     * Never define it in an image that ships. */
+#if !OTA_EXPLORER_NO_I2C_CLEAR
     i2c_bus_clear();
+#endif
     if(peripherals_init()) return -1;
     initialized=1;read_storage_identity();nor_open();
     ota_user_log(OTA_EXPLORER_UPDATE_CAPABLE?
