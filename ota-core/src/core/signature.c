@@ -30,12 +30,12 @@ static int scalar_is_canonical(const uint8_t s[32])
     return 0;
 }
 
-int image_signature_verify(flash_port_t external, uint32_t offset,
-                           uint32_t image_size,
-                           const uint8_t signature[OTA_SIGNATURE_SIZE])
+int image_signature_verify_split(flash_port_t source, uint32_t payload_offset,
+                                 const uint8_t header[IMAGE_HEADER_SIZE],
+                                 uint32_t image_size,
+                                 const uint8_t signature[OTA_SIGNATURE_SIZE])
 {
     sha512_context ctx;
-    uint8_t header[IMAGE_HEADER_SIZE];
     uint8_t chunk[256];
     uint8_t h[64];
     uint8_t checker[32];
@@ -43,22 +43,19 @@ int image_signature_verify(flash_port_t external, uint32_t offset,
     ge_p2 R;
     uint32_t off = 0u;
 
-    if (!external.read || !signature ||
-        (offset!=DOWNLOAD_OFFSET && offset!=BACKUP_OFFSET) ||
+    if (!source.read || !header || !signature ||
         image_size<8u || image_size>IMAGE_MAX_PAYLOAD ||
         !scalar_is_canonical(signature+32u)) return -1;
-    if (external.read(external.user, offset, header, sizeof header)) return -1;
 
     /* h = SHA-512(R || A || header || payload), streamed in chunks. */
     sha512_init(&ctx);
     sha512_update(&ctx, signature, 32u);            /* R */
     sha512_update(&ctx, OTA_PUBLIC_KEY, 32u);       /* A */
-    sha512_update(&ctx, header, sizeof header);     /* header */
+    sha512_update(&ctx, header, IMAGE_HEADER_SIZE);
     while (off < image_size) {
         uint32_t n = image_size - off;
         if (n > sizeof chunk) n = sizeof chunk;
-        if (external.read(external.user, offset + IMAGE_HEADER_SIZE + off,
-                          chunk, n))
+        if (source.read(source.user, payload_offset + off, chunk, n))
             return -1;
         sha512_update(&ctx, chunk, n);
         off += n;
@@ -71,4 +68,18 @@ int image_signature_verify(flash_port_t external, uint32_t offset,
     ge_double_scalarmult_vartime(&R, h, &A, signature + 32u);
     ge_tobytes(checker, &R);
     return consttime_equal32(checker, signature) ? 0 : -1;
+}
+
+int image_signature_verify(flash_port_t external, uint32_t offset,
+                           uint32_t image_size,
+                           const uint8_t signature[OTA_SIGNATURE_SIZE])
+{
+    uint8_t header[IMAGE_HEADER_SIZE];
+
+    if (!external.read || !signature ||
+        (offset!=DOWNLOAD_OFFSET && offset!=BACKUP_OFFSET) ||
+        image_size<8u || image_size>IMAGE_MAX_PAYLOAD) return -1;
+    if (external.read(external.user, offset, header, sizeof header)) return -1;
+    return image_signature_verify_split(external, offset + IMAGE_HEADER_SIZE,
+                                        header, image_size, signature);
 }

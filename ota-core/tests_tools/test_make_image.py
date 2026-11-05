@@ -38,10 +38,10 @@ class PackageTests(unittest.TestCase):
     def test_bad_capacity(self):
         with self.assertRaises(ValueError): package(raw(),1,256)
     def test_exact_ze_capacity(self):
-        data=raw(size=512*1024-0x10000)
+        data=raw(size=512*1024-0x10000-96)
         self.assertEqual(len(package(data,1,512)),len(data)+32)
     def test_over_ze_capacity(self):
-        with self.assertRaises(ValueError): package(raw(size=512*1024-0x10000+1),1,512)
+        with self.assertRaises(ValueError): package(raw(size=512*1024-0x10000-96+1),1,512)
 
 if __name__=="__main__":
     unittest.main()

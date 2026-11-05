@@ -1,14 +1,15 @@
 {
   "status": "passed",
-  "duration_s": 201.844,
+  "duration_s": 73.82,
   "validated_source_hashes": {
     "build-temp/bench_seq.py": "713c7bea38e4bf10ae5afb34f13a2bdc1b446926b55f35005a4f0c7c8a056b5c",
-    "build-temp/build_stage_d.py": "b158871c7d62071347406941053108566c1bb2c864e5a6543fc44c53d1e1bcd6",
+    "build-temp/build_stage_d.py": "a4e5829a0a27087b5c382df3556fe74e2390e3c631527e26c43ac47e99e64eff",
     "build-temp/build_update_variant.py": "f54bf97ce210e1c6e6e86f9d23002a7b5dcbf7a4842f8df8f1d3380cc0729230",
+    "build-temp/stage-d/attack_main.c": "c57cc8981971523fe3e1c778b5660e2615462c0a99abdc038f91d72a90b836df",
     "build-temp/stage-d/dump_main.c": "4452ba08c2800af4f6f76188c37842ab98a98fb2a7c5e60fa92ffc6487ff1b12",
     "build-temp/stage-d/wipe_meta_main.c": "2d0711cc24f6cb915f5d0fa41d120a1f68ef6458a4009de616bc6dc85a189d28",
     "firmware/app/main.c": "bf171e3b0c367b051fb33497cb8c3eb0b6b4194aa836280c552044408671e47b",
-    "firmware/bootloader/main.c": "1f63d7f369d67e66bc54c3e9ff2d3eff9d55c9e7de026beab93d3bf9b964d8db",
+    "firmware/bootloader/main.c": "7b4e5c3f7cd2eb7b7bedffae51955fce043c54827883349057cfca40065091bf",
     "firmware/explorer_loopback/main.c": "9d3f178e48fa5fd7db9fc5fa6235e06781308ec9220ddaf51adc43f85ada60d4",
     "firmware/linker/app_boot.ld": "8106121a8162f81fb238e1aa85ed1407ce214c8d9837f916255703aa34f8bd33",
     "firmware/linker/app_ZE.sct": "ee98bd9b5c0e0fba1cfdfcba7e07e048f505dabe2a5c86c3f758c6d3022bce2b",
@@ -17,17 +18,17 @@
     "firmware/linker/bootloader_ZG.sct": "d26103110e37aa5efba2158d2e75f4bdd6dfd98f67c6da7ef7117493a7e0daf0",
     "firmware/linker/explorer_boot.ld": "1268ecc9fd3f3ef1d5ad045ce251e104e81c052c81a3fc612e01f2e02b1fe650",
     "firmware/runtime/newlib_init.c": "ddb2b5d6c5c05233a20875277df33fe274e79e3cc928d6c753c7124c21777e02",
-    "include/ota/boot.h": "38f3a12076ab899fc062b923907f2e9ead592912b902be59b73b62fe8554b6c1",
+    "include/ota/boot.h": "cb0434df77693604dc5da9e7b6f5f794c1f67a566ae7e096bb85a19d6fb69f10",
     "include/ota/can_frame.h": "f517988b24bf8165b260458c33f6cb4311cb854d748ec1544d1146e8d15afb36",
     "include/ota/can_uart.h": "a9b2cc62b7d8a9f2dc5bcc67bdfb64788133fbe9be0e772cd37742c434987812",
     "include/ota/crc32.h": "cd2ae5f6b24108e060cd04438897279263daf3f0132eb57a09edf19ad477795b",
-    "include/ota/flash_layout.h": "c4c3539993daa7282b3d2ebad07bd4fc361841718f8b4eacc94faa72165ccb05",
-    "include/ota/image.h": "64b67b249d0315e5676df5ccdbe195a9b9573c862a1ff5f573a13b9a5717f869",
+    "include/ota/flash_layout.h": "bb777cc3285bce63b7ccc4bf476d0096a293cda9a8ad8cb6d0be8342d4b579dd",
+    "include/ota/image.h": "8bad18a0dcfdf8c7ca7196539eb382ce13842910033be684c09a5afccb28a27c",
     "include/ota/isotp.h": "c2c83c65ffee0c9b5d5603b2eef5402d84c27c28494376126e4eba2f3c40170f",
     "include/ota/metadata.h": "0e06429d70a9046e776e0d8c0e978af9def97da2336d8817dec07bf56e026597",
     "include/ota/ota_port.h": "c839449762eb1eff66ec8b3055090ecf4814c13d0240b0d0224207349639d587",
     "include/ota/pubkey.h": "67b5b989f439d9869fb13b25be70dd571988f6297907a9f17be1147b1e88802b",
-    "include/ota/signature.h": "62aa856f4fb9778dbdd5c90029b802ea7510306f766777d19c8e22a07c5fd61e",
+    "include/ota/signature.h": "01e0e7ada9d65be41fca69a0fc73943ea1b4b83e980b2d42b11a03ea7e76ad25",
     "include/ota/spi_nor.h": "835c1afe3f44620db87e8169472eaccc9306125d696a0ea15c24a44a0e7ac47b",
     "include/ota/uds.h": "1f56af7e076b325f3144e25d09fe9b11e77635bab3efdc1672790d2dd710cf90",
     "include/ota/watchdog_policy.h": "9c2aa995a01dd523170e923dabfc410b52fec93f0f0b0bdd985b1b533b981181",
@@ -65,13 +66,13 @@
     "run_tests.py": "5642df066095f453e814eecadeca5e9ad3eaf5205d79c7c1c724d0c9aaf2a3d6",
     "run_virtual_can_checks.py": "6d01cf70bf9b6354262789c4effc834f56c3a07b2b3b7a4c7ea0404234c21720",
     "sim/ecu_main.c": "975255ece95292d32b186f3594c1b109cf959d30ff2f86f4cdf641fadd904c11",
-    "src/core/boot.c": "9710dcdbc404ee56b08d881930c32adb6dece9c7fb1722d7441fc4bee80d2475",
+    "src/core/boot.c": "01b9ded5378cbd8b1f928e8bdd031335444436e9880f6b0004e876c9405990f0",
     "src/core/can_uart.c": "633de3b6d031bfe87dea66fbf469029af28e1d726395c61096006f041460d856",
     "src/core/crc32.c": "58aa2b4bd0f4219dd3297a5f06927b4a89a1e5deba23b6b93508c15d51e59da6",
-    "src/core/image.c": "d1d1689ead03a06ac4041da0ef302c105eb90fb3f9e6a543a877e72f08e07bea",
+    "src/core/image.c": "a681df76c572e29fd18b2a1497122086ec9bc30af10ecbadbac9581cb8be1a34",
     "src/core/isotp.c": "4db8e74761947d442570b3f844e596430e89218d373c5f47e41cabb93f7d74f5",
     "src/core/metadata.c": "fac7ba2a4ee787f900c874f186a1861e3c072f4795846763a126bc5c40b7b5ff",
-    "src/core/signature.c": "15d55f8ce2e29d61368671aa292bb239b6e80cd2113f8ff58242eff99b9488b2",
+    "src/core/signature.c": "ee61250cc55f167c9380da8a02e8dfbd5f8264b287f7d96eecd38cc1fdfb32b7",
     "src/core/uds.c": "51615e7e921b042bc0288593f915dc793e9418b714827937175bec424f3c4128",
     "src/core/watchdog_policy.c": "60e34b515494e54df2769fe5bd1f2ad52a84692f4829b45d2cd3f8088d1c5450",
     "src/driver/spi_nor.c": "93fff6fd100f05fdabcc53e15f8066fcd9bfe61ac16e4c22cb8473ef804f1fe2",
@@ -79,14 +80,14 @@
     "src/port/host/flash_ram.h": "f4452bfe846f79839146ed6771356e89f0aa605fbcfae960b01b8c5d4dd21f73",
     "tests/bench.c": "0e20f665454cf9b01c0a4fb488ff3c707e95fcbff169ccab45edac1df91fadcb",
     "tests/bench.h": "a11c14e67d5443182d26aa8fe3a5745fff9e1d3e1dc9f282d9be15e07352aff6",
-    "tests/test_boot.c": "e90139fdf0754e641ec31e8ea38f50da21c94ee8b0b4e99f8276d75f4bb114a1",
+    "tests/test_boot.c": "4d09cc89e2bcd88ce872c1a15c3dd0b70789a23e51f9389d1066a1f1554fb5f7",
     "tests/test_crc.c": "00659830d334b05f6e5bee90d9d05dd4855db07b5423cd310f2bdf07ce487ae9",
     "tests/test_dtc.c": "dc9af9cc990149626837b05ba6f6c2b5eb371b64ddab527070904a13e9b64e6f",
     "tests/test_input_edges.c": "5bbd20ee062987f9530b8cedb6d41176bb647ddcc95807f5743402c455eb4ae7",
     "tests/test_isotp.c": "71450d608cb671472833a20142dd99bdb757b2bac3918f8cb9a5a22d35e7af37",
     "tests/test_main.c": "5b0e180623d6363bc47bdeaa2636e1bbbe2d424d121c48e3c17d1189dd245471",
     "tests/test_protocol_edges.c": "e2ed4dd84cd9e31c206b56c2c458a80d94d04a1268daed367c5d734fe075dfe7",
-    "tests/test_signature.c": "56bda0398b25e96a963bc8d2ed2daf2707315487491e0dc19cb4b9407fdc2073",
+    "tests/test_signature.c": "71ce6bd8e019ef51a3c8a5f94a32bbd3cd91079c0d69e217e11cfe0a3a9206e3",
     "tests/test_uart_codec.c": "e29f62626aa693cbfe1a027278d9e3273083178609945dd6db2bdeaf5e44b872",
     "tests/test_uart_fuzz.c": "987ba9aed8b04a97e1805480eb78b375a04ebb138bd085b9c121f344b73a884f",
     "tests/test_uds.c": "de5c0a18d4754fa34a109a048608b9697eb3a2432fe4274712c798ba96c58f07",
@@ -94,7 +95,7 @@
     "tests/test_util.h": "0523a750b96b3a600ec89889d6be2b8197bbe95a740b93534bdf01f43812da8b",
     "tests/test_watchdog.c": "294759724a3ca24d696b6e789892c98db83c66a8c836005ba88914a020fd7d82",
     "tests_driver/test_spi_nor.c": "c0e1c161d152d3fd572b8a951433702fa6768357392f5e818df4754ca44185c5",
-    "tests_firmware/test_app.c": "a45f8a55b6827ce6ed91a3e5ed0274111a35c7e709e1270f80a296ecfc8a9480",
+    "tests_firmware/test_app.c": "cb301633042fad7dd5084eddb6f1c09ea9e212b87102444281dc1006d275e6bb",
     "tests_firmware/test_explorer_loopback.c": "10380806fc06e4b933b7875a303163451441d7108895db8766d55da88ff27b2a",
     "tests_pc/test_pc.py": "8b70e4d08c75f74787530105b75cb7c5d8d7674bca8754aeb640cbd8f535f277",
     "tests_stm32/mock_board.c": "60a834c5ccef59973b552c85aaa92d94d78817d0a210f3d851a8a29e8c5b533a",
@@ -102,7 +103,7 @@
     "tests_stm32/test_stm32.c": "ea1e56a464cbd7ec26ec389f9921fb855c43baa4a819d7148dfd45c578350dbf",
     "tests_tools/check_package.c": "12f47c16d889af385634b445e2759d1059a0fbc6209a3e0c3222d96848548633",
     "tests_tools/test_ed25519.py": "bba0e9cc3f8c81beae2fdc15fa360f862f415363914735503db6ff3ed299501d",
-    "tests_tools/test_make_image.py": "7776b97e5b7c476db531506d9183209f97ab9551ec622d2385be5d48ffa73e97",
+    "tests_tools/test_make_image.py": "b56a79334aa4b5f028e58bb208c86f3f2ead29b3116a5955587782af7738af0b",
     "tests_tools/test_uart_transport.py": "98481fbafe823906470f7d260cb8e5575a4a6d10e07c63dc30f4209fed53ddae",
     "tests_virtual_can/bench.py": "9d879bfdbddd093a44c0df9b0179d9255c4044eb7a49156efeb807559683eda9",
     "tests_virtual_can/test_virtual.py": "9bac33419fdffb85f9cb98e36ad0bd38f423416b5bd47392af6ff34905fec562",
@@ -127,12 +128,12 @@
     "tools/ed25519.py": "069a20544c4e707f2c050ab680bdc57157a0766ddc34c93baf09530e0f0c53c4",
     "tools/generate_explorer_mdk.py": "64617e3f93af299d78a56fcdc84061553126520ecf85e03760c845d54635e7af",
     "tools/generate_mdk.py": "74e43f961f7c0ad3559005bd594b7b9b445f197e8272058c090fd770ffb5d775",
-    "tools/make_image.py": "6a4af28383dbc1a60b472a0fe8e3f23e50cd974aa097af722bb2680bade6f762",
+    "tools/make_image.py": "5df10138a0458ba9fe3a274bc45e82cb319cbdb494408ac3c48181c5a6497bf2",
     "tools/package_project.py": "bd0f58ceb79abdecf64de2979a6261ec4dd35c0bd76f0b45d952514e473793dc",
     "tools/pc/__init__.py": "d74f5684789fa22b23b00051575d11cd5846be5ce18f6dc6127e23a0aba202f5",
     "tools/pc/isotp_client.py": "7be08a3bfa82bb3407d5117d88e216e674cc91336031120eb85a4b1883fa5415",
     "tools/pc/transport.py": "e6fb758c2918fdcd8bf700b7b88fce74c4c7c9a21ab3d8167266fd6c4e597fc3",
-    "tools/pc/uds_client.py": "ddaf9ba49a561ff0d6ba047434dce6fdfc817b511e59d0a2bf8172c0d91ec209",
+    "tools/pc/uds_client.py": "30522c46743af8513ed2eda5d4057ab668744821acd6be908091dca35a58ae3e",
     "tools/source_snapshot.py": "6656641d5d2723b3ebfb7a97c301acb380af9872e4197b0d189c1a30646ee647",
     "tools/templates/target_option.xml": "4866fd38cff9c16db1d9eb8266642804eee919d6aa182c1a84b579eb2882b7b9",
     "tools/uds_gui.py": "ed0c5db7e61f5a03823521700017481f8efba7087d3f5ab75f8b8ffee961ab30",
@@ -152,31 +153,19 @@
     "hardware_verified": false,
     "signature_implemented": true,
     "1024": {
-      "checks": 3421,
+      "checks": 3502,
       "failures": 0,
-      "storage_power_cut_scenarios": 420,
+      "storage_power_cut_scenarios": 429,
       "execution": "TinyCC native in-memory C"
     },
     "512": {
-      "checks": 3421,
+      "checks": 3502,
       "failures": 0,
-      "storage_power_cut_scenarios": 420,
+      "storage_power_cut_scenarios": 429,
       "execution": "TinyCC native in-memory C"
     },
     "cortex_m4_syntax": {
-      "capacities_bytes": [
-        1048576,
-        524288
-      ],
-      "exit_codes": [
-        0,
-        0
-      ],
-      "flags": [
-        "-Wall",
-        "-Wextra",
-        "-Werror"
-      ],
+      "performed_this_run": false,
       "target_linked": false
     }
   },
@@ -285,98 +274,12 @@
       "linked": true,
       "executed": false,
       "hardware": false
-    },
-    "arm_objects": [
-      {
-        "flash_kib": 1024,
-        "image": "bootloader",
-        "objects": 29,
-        "exit": 0
-      },
-      {
-        "flash_kib": 1024,
-        "image": "app",
-        "objects": 29,
-        "exit": 0
-      },
-      {
-        "flash_kib": 512,
-        "image": "bootloader",
-        "objects": 29,
-        "exit": 0
-      },
-      {
-        "flash_kib": 512,
-        "image": "app",
-        "objects": 29,
-        "exit": 0
-      }
-    ],
-    "hal_reference_syntax": {
-      "exit": 0,
-      "linked": false
     }
   },
   "explorer": {
-    "targets": [
-      {
-        "target": "explorer_ZG_loopback_READONLY",
-        "flash_bytes": 1048576,
-        "can_loopback": true,
-        "c_objects": 46,
-        "startup_assembled": false,
-        "linked": false
-      },
-      {
-        "target": "explorer_ZG_uart_READONLY",
-        "flash_bytes": 1048576,
-        "can_loopback": false,
-        "c_objects": 46,
-        "startup_assembled": false,
-        "linked": false
-      },
-      {
-        "target": "explorer_ZE_loopback_READONLY",
-        "flash_bytes": 524288,
-        "can_loopback": true,
-        "c_objects": 46,
-        "startup_assembled": false,
-        "linked": false
-      },
-      {
-        "target": "explorer_ZE_uart_READONLY",
-        "flash_bytes": 524288,
-        "can_loopback": false,
-        "c_objects": 46,
-        "startup_assembled": false,
-        "linked": false
-      }
-    ],
-    "forbidden_gates_rejected": [
-      "OTA_ENABLE_FLASHING",
-      "OTA_ENABLE_BOOT_HANDOFF",
-      "OTA_ENABLE_WATCHDOG"
-    ],
-    "nor_variant_compiles": [
-      "write hooks off",
-      "self-test at 0xFFF000",
-      "self-test in image slot rejected",
-      "self-test without address rejected",
-      "update-capable build accepted",
-      "engine switch alone rejected",
-      "board switch alone rejected",
-      "update-capable without write hooks rejected",
-      "loader role accepted",
-      "handoff without the board switch rejected",
-      "handoff with a closed engine rejected",
-      "handoff trusting nothing rejected",
-      "unknown boot role rejected",
-      "application role accepted"
-    ],
-    "physical_mode_loopback_entry_rejected": true,
+    "performed_this_run": false,
     "hardware_verified": false,
-    "target_linked": false,
-    "performed_this_run": true
+    "target_linked": false
   },
   "gnu_readonly_targets": {
     "status": "passed",
@@ -405,15 +308,15 @@
         "linked": true,
         "image": {
           "flash_base": "0x8000000",
-          "flash_bytes": 44432,
+          "flash_bytes": 44520,
           "flash_limit": "0x8010000",
           "ram_bytes_with_reserved_stack": 13216,
           "initial_sp": "0x20020000",
-          "reset_vector": "0x80098e9",
-          "elf_entry": "0x80098e9"
+          "reset_vector": "0x8009941",
+          "elf_entry": "0x8009941"
         },
         "hardware_verified": false,
-        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  44420\t     12\t  13204\t  57636\t   e124\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZG_uart_READONLY\\explorer_ZG_uart_READONLY.elf"
+        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  44508\t     12\t  13204\t  57724\t   e17c\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZG_uart_READONLY\\explorer_ZG_uart_READONLY.elf"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
@@ -437,23 +340,23 @@
         "linked": true,
         "image": {
           "flash_base": "0x8000000",
-          "flash_bytes": 44440,
+          "flash_bytes": 44528,
           "flash_limit": "0x8010000",
           "ram_bytes_with_reserved_stack": 13216,
           "initial_sp": "0x20020000",
-          "reset_vector": "0x80098ed",
-          "elf_entry": "0x80098ed"
+          "reset_vector": "0x8009945",
+          "elf_entry": "0x8009945"
         },
         "hardware_verified": false,
-        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  44428\t     12\t  13204\t  57644\t   e12c\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZE_uart_READONLY\\explorer_ZE_uart_READONLY.elf"
+        "size_output": "text\t   data\t    bss\t    dec\t    hex\tfilename\n  44516\t     12\t  13204\t  57732\t   e184\tD:\\Project\\Can-learning\\ota-core\\build\\gnu-explorer\\explorer_ZE_uart_READONLY\\explorer_ZE_uart_READONLY.elf"
       }
     ],
     "artifacts": [
       {
         "target": "explorer_ZG_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.elf",
-        "bytes": 1240204,
-        "sha256": "536308eddb2d16793ab14d8f7a461b4ef68eda306c85d295952247b9429ec22d"
+        "bytes": 1240316,
+        "sha256": "23a959fda7dbfc143c824e30e0833349b182d9feb60e95876baaaf70138fec8c"
       },
       {
         "target": "explorer_ZG_loopback_READONLY",
@@ -464,32 +367,32 @@
       {
         "target": "explorer_ZG_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_loopback_READONLY/explorer_ZG_loopback_READONLY.map",
-        "bytes": 610228,
-        "sha256": "e397d141795e34c93a6837e7d11d8105d3b8cd6a7295271ab5b91811baa4330e"
+        "bytes": 610983,
+        "sha256": "6cbaf4a24e233e3b8ae8bcab945b30aa4068e021058d98240969aad324ba6ec7"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.elf",
-        "bytes": 1506000,
-        "sha256": "226fc4f48f88813eb7b41da8ae75289f49d7cbce90b8334bd8832ffde493c080"
+        "bytes": 1509880,
+        "sha256": "3a30036f2903577e43527394536d4f81b49fba13407a9ebaa792a865455f012c"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.bin",
-        "bytes": 44432,
-        "sha256": "0f45369dd28b9f14849606344ff4a85211bdb14c6f3b95c601af0caee2f7c8bc"
+        "bytes": 44520,
+        "sha256": "8b3c553b5a39a0b8c4e51ad18880d6e145b362daad517bb2bb15b9e42b80afc7"
       },
       {
         "target": "explorer_ZG_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZG_uart_READONLY/explorer_ZG_uart_READONLY.map",
-        "bytes": 599624,
-        "sha256": "1bba6b73b150a54fe0c7032fd5fca3e7a68a6ebda718900267b376deb6445bc9"
+        "bytes": 600391,
+        "sha256": "398cab7e496de6331eab807df8bfbcd0820ad8e39fb38b9ae735127657b93073"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.elf",
-        "bytes": 1240208,
-        "sha256": "9fb44ec8aefb2a3469ca5244cd4424412c2fd57826031d36c2a4ba10b988c441"
+        "bytes": 1240320,
+        "sha256": "3674cbf907559305aaddec0b64e3d5173cf52adaf7f96738082419b33b90bc46"
       },
       {
         "target": "explorer_ZE_loopback_READONLY",
@@ -500,36 +403,37 @@
       {
         "target": "explorer_ZE_loopback_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_loopback_READONLY/explorer_ZE_loopback_READONLY.map",
-        "bytes": 610228,
-        "sha256": "4c8c2438918c495b00e883d71d516a2511ae5c27b8d12ffb9fa053126f36ac3f"
+        "bytes": 610983,
+        "sha256": "366bd3a9fa850804cec107e7ee99cb052eb86759e6ce92b87b121ef8e4647df3"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.elf",
-        "bytes": 1506004,
-        "sha256": "f72de1befa262e5ab2a7c27939dedf1ee37aa3635b2d6dca0b3bc827148a6920"
+        "bytes": 1509884,
+        "sha256": "f964c81c9c9c859488b74483ef947eb76ec338725e9e140add477c52ad1d9adb"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.bin",
-        "bytes": 44440,
-        "sha256": "f5bcaeaeb9a7a566c02f5e2db0539e295065b5da61ab873909e20aefab0c0db0"
+        "bytes": 44528,
+        "sha256": "939f983688e2750cc404da3e5e1ebab3f04000db2b562e87c8baca119389733c"
       },
       {
         "target": "explorer_ZE_uart_READONLY",
         "path": "build/gnu-explorer/explorer_ZE_uart_READONLY/explorer_ZE_uart_READONLY.map",
-        "bytes": 599664,
-        "sha256": "bf6ff1b7f39abcaa906d5176c50b434d2b495e22a3b11507f733a30c73321d9b"
+        "bytes": 600431,
+        "sha256": "604d946a5f1b3901b8f6d00c0a28740e6bc3001b002ac8b64c2b0cd0d6d55bf9"
       }
     ],
     "validated_source_hashes": {
       "build-temp/bench_seq.py": "713c7bea38e4bf10ae5afb34f13a2bdc1b446926b55f35005a4f0c7c8a056b5c",
-      "build-temp/build_stage_d.py": "b158871c7d62071347406941053108566c1bb2c864e5a6543fc44c53d1e1bcd6",
+      "build-temp/build_stage_d.py": "a4e5829a0a27087b5c382df3556fe74e2390e3c631527e26c43ac47e99e64eff",
       "build-temp/build_update_variant.py": "f54bf97ce210e1c6e6e86f9d23002a7b5dcbf7a4842f8df8f1d3380cc0729230",
+      "build-temp/stage-d/attack_main.c": "c57cc8981971523fe3e1c778b5660e2615462c0a99abdc038f91d72a90b836df",
       "build-temp/stage-d/dump_main.c": "4452ba08c2800af4f6f76188c37842ab98a98fb2a7c5e60fa92ffc6487ff1b12",
       "build-temp/stage-d/wipe_meta_main.c": "2d0711cc24f6cb915f5d0fa41d120a1f68ef6458a4009de616bc6dc85a189d28",
       "firmware/app/main.c": "bf171e3b0c367b051fb33497cb8c3eb0b6b4194aa836280c552044408671e47b",
-      "firmware/bootloader/main.c": "1f63d7f369d67e66bc54c3e9ff2d3eff9d55c9e7de026beab93d3bf9b964d8db",
+      "firmware/bootloader/main.c": "7b4e5c3f7cd2eb7b7bedffae51955fce043c54827883349057cfca40065091bf",
       "firmware/explorer_loopback/main.c": "9d3f178e48fa5fd7db9fc5fa6235e06781308ec9220ddaf51adc43f85ada60d4",
       "firmware/linker/app_boot.ld": "8106121a8162f81fb238e1aa85ed1407ce214c8d9837f916255703aa34f8bd33",
       "firmware/linker/app_ZE.sct": "ee98bd9b5c0e0fba1cfdfcba7e07e048f505dabe2a5c86c3f758c6d3022bce2b",
@@ -538,17 +442,17 @@
       "firmware/linker/bootloader_ZG.sct": "d26103110e37aa5efba2158d2e75f4bdd6dfd98f67c6da7ef7117493a7e0daf0",
       "firmware/linker/explorer_boot.ld": "1268ecc9fd3f3ef1d5ad045ce251e104e81c052c81a3fc612e01f2e02b1fe650",
       "firmware/runtime/newlib_init.c": "ddb2b5d6c5c05233a20875277df33fe274e79e3cc928d6c753c7124c21777e02",
-      "include/ota/boot.h": "38f3a12076ab899fc062b923907f2e9ead592912b902be59b73b62fe8554b6c1",
+      "include/ota/boot.h": "cb0434df77693604dc5da9e7b6f5f794c1f67a566ae7e096bb85a19d6fb69f10",
       "include/ota/can_frame.h": "f517988b24bf8165b260458c33f6cb4311cb854d748ec1544d1146e8d15afb36",
       "include/ota/can_uart.h": "a9b2cc62b7d8a9f2dc5bcc67bdfb64788133fbe9be0e772cd37742c434987812",
       "include/ota/crc32.h": "cd2ae5f6b24108e060cd04438897279263daf3f0132eb57a09edf19ad477795b",
-      "include/ota/flash_layout.h": "c4c3539993daa7282b3d2ebad07bd4fc361841718f8b4eacc94faa72165ccb05",
-      "include/ota/image.h": "64b67b249d0315e5676df5ccdbe195a9b9573c862a1ff5f573a13b9a5717f869",
+      "include/ota/flash_layout.h": "bb777cc3285bce63b7ccc4bf476d0096a293cda9a8ad8cb6d0be8342d4b579dd",
+      "include/ota/image.h": "8bad18a0dcfdf8c7ca7196539eb382ce13842910033be684c09a5afccb28a27c",
       "include/ota/isotp.h": "c2c83c65ffee0c9b5d5603b2eef5402d84c27c28494376126e4eba2f3c40170f",
       "include/ota/metadata.h": "0e06429d70a9046e776e0d8c0e978af9def97da2336d8817dec07bf56e026597",
       "include/ota/ota_port.h": "c839449762eb1eff66ec8b3055090ecf4814c13d0240b0d0224207349639d587",
       "include/ota/pubkey.h": "67b5b989f439d9869fb13b25be70dd571988f6297907a9f17be1147b1e88802b",
-      "include/ota/signature.h": "62aa856f4fb9778dbdd5c90029b802ea7510306f766777d19c8e22a07c5fd61e",
+      "include/ota/signature.h": "01e0e7ada9d65be41fca69a0fc73943ea1b4b83e980b2d42b11a03ea7e76ad25",
       "include/ota/spi_nor.h": "835c1afe3f44620db87e8169472eaccc9306125d696a0ea15c24a44a0e7ac47b",
       "include/ota/uds.h": "1f56af7e076b325f3144e25d09fe9b11e77635bab3efdc1672790d2dd710cf90",
       "include/ota/watchdog_policy.h": "9c2aa995a01dd523170e923dabfc410b52fec93f0f0b0bdd985b1b533b981181",
@@ -586,13 +490,13 @@
       "run_tests.py": "5642df066095f453e814eecadeca5e9ad3eaf5205d79c7c1c724d0c9aaf2a3d6",
       "run_virtual_can_checks.py": "6d01cf70bf9b6354262789c4effc834f56c3a07b2b3b7a4c7ea0404234c21720",
       "sim/ecu_main.c": "975255ece95292d32b186f3594c1b109cf959d30ff2f86f4cdf641fadd904c11",
-      "src/core/boot.c": "9710dcdbc404ee56b08d881930c32adb6dece9c7fb1722d7441fc4bee80d2475",
+      "src/core/boot.c": "01b9ded5378cbd8b1f928e8bdd031335444436e9880f6b0004e876c9405990f0",
       "src/core/can_uart.c": "633de3b6d031bfe87dea66fbf469029af28e1d726395c61096006f041460d856",
       "src/core/crc32.c": "58aa2b4bd0f4219dd3297a5f06927b4a89a1e5deba23b6b93508c15d51e59da6",
-      "src/core/image.c": "d1d1689ead03a06ac4041da0ef302c105eb90fb3f9e6a543a877e72f08e07bea",
+      "src/core/image.c": "a681df76c572e29fd18b2a1497122086ec9bc30af10ecbadbac9581cb8be1a34",
       "src/core/isotp.c": "4db8e74761947d442570b3f844e596430e89218d373c5f47e41cabb93f7d74f5",
       "src/core/metadata.c": "fac7ba2a4ee787f900c874f186a1861e3c072f4795846763a126bc5c40b7b5ff",
-      "src/core/signature.c": "15d55f8ce2e29d61368671aa292bb239b6e80cd2113f8ff58242eff99b9488b2",
+      "src/core/signature.c": "ee61250cc55f167c9380da8a02e8dfbd5f8264b287f7d96eecd38cc1fdfb32b7",
       "src/core/uds.c": "51615e7e921b042bc0288593f915dc793e9418b714827937175bec424f3c4128",
       "src/core/watchdog_policy.c": "60e34b515494e54df2769fe5bd1f2ad52a84692f4829b45d2cd3f8088d1c5450",
       "src/driver/spi_nor.c": "93fff6fd100f05fdabcc53e15f8066fcd9bfe61ac16e4c22cb8473ef804f1fe2",
@@ -600,14 +504,14 @@
       "src/port/host/flash_ram.h": "f4452bfe846f79839146ed6771356e89f0aa605fbcfae960b01b8c5d4dd21f73",
       "tests/bench.c": "0e20f665454cf9b01c0a4fb488ff3c707e95fcbff169ccab45edac1df91fadcb",
       "tests/bench.h": "a11c14e67d5443182d26aa8fe3a5745fff9e1d3e1dc9f282d9be15e07352aff6",
-      "tests/test_boot.c": "e90139fdf0754e641ec31e8ea38f50da21c94ee8b0b4e99f8276d75f4bb114a1",
+      "tests/test_boot.c": "4d09cc89e2bcd88ce872c1a15c3dd0b70789a23e51f9389d1066a1f1554fb5f7",
       "tests/test_crc.c": "00659830d334b05f6e5bee90d9d05dd4855db07b5423cd310f2bdf07ce487ae9",
       "tests/test_dtc.c": "dc9af9cc990149626837b05ba6f6c2b5eb371b64ddab527070904a13e9b64e6f",
       "tests/test_input_edges.c": "5bbd20ee062987f9530b8cedb6d41176bb647ddcc95807f5743402c455eb4ae7",
       "tests/test_isotp.c": "71450d608cb671472833a20142dd99bdb757b2bac3918f8cb9a5a22d35e7af37",
       "tests/test_main.c": "5b0e180623d6363bc47bdeaa2636e1bbbe2d424d121c48e3c17d1189dd245471",
       "tests/test_protocol_edges.c": "e2ed4dd84cd9e31c206b56c2c458a80d94d04a1268daed367c5d734fe075dfe7",
-      "tests/test_signature.c": "56bda0398b25e96a963bc8d2ed2daf2707315487491e0dc19cb4b9407fdc2073",
+      "tests/test_signature.c": "71ce6bd8e019ef51a3c8a5f94a32bbd3cd91079c0d69e217e11cfe0a3a9206e3",
       "tests/test_uart_codec.c": "e29f62626aa693cbfe1a027278d9e3273083178609945dd6db2bdeaf5e44b872",
       "tests/test_uart_fuzz.c": "987ba9aed8b04a97e1805480eb78b375a04ebb138bd085b9c121f344b73a884f",
       "tests/test_uds.c": "de5c0a18d4754fa34a109a048608b9697eb3a2432fe4274712c798ba96c58f07",
@@ -615,7 +519,7 @@
       "tests/test_util.h": "0523a750b96b3a600ec89889d6be2b8197bbe95a740b93534bdf01f43812da8b",
       "tests/test_watchdog.c": "294759724a3ca24d696b6e789892c98db83c66a8c836005ba88914a020fd7d82",
       "tests_driver/test_spi_nor.c": "c0e1c161d152d3fd572b8a951433702fa6768357392f5e818df4754ca44185c5",
-      "tests_firmware/test_app.c": "a45f8a55b6827ce6ed91a3e5ed0274111a35c7e709e1270f80a296ecfc8a9480",
+      "tests_firmware/test_app.c": "cb301633042fad7dd5084eddb6f1c09ea9e212b87102444281dc1006d275e6bb",
       "tests_firmware/test_explorer_loopback.c": "10380806fc06e4b933b7875a303163451441d7108895db8766d55da88ff27b2a",
       "tests_pc/test_pc.py": "8b70e4d08c75f74787530105b75cb7c5d8d7674bca8754aeb640cbd8f535f277",
       "tests_stm32/mock_board.c": "60a834c5ccef59973b552c85aaa92d94d78817d0a210f3d851a8a29e8c5b533a",
@@ -623,7 +527,7 @@
       "tests_stm32/test_stm32.c": "ea1e56a464cbd7ec26ec389f9921fb855c43baa4a819d7148dfd45c578350dbf",
       "tests_tools/check_package.c": "12f47c16d889af385634b445e2759d1059a0fbc6209a3e0c3222d96848548633",
       "tests_tools/test_ed25519.py": "bba0e9cc3f8c81beae2fdc15fa360f862f415363914735503db6ff3ed299501d",
-      "tests_tools/test_make_image.py": "7776b97e5b7c476db531506d9183209f97ab9551ec622d2385be5d48ffa73e97",
+      "tests_tools/test_make_image.py": "b56a79334aa4b5f028e58bb208c86f3f2ead29b3116a5955587782af7738af0b",
       "tests_tools/test_uart_transport.py": "98481fbafe823906470f7d260cb8e5575a4a6d10e07c63dc30f4209fed53ddae",
       "tests_virtual_can/bench.py": "9d879bfdbddd093a44c0df9b0179d9255c4044eb7a49156efeb807559683eda9",
       "tests_virtual_can/test_virtual.py": "9bac33419fdffb85f9cb98e36ad0bd38f423416b5bd47392af6ff34905fec562",
@@ -648,12 +552,12 @@
       "tools/ed25519.py": "069a20544c4e707f2c050ab680bdc57157a0766ddc34c93baf09530e0f0c53c4",
       "tools/generate_explorer_mdk.py": "64617e3f93af299d78a56fcdc84061553126520ecf85e03760c845d54635e7af",
       "tools/generate_mdk.py": "74e43f961f7c0ad3559005bd594b7b9b445f197e8272058c090fd770ffb5d775",
-      "tools/make_image.py": "6a4af28383dbc1a60b472a0fe8e3f23e50cd974aa097af722bb2680bade6f762",
+      "tools/make_image.py": "5df10138a0458ba9fe3a274bc45e82cb319cbdb494408ac3c48181c5a6497bf2",
       "tools/package_project.py": "bd0f58ceb79abdecf64de2979a6261ec4dd35c0bd76f0b45d952514e473793dc",
       "tools/pc/__init__.py": "d74f5684789fa22b23b00051575d11cd5846be5ce18f6dc6127e23a0aba202f5",
       "tools/pc/isotp_client.py": "7be08a3bfa82bb3407d5117d88e216e674cc91336031120eb85a4b1883fa5415",
       "tools/pc/transport.py": "e6fb758c2918fdcd8bf700b7b88fce74c4c7c9a21ab3d8167266fd6c4e597fc3",
-      "tools/pc/uds_client.py": "ddaf9ba49a561ff0d6ba047434dce6fdfc817b511e59d0a2bf8172c0d91ec209",
+      "tools/pc/uds_client.py": "30522c46743af8513ed2eda5d4057ab668744821acd6be908091dca35a58ae3e",
       "tools/source_snapshot.py": "6656641d5d2723b3ebfb7a97c301acb380af9872e4197b0d189c1a30646ee647",
       "tools/templates/target_option.xml": "4866fd38cff9c16db1d9eb8266642804eee919d6aa182c1a84b579eb2882b7b9",
       "tools/uds_gui.py": "ed0c5db7e61f5a03823521700017481f8efba7087d3f5ab75f8b8ffee961ab30",

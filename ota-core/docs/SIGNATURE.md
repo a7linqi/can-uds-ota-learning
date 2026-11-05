@@ -57,7 +57,11 @@ IMG2 头保持不变（32 字节，8 个 32 位小端字段），新增两个约
 
 所有入参在任何读操作**之前**校验：签名指针非空、偏移只能是下载区或备份区、`8 ≤ image_size ≤ IMAGE_MAX_PAYLOAD`、且标量 `S` 必须**规范**（`S < L`，见 [RFC 8032 §5.1.7、§8.4](https://www.rfc-editor.org/rfc/rfc8032.html)）。旧实现只检查高三位，会同时接受 `S` 和 `S+L`；其中 `S+L` 不符合标准编码要求。这不是对另一份固件生成有效签名。
 
-**备份区例外**：`create_backup` 生成的备份镜像只有 CRC（`image_validate_backup`，无签名）。因为备份内容是"已通过签名验证安装的内部 App"的副本，恢复时 MCU 也没有私钥重新签名。
+~~**备份区例外**：`create_backup` 生成的备份镜像只有 CRC。~~
+
+**2026-11-05 更正**：这个例外已经取消。它的前提是"恢复时 MCU 没有私钥，没法重签"。签名凭证出现后前提不成立——
+`create_backup()` 会把当前 App 凭证里的签名抄进备份容器，恢复时是**重放一份已有证明**，不是**制造**证明。
+现在 `image_validate_backup()` 要求 `flags == IMAGE_FLAG_SIGNED` 并验签。
 
 ### 三条验收路径的接入点（2026-11-02 复核）
 
@@ -66,12 +70,13 @@ IMG2 头保持不变（32 字节，8 个 32 位小端字段），新增两个约
 | 路径 | 入口 | 验签点 |
 |---|---|---|
 | 下载 | UDS `0x34 / 0x36 / 0x37` | `0x37` 先核对 `32 + image_size + (signed ? 64 : 0) == 下载总量`，再调 `image_validate`（含签名）；通过后才置 `READY` |
-| 安装 | `boot_select` 的 `READY` / `INSTALLING` | `pending_ok()` 调 `image_validate`（含签名）；`install()` 只搬 `image_size` 字节，签名不会被写进内部 Flash |
-| 恢复 | `boot_select` 的 `RESTORING` | `backup_ok()` 用 `image_validate_backup`（只 CRC） |
+| 安装 | `boot_select` 的 `READY` / `INSTALLING` | `pending_ok()` 调 `image_validate`（含签名）；`install()` 搬 `image_size` 字节，再把容器头与签名写成内部 Flash 尾部的凭证 |
+| 启动 | `boot_select` 的 `IDLE` / `DOWNLOADING` / `TRIAL` | `signed_image_ok()`：CRC → 凭证存在 → 凭证头与 metadata 逐项相等 → `image_signature_verify_split()` |
+| 恢复 | `boot_select` 的 `RESTORING` | `backup_ok()` 用 `image_validate_backup`，现在要求签名并验签 |
 
 `0x36` 传输阶段只写不验是有意的：流式校验在 `0x37` 一次做完，避免半包误判。
 
-**备份例外的边界**：`image_validate_backup` 只接受 `BACKUP_OFFSET`，且要求 `flags == 0`，其余偏移在读任何字节前就返回失败。因此"备份区免签"只对真正的备份槽开放，不能被拿去验下载区，也就不会变成整体绕过签名的后门。
+`image_validate_backup` 只接受 `BACKUP_OFFSET`，其余偏移在读任何字节前就返回失败。
 
 ## 6. 依赖
 
@@ -95,5 +100,9 @@ IMG2 头保持不变（32 字节，8 个 32 位小端字段），新增两个约
 ## 8. 边界（不要夸大）
 
 - verify 路径使用 `*_vartime` 点运算；签名与公钥均为公开数据、验证不涉私钥，固件签名场景可接受。**量产抗侧信道安全启动应换 constant-time 实现或硬件加速**。
-- 公钥硬编码、EEPROM 不提供防篡改版本计数，仍**不是安全启动**。
+- ~~公钥硬编码、EEPROM 不提供防篡改版本计数，仍不是安全启动。~~（2026-11-05 起 App 启动前验签，属于安全启动；
+  见 §9 与 `stages/board-lab/SECURE_BOOT_EVIDENCE.md`。）
+- **Bootloader 自身不验签**：能改写 0x08000000 的人不受任何约束。信任锚仍在硬件（RDP / 关闭 SWD / 写保护），
+  本项目假设的是"不去写它"。
+- EEPROM 仍不提供防篡改版本计数器，降级攻击不在防护范围内（版本策略只挡 `version <= active_version` 的常规包）。
 - 演示 seed 非密码学秘密；这是"篡改检测"，不是"真实性权威"。

@@ -61,6 +61,33 @@ int main(void)
             ota_bsp_log("loader: handing off to the app at 08010000");
             (void)ota_stm32_jump_to_app(&storage);
         }
+        /* "Staying in the loader" is the same sentence for six very different
+         * situations. Without the reason a board with no debugger attached
+         * cannot be told apart from a board that is refusing an unsigned
+         * image, and the only way to find out is to guess. */
+        switch(storage.boot.last_reason) {
+        case BOOT_REASON_NO_METADATA:
+            ota_bsp_log("loader: no usable metadata record");
+            break;
+        case BOOT_REASON_IMAGE_DAMAGED:
+            ota_bsp_log("loader: installed app failed its CRC or vectors");
+            break;
+        case BOOT_REASON_NO_TICKET:
+            ota_bsp_log("loader: installed app has no signed ticket");
+            break;
+        case BOOT_REASON_TICKET_MISMATCH:
+            ota_bsp_log("loader: ticket describes a different image");
+            break;
+        case BOOT_REASON_SIGNATURE:
+            ota_bsp_log("loader: ticket signature does not verify");
+            break;
+        case BOOT_REASON_UNREADABLE:
+            ota_bsp_log("loader: internal flash could not be read");
+            break;
+        default:
+            ota_bsp_log("loader: update state machine has work to do");
+            break;
+        }
         ota_bsp_log("loader: staying in the loader");
     }
 #endif

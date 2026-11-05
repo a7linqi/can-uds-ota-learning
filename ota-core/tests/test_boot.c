@@ -714,15 +714,108 @@ static void signature_paths(void)
     TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_APP && running_version(3u));
     TEST_ASSERT(boot_confirm(&B.boot)==0);
 
-    /* The backup container is intentionally unsigned, but that exemption must
-     * apply to the backup validator only. Drive READY -> backup+install once,
-     * then show the CRC-only validator accepts the backup while the signed
-     * validator rejects it, so restore is not a global signature bypass. */
+    /* The backup used to be unsigned on purpose, with the exemption confined
+     * to image_validate_backup(). It now carries the signature copied out of
+     * the live ticket, so the same container validates through both paths.
+     * Keeping the old assertion would enshrine a hole: an unsigned backup is
+     * exactly what a rollback would use to run unverified code. */
     restore_fixture(&Ready);
     TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_APP);
     TEST_ASSERT(image_validate_backup(B.boot.external,BACKUP_OFFSET,0,0)==0);
-    TEST_ASSERT(image_validate(B.boot.external,BACKUP_OFFSET,0,0)!=0);
+    TEST_ASSERT(image_validate(B.boot.external,BACKUP_OFFSET,0,0)==0);
+    /* One flipped payload byte is caught by the CRC and, with the header CRCs
+     * repaired, by the signature as well. A backup nobody signed cannot be
+     * made to pass by editing its own header. */
+    B.external_mem[BACKUP_OFFSET+IMAGE_HEADER_SIZE+40u]^=0x01u;
+    TEST_ASSERT(image_validate_backup(B.boot.external,BACKUP_OFFSET,0,0)!=0);
 #endif
+}
+/* Secure boot is the claim that CRC32 cannot make: "these are the bytes
+ * somebody signed", not "these bytes are not damaged". Every case below is
+ * something an attacker with a debug probe can actually do -- the probe writes
+ * flash and edits the EEPROM record, so repairing a CRC is one metadata_save
+ * away. The only thing it cannot do is produce an Ed25519 signature. */
+static void secure_boot_paths(void)
+{
+    metadata_t m;
+    uint32_t crc,k;
+
+    puts("[secure boot: only a signed image may run]");
+
+    /* 1. The headline case. Rewrite part of the installed app, recompute the
+     * payload CRC, repair the ticket's own header CRC32 and store the new CRC
+     * in the metadata. Every checksum an attacker can recompute is now
+     * consistent -- this is exactly what a debug probe can do -- so nothing
+     * except the signature is left to notice. A test that stops at "rewrite
+     * the payload" passes for the wrong reason: the ticket's stale payload_crc
+     * catches it, and the signature never gets a chance to matter. */
+    restore_fixture(&Idle);
+    for(k=0u;k<64u;k++) B.internal_mem[APP_OFFSET+200u+k]^=(uint8_t)(k+1u);
+    crc=crc32_calc(B.internal_mem+APP_OFFSET,1003u);
+    TEST_ASSERT(metadata_load(&B.meta,&m)==1);
+    m.active_crc=crc;
+    TEST_ASSERT(metadata_save(&B.meta,&m)==0);
+    {
+        image_header_t h;
+        uint8_t raw[IMAGE_HEADER_SIZE];
+        memcpy(raw,B.internal_mem+APP_TICKET_OFFSET,IMAGE_HEADER_SIZE);
+        image_header_decode(&h,raw);
+        h.payload_crc=crc;
+        image_header_finalize(&h);
+        image_header_encode(&h,raw);
+        TEST_ASSERT(image_header_ok(&h));
+        memcpy(B.internal_mem+APP_TICKET_OFFSET,raw,IMAGE_HEADER_SIZE);
+    }
+    TEST_ASSERT(image_validate_app(B.boot.internal,1003u,crc)==IMAGE_APP_VALID);
+    TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_LOADER);
+    TEST_ASSERT(B.boot.last_reason==BOOT_REASON_SIGNATURE);
+
+    /* 2. Leave the image alone and flip a bit inside the signature. */
+    restore_fixture(&Idle);
+    B.internal_mem[APP_TICKET_OFFSET+IMAGE_HEADER_SIZE+5u]^=0x01u;
+    TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_LOADER);
+    TEST_ASSERT(B.boot.last_reason==BOOT_REASON_SIGNATURE);
+
+    /* 3. A ticket describing a different version of the same image. The
+     * header is inside the signed message, so repairing its own CRC does not
+     * help. */
+    restore_fixture(&Idle);
+    {
+        image_header_t h;
+        uint8_t raw[IMAGE_HEADER_SIZE];
+        memcpy(raw,B.internal_mem+APP_TICKET_OFFSET,IMAGE_HEADER_SIZE);
+        image_header_decode(&h,raw);
+        h.version=9u;
+        image_header_finalize(&h);
+        image_header_encode(&h,raw);
+        TEST_ASSERT(image_header_ok(&h));
+        memcpy(B.internal_mem+APP_TICKET_OFFSET,raw,IMAGE_HEADER_SIZE);
+    }
+    TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_LOADER);
+    TEST_ASSERT(B.boot.last_reason==BOOT_REASON_TICKET_MISMATCH);
+
+    /* 4. An erased ticket: the state an interrupted install leaves behind.
+     * The app still passes its CRC, and it must still not run. */
+    restore_fixture(&Idle);
+    memset(B.internal_mem+APP_TICKET_OFFSET,0xFF,APP_TICKET_SIZE);
+    TEST_ASSERT(metadata_load(&B.meta,&m)==1);
+    TEST_ASSERT(image_validate_app(B.boot.internal,m.active_size,m.active_crc)
+                ==IMAGE_APP_VALID);
+    TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_LOADER);
+    TEST_ASSERT(B.boot.last_reason==BOOT_REASON_NO_TICKET);
+
+    /* 5. Layout arithmetic: the ticket is the last thing in the app area, and
+     * it has to stay word aligned because internal flash is programmed in
+     * words. */
+    TEST_ASSERT(APP_TICKET_OFFSET+APP_TICKET_SIZE==APP_OFFSET+APP_SIZE);
+    TEST_ASSERT(IMAGE_MAX_PAYLOAD+APP_TICKET_SIZE==APP_SIZE);
+    TEST_ASSERT((APP_TICKET_OFFSET&3u)==0u);
+
+    /* 6. The untouched fixture still boots -- otherwise the four refusals
+     * above could all be explained by a boot path that is simply broken. */
+    restore_fixture(&Idle);
+    TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_APP);
+    TEST_ASSERT(B.boot.last_reason==BOOT_REASON_APP_STARTED);
 }
 void run_boot_tests(void)
 {
@@ -730,6 +823,7 @@ void run_boot_tests(void)
     init_sign_key();
     ordinary_paths();
     signed_package_paths();
+    secure_boot_paths();
     signature_paths();
     watchdog_recovery();
     first_install_recovery();

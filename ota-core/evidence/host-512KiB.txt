@@ -17,6 +17,7 @@ uart fuzz / resync:
 [signed image validation]
 [boot/UDS storage paths]
 [signed UDS commit/install/recovery paths]
+[secure boot: only a signed image may run]
 [signature: download/install/restore paths]
 [watchdog-driven reset model]
 [boot/READY while the installed app does not validate]
@@ -26,9 +27,9 @@ uart fuzz / resync:
 [download/commit reset sweep]
   sampled 76 download mutation cut points
 [installation/reset sweep]
-  sampled 130 durable-mutation cut points (expected v2)
+  sampled 136 durable-mutation cut points (expected v2)
 [rollback/reset sweep]
-  sampled 76 durable-mutation cut points (expected v1)
+  sampled 79 durable-mutation cut points (expected v1)
 [input edges]
 [A] isotp_send length boundaries
   NOTE tests/test_input_edges.c:137  rejected length does not record tx_error; caller must use the return value
@@ -44,5 +45,5 @@ uart fuzz / resync:
 [I] uds response buffer preconditions
 [dtc]
 
-3421 checks, 0 failures
-420 storage power-cut scenarios (host model)
+3502 checks, 0 failures
+429 storage power-cut scenarios (host model)

@@ -2,6 +2,8 @@
  * setjmp terminates the infinite firmware loop at reset/observation bounds. */
 #include "mock_board.h"
 #include "ota/crc32.h"
+#include "ota/image.h"
+#include "ed25519.h"
 #include <setjmp.h>
 #include <stdio.h>
 #include <string.h>
@@ -36,6 +38,11 @@ static void put_le(uint8_t *p,uint32_t value)
 static void fixture(uint32_t state)
 {
     metadata_t m;
+    image_header_t h;
+    uint8_t raw[IMAGE_HEADER_SIZE],sig[OTA_SIGNATURE_SIZE];
+    uint8_t msg[IMAGE_HEADER_SIZE+16u],pub[32],priv[64];
+    unsigned char seed[32];
+    uint32_t i;
     ota_board_config_t config;
     mock_board_reset(); config=mock_config(); ota_stm32_ports_init(&storage,&config);
     memset(M.internal+APP_OFFSET,0xA5,16u);
@@ -49,6 +56,24 @@ static void fixture(uint32_t state)
         m.active_crc=crc32_calc(M.internal+APP_OFFSET,16u);
     }
     CHECK(!metadata_save(&storage.store,&m));
+
+    /* Secure boot: the app entry only accepts an image it can prove was
+     * signed, so the fixture has to install the ticket as well as the bytes.
+     * Signing with the demo seed keeps this a model check -- it proves the
+     * entry path consults the signature, not that the key is secret. */
+    for(i=0u;i<32u;i++) seed[i]=(unsigned char)i;
+    ed25519_create_keypair(pub,priv,seed);
+    memset(&h,0,sizeof h);
+    h.magic=IMAGE_MAGIC; h.version=1u; h.image_size=16u;
+    h.payload_crc=crc32_calc(M.internal+APP_OFFSET,16u);
+    h.load_address=APP_BASE_ADDR; h.flags=IMAGE_FLAG_SIGNED;
+    image_header_finalize(&h); image_header_encode(&h,raw);
+    memcpy(msg,raw,IMAGE_HEADER_SIZE);
+    memcpy(msg+IMAGE_HEADER_SIZE,M.internal+APP_OFFSET,16u);
+    ed25519_sign(sig,msg,sizeof msg,pub,priv);
+    memcpy(M.internal+APP_TICKET_OFFSET,raw,IMAGE_HEADER_SIZE);
+    memcpy(M.internal+APP_TICKET_OFFSET+IMAGE_HEADER_SIZE,sig,OTA_SIGNATURE_SIZE);
+
     M.idle_hook=idle; origin=0u; observation_ms=6000u; stop_reason=0;
     lose_health_ms=0u; background_service=0;
 }

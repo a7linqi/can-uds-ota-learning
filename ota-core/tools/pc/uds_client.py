@@ -9,6 +9,7 @@ APP=0x08010000
 MAGIC=0x32474D49
 IMAGE_FLAG_SIGNED=0x00000001
 SIGNATURE_SIZE=64
+TICKET_SIZE=96  # secure-boot ticket at the end of the app area (header+signature)
 class NegativeResponse(RuntimeError):
     def __init__(self,sid,nrc):
         self.sid,self.nrc=sid,nrc
@@ -25,7 +26,7 @@ def inspect_package(data,flash_kib=1024):
     if magic!=MAGIC or version==0 or address!=APP or (flags&~IMAGE_FLAG_SIGNED) or reserved:
         raise ValueError("unsupported IMG2 header")
     signed=bool(flags&IMAGE_FLAG_SIGNED)
-    if size<8 or size>flash_kib*1024-0x10000 or len(data)!=32+size+(SIGNATURE_SIZE if signed else 0):
+    if size<8 or size>flash_kib*1024-0x10000-TICKET_SIZE or len(data)!=32+size+(SIGNATURE_SIZE if signed else 0):
         raise ValueError("package size does not match its header/target capacity")
     if zlib.crc32(data[:28])!=hcrc or zlib.crc32(data[32:32+size])!=crc:
         raise ValueError("package CRC32 mismatch")

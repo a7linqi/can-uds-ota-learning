@@ -99,12 +99,55 @@ int image_validate(flash_port_t p,uint32_t offset,uint32_t *version,uint32_t *si
 int image_validate_app(flash_port_t p,uint32_t size,uint32_t crc)
 { return validate_payload(p,APP_OFFSET,size,crc); }
 
+/* The secure-boot ticket: header + signature of the image at APP_OFFSET.
+ * Read and write are deliberately dumb -- they move 96 bytes and nothing
+ * else. Deciding whether those bytes mean anything belongs to the boot
+ * selector, which is the only caller that also has the metadata needed to
+ * cross-check them. */
+int image_ticket_read(flash_port_t internal,uint8_t raw[IMAGE_HEADER_SIZE],
+                      uint8_t signature[OTA_SIGNATURE_SIZE])
+{
+    uint8_t block[APP_TICKET_SIZE];
+    if(!internal.read || !raw || !signature) return -1;
+    if(internal.read(internal.user,APP_TICKET_OFFSET,block,sizeof block)) return -1;
+    memcpy(raw,block,IMAGE_HEADER_SIZE);
+    memcpy(signature,block+IMAGE_HEADER_SIZE,OTA_SIGNATURE_SIZE);
+    return 0;
+}
+int image_ticket_write(flash_port_t internal,const uint8_t raw[IMAGE_HEADER_SIZE],
+                       const uint8_t signature[OTA_SIGNATURE_SIZE])
+{
+    uint8_t block[APP_TICKET_SIZE],check[APP_TICKET_SIZE];
+    if(!internal.write || !internal.read || !raw || !signature) return -1;
+    memcpy(block,raw,IMAGE_HEADER_SIZE);
+    memcpy(block+IMAGE_HEADER_SIZE,signature,OTA_SIGNATURE_SIZE);
+    if(internal.write(internal.user,APP_TICKET_OFFSET,block,sizeof block)) return -1;
+    /* Read back. A driver that accepted 96 bytes but programmed 64 would
+     * otherwise only show up at the next boot, as a board that refuses to
+     * start with no explanation and no way to tell why. */
+    if(internal.read(internal.user,APP_TICKET_OFFSET,check,sizeof check)) return -1;
+    return memcmp(check,block,sizeof block) ? -1 : 0;
+}
+
 int image_validate_backup(flash_port_t p,uint32_t offset,uint32_t *version,uint32_t *size)
 {
     image_header_t h;
-    if(offset!=BACKUP_OFFSET || image_read_header(p,offset,&h) || h.flags!=0u ||
-       validate_payload(p,offset+IMAGE_HEADER_SIZE,h.image_size,h.payload_crc))
+    uint8_t signature[OTA_SIGNATURE_SIZE];
+    if(offset!=BACKUP_OFFSET || image_read_header(p,offset,&h) ||
+       validate_payload(p,offset+IMAGE_HEADER_SIZE,h.image_size,h.payload_crc)!=IMAGE_APP_VALID)
         return -1;
+    /* The backup used to be CRC-only on the argument that the device has no
+     * private key to re-sign at restore time. That argument expired when the
+     * ticket arrived: create_backup() copies the live ticket's signature into
+     * the backup container, so a restore replays a signature the device
+     * already held instead of minting one. Accepting an unsigned backup now
+     * would be the single hole through which a forged image could be made to
+     * run -- roll back to a hand-crafted backup, and secure boot never sees
+     * it. */
+    if(h.flags!=IMAGE_FLAG_SIGNED) return -1;
+    if(p.read(p.user,offset+IMAGE_HEADER_SIZE+h.image_size,signature,sizeof signature))
+        return -1;
+    if(image_signature_verify(p,offset,h.image_size,signature)) return -1;
     if(version) *version=h.version;
     if(size) *size=h.image_size;
     return 0;

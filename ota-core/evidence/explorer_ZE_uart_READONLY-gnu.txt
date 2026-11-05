@@ -116,4 +116,4 @@ COMMAND: D:\Project\Can\toolchain\xpack-arm-none-eabi-gcc-15.2.1-1.1\bin\arm-non
 
 COMMAND: D:\Project\Can\toolchain\xpack-arm-none-eabi-gcc-15.2.1-1.1\bin\arm-none-eabi-size.exe D:\Project\Can-learning\ota-core\build\gnu-explorer\explorer_ZE_uart_READONLY\explorer_ZE_uart_READONLY.elf
    text	   data	    bss	    dec	    hex	filename
-  44428	     12	  13204	  57644	   e12c	D:\Project\Can-learning\ota-core\build\gnu-explorer\explorer_ZE_uart_READONLY\explorer_ZE_uart_READONLY.elf
+  44516	     12	  13204	  57732	   e184	D:\Project\Can-learning\ota-core\build\gnu-explorer\explorer_ZE_uart_READONLY\explorer_ZE_uart_READONLY.elf

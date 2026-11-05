@@ -38,10 +38,27 @@ int image_validate(flash_port_t external, uint32_t offset,
 #define IMAGE_APP_CORRUPT  (-1)
 #define IMAGE_APP_UNREADABLE (-2)
 int image_validate_app(flash_port_t internal, uint32_t size, uint32_t crc);
-/* Only BACKUP_OFFSET with flags == 0 is accepted by this CRC-only path.
- * The backup holds a
- * copy of the already-verified internal App, and the device has no private
- * key to re-sign at restore time. */
+
+/* Secure-boot ticket: the 32-byte container header and the 64-byte Ed25519
+ * signature of the image at APP_OFFSET, stored in the last APP_TICKET_SIZE
+ * bytes of the app area (see ota/flash_layout.h).
+ *
+ * These two only move bytes. The boot selector is the only caller that also
+ * holds the metadata needed to decide whether the bytes describe the app it
+ * is about to jump into, and it is the one that runs the signature check. */
+int image_ticket_read(flash_port_t internal, uint8_t raw[IMAGE_HEADER_SIZE],
+                      uint8_t signature[OTA_SIGNATURE_SIZE]);
+int image_ticket_write(flash_port_t internal, const uint8_t raw[IMAGE_HEADER_SIZE],
+                       const uint8_t signature[OTA_SIGNATURE_SIZE]);
+
+/* Only BACKUP_OFFSET is accepted, and the container MUST be signed.
+ *
+ * It used to be CRC-only: the device has no private key, so it cannot re-sign
+ * at restore time. The ticket removes that constraint -- create_backup()
+ * copies the signature the device already holds into the backup container,
+ * so a restore replays a proof instead of producing one. An unsigned backup
+ * is now rejected because it would be the one path that puts unverified code
+ * into internal flash. */
 int image_validate_backup(flash_port_t external, uint32_t offset,
                           uint32_t *version, uint32_t *size);
 #endif

@@ -97,17 +97,22 @@ void run_signature_tests(void)
     TEST_ASSERT(image_header_ok(&h));
     TEST_ASSERT(image_validate(port,DOWNLOAD_OFFSET,0,0)!=0);
 
-    port=make_signed(0u);image_header_decode(&h,bytes);h.flags=0u;
-    image_header_finalize(&h);image_header_encode(&h,bytes);
-    TEST_ASSERT(image_validate(port,DOWNLOAD_OFFSET,0,0)!=0);
-    base=BACKUP_OFFSET;
+    /* A backup is a signature REPLAY, not a signature exemption. create_backup
+     * copies the live ticket's signature into the container, so a genuine
+     * backup validates through both paths. */
+    port=make_signed(0u);base=BACKUP_OFFSET;
     TEST_ASSERT(image_validate_backup(port,BACKUP_OFFSET,&version,&size)==0);
     TEST_ASSERT(version==7u && size==SIGNED_TEST_PAYLOAD);
-    /* The CRC-only exception must not validate a download or a signed header. */
+    TEST_ASSERT(image_validate(port,BACKUP_OFFSET,0,0)==0);
+    /* ... and an unsigned backup is refused outright now: it is the one
+     * container a rollback would otherwise execute with nothing behind it. */
+    port=make_signed(0u);image_header_decode(&h,bytes);h.flags=0u;
+    image_header_finalize(&h);image_header_encode(&h,bytes);
+    base=BACKUP_OFFSET;
+    TEST_ASSERT(image_validate_backup(port,BACKUP_OFFSET,0,0)!=0);
+    /* Wrong offset is still rejected without touching storage. */
     reads=0u;
     TEST_ASSERT(image_validate_backup(port,DOWNLOAD_OFFSET,0,0)!=0 && reads==0u);
-    h.flags=IMAGE_FLAG_SIGNED;image_header_finalize(&h);image_header_encode(&h,bytes);
-    TEST_ASSERT(image_validate_backup(port,BACKUP_OFFSET,0,0)!=0);
 
     port=make_signed(0u);reads=0u;
     TEST_ASSERT(image_signature_verify(port,DOWNLOAD_OFFSET,SIGNED_TEST_PAYLOAD,0)!=0);

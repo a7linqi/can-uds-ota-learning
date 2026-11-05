@@ -25,12 +25,18 @@ def _seed_from_hex(value):
     return raw
 
 
+TICKET_SIZE = 96  # secure-boot ticket: 32-byte header + 64-byte signature
+
+
 def package(payload, version, flash_kib=1024, seed=None):
     if not 0 < version <= 0xFFFFFFFF:
         raise ValueError("version must be 1..0xFFFFFFFF")
     if flash_kib not in (512, 1024):
         raise ValueError("flash capacity must be 512 or 1024 KiB")
-    if not 8 <= len(payload) <= flash_kib * 1024 - 0x10000:
+    # The last 96 bytes of the app area hold the ticket that proves this image
+    # may run, so a payload can never use the whole region. See
+    # include/ota/flash_layout.h.
+    if not 8 <= len(payload) <= flash_kib * 1024 - 0x10000 - TICKET_SIZE:
         raise ValueError("payload does not fit the internal app region")
     stack, reset = struct.unpack_from("<II", payload)
     ram = 0x20000000 < stack <= 0x20020000 or 0x10000000 < stack <= 0x10010000
