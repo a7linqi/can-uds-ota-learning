@@ -8,6 +8,7 @@ int g_fault_scenarios = 0;
 
 void run_crc_tests(void);
 void run_uart_codec_tests(void);
+void run_uart_fuzz_tests(void);
 void run_isotp_tests(void);
 void run_uds_tests(void);
 void run_protocol_edge_tests(void);
@@ -23,6 +24,7 @@ int main(void)
 
     run_crc_tests();
     run_uart_codec_tests();
+    run_uart_fuzz_tests();
     run_isotp_tests();
     run_uds_tests();
     run_protocol_edge_tests();

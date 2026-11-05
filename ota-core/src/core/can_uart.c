@@ -1,6 +1,29 @@
+/* CAN-over-UART frame decoder with sliding-window resynchronisation.
+ *
+ * Wire format, ota/can_uart.h and can_uart_encode() are unchanged.
+ *
+ * A truncated frame (sender reset, lost byte, noise) used to leave the old
+ * decoder in DECODER_COLLECT with an `expected` length taken from a byte
+ * that was never really a header. It kept swallowing bytes -- including the
+ * A5 5A of the next real frame -- until that length was reached, then failed
+ * the CRC and reset. One bad byte therefore cost at least one good frame.
+ *
+ * parse_front() now classifies the bytes at the front on every new byte.
+ * When they can never start a valid frame, one byte is dropped and the window
+ * walks to the next sync marker. A complete valid frame at the front is
+ * always emitted before resynchronisation is considered, so a payload that
+ * legitimately contains A5 5A is not cut in half.
+ *
+ * Known limit: if a fake sync header claims 18 bytes, only 17 bytes follow
+ * and the line then goes idle, the decoder cannot disprove it until one more
+ * byte arrives. There is no flush()/timeout hook. A continuous UART stream
+ * supplies that byte; a link that stops mid-frame needs one.
+ */
 #include "ota/can_uart.h"
 #include <string.h>
 
+/* Kept for compatibility and for debugger inspection only; the decoder no
+ * longer needs them to make progress. */
 enum {
     DECODER_WAIT_SYNC0 = 0,
     DECODER_WAIT_SYNC1,
@@ -12,6 +35,17 @@ static void reset(can_uart_decoder_t *d)
     d->len = 0u;
     d->expected = 0u;
     d->state = DECODER_WAIT_SYNC0;
+}
+
+static void update_state(can_uart_decoder_t *d)
+{
+    if (d->len == 0u) {
+        d->state = DECODER_WAIT_SYNC0;
+    } else if (d->len == 1u && d->buf[0] == CAN_UART_SYNC0) {
+        d->state = DECODER_WAIT_SYNC1;
+    } else {
+        d->state = DECODER_COLLECT;
+    }
 }
 
 void can_uart_decoder_init(can_uart_decoder_t *d)
@@ -78,72 +112,56 @@ uint32_t can_uart_encode(const can_frame_t *frame, uint8_t *out, uint32_t max)
     return total;
 }
 
-int can_uart_decoder_feed(can_uart_decoder_t *d, uint8_t byte, can_frame_t *out)
+/* Examine the bytes at the front of the window.
+ *  1 = a complete, valid frame was consumed into *out
+ *  0 = more bytes are needed before the front can be classified
+ * -1 = the front can never start a valid frame; drop one byte and retry
+ */
+static int parse_front(can_uart_decoder_t *d, can_frame_t *out)
 {
     uint8_t version, dlc;
-    uint32_t id;
+    uint32_t id, total;
     uint16_t crc;
     int i;
 
-    if (d == 0 || out == 0) {
+    if (d->len < 1u) {
         return 0;
     }
-    if (d->state == DECODER_WAIT_SYNC0) {
-        if (byte == CAN_UART_SYNC0) {
-            d->state = DECODER_WAIT_SYNC1;
-        }
+    if (d->buf[0] != CAN_UART_SYNC0) {
+        return -1;
+    }
+    if (d->len < 2u) {
         return 0;
     }
-    if (d->state == DECODER_WAIT_SYNC1) {
-        if (byte == CAN_UART_SYNC1) {
-            d->state = DECODER_COLLECT;
-            d->len = 0u;
-            d->expected = 0u;
-        } else if (byte != CAN_UART_SYNC0) {
-            d->state = DECODER_WAIT_SYNC0;
-        }
+    if (d->buf[1] != CAN_UART_SYNC1) {
+        return -1;
+    }
+    if (d->len < 4u) {
         return 0;
     }
-
-    if (d->len >= CAN_UART_MAX_FRAME) {
-        reset(d);
+    version = d->buf[2];
+    dlc = d->buf[3];
+    if (dlc == 0u || dlc > 8u) {
+        return -1;
+    }
+    total = 10u + dlc;
+    if (d->len < total) {
+        d->expected = (uint8_t)total;   /* informational: what the front still needs */
         return 0;
     }
-    d->buf[d->len++] = byte;
-    if (d->len == 2u) {
-        dlc = d->buf[1];
-        if (dlc == 0u || dlc > 8u) {
-            reset(d);
-            return 0;
-        }
-        d->expected = (uint8_t)(8u + dlc);
-    }
-    if (d->expected == 0u || d->len < d->expected) {
-        return 0;
-    }
-    if (d->len != d->expected) {
-        reset(d);
-        return 0;
-    }
-
-    version = d->buf[0];
-    dlc = d->buf[1];
-    id = ((uint32_t)d->buf[2] << 24u) | ((uint32_t)d->buf[3] << 16u) |
-         ((uint32_t)d->buf[4] << 8u) | (uint32_t)d->buf[5];
     if ((version & 0x7Fu) != CAN_UART_VERSION) {
-        reset(d);
-        return 0;
+        return -1;
     }
+    id = ((uint32_t)d->buf[4] << 24u) | ((uint32_t)d->buf[5] << 16u) |
+         ((uint32_t)d->buf[6] << 8u) | (uint32_t)d->buf[7];
     if (((version & CAN_UART_EXTENDED) != 0u && id > 0x1FFFFFFFu) ||
         ((version & CAN_UART_EXTENDED) == 0u && id > 0x7FFu)) {
-        reset(d);
-        return 0;
+        return -1;
     }
-    crc = (uint16_t)((uint16_t)d->buf[6u + dlc] << 8u) |
-          (uint16_t)d->buf[7u + dlc];
-    if (crc != can_uart_crc16(d->buf, 6u + dlc)) {
-        reset(d);
-        return 0;
+    crc = (uint16_t)((uint16_t)d->buf[8u + dlc] << 8u) |
+          (uint16_t)d->buf[9u + dlc];
+    if (crc != can_uart_crc16(&d->buf[2], 6u + dlc)) {
+        return -1;
     }
 
     memset(out, 0, sizeof *out);
@@ -151,8 +169,48 @@ int can_uart_decoder_feed(can_uart_decoder_t *d, uint8_t byte, can_frame_t *out)
     out->dlc = dlc;
     out->extended = (version & CAN_UART_EXTENDED) != 0u;
     for (i = 0; i < (int)dlc; i++) {
-        out->data[i] = d->buf[6u + (uint8_t)i];
+        out->data[i] = d->buf[8u + (uint8_t)i];
     }
-    reset(d);
+    d->len = (uint8_t)(d->len - total);
+    memmove(d->buf, &d->buf[total], d->len);
+    d->expected = 0u;
     return 1;
+}
+
+static void drop_front(can_uart_decoder_t *d)
+{
+    d->len--;
+    memmove(d->buf, &d->buf[1], d->len);
+}
+
+int can_uart_decoder_feed(can_uart_decoder_t *d, uint8_t byte, can_frame_t *out)
+{
+    int result;
+
+    if (d == 0 || out == 0) {
+        return 0;
+    }
+    /* The window only ever needs to hold one maximal frame: 2 sync + 8 header
+     * + 8 data. If it is full and still unresolved, the oldest byte is dead. */
+    if (d->len >= CAN_UART_MAX_FRAME) {
+        drop_front(d);
+    }
+    d->buf[d->len++] = byte;
+
+    for (;;) {
+        result = parse_front(d, out);
+        if (result > 0) {
+            update_state(d);
+            return 1;
+        }
+        if (result == 0) {
+            update_state(d);
+            return 0;
+        }
+        drop_front(d);
+        if (d->len == 0u) {
+            reset(d);
+            return 0;
+        }
+    }
 }
