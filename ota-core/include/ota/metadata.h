@@ -21,7 +21,12 @@ typedef struct {
     uint32_t active_version, active_size, active_crc;
     uint32_t pending_version, pending_size, pending_crc;
     uint32_t boot_attempts, min_version;
-    uint32_t reserved[3];
+    /* 1 = the application asked for the next reset to stay in the loader.
+     * Occupies the first reserved word, so the record size, the CRC window and
+     * the offset of every other field are unchanged: a record written before
+     * this field existed decodes as boot_request = 0 and stays valid. */
+    uint32_t boot_request;
+    uint32_t reserved[2];
     uint32_t crc, commit;
 } metadata_t;
 

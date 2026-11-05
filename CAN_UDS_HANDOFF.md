@@ -124,29 +124,29 @@ V3 手册明确允许 NM25Q128/BY25Q128 等 NOR 替换。现有可选写入驱�
 
 | 项目 | 结果 |
 |---|---|
-| C 核心 | ZG/ZE 每种容量各 3050 项断言，0 失败 |
+| C 核心 | ZG/ZE 每种容量各 **3421** 项断言，0 失败 |
 | 存储故障注入 | 每种容量各 420 个模型场景，不是物理断电次数 |
-| PC 客户端 | 45 项 unittest，0 失败 |
-| 实际 python-can 4.6.1 virtual 后端 | 5 项测试，连接实际 C ECU 子进程，未访问 USB-CAN |
-| W25Q SPI 命令模型 | 720 项断言，含 31 个传输失败注入点，0 失败 |
-| STM32 适配器模型 | 每种容量默认门控 177 项、启用门控 243 项断言，0 失败 |
+| PC 客户端 | **47** 项 unittest，0 失败 |
+| 实际 python-can 4.6.1 virtual 后端 | 7 项测试，连接实际 C ECU 子进程，未访问 USB-CAN |
+| W25Q SPI 命令模型 | 740 项断言，含 31 个传输失败注入点，0 失败 |
+| STM32 适配器模型 | 每种容量默认门控 **258** 项、启用门控 **325** 项断言，0 失败 |
 | App 入口与虚拟看门狗 | 每种容量 35 项断言、8 个场景，未验证真实 IWDG |
 | 新回环入口及实际 CAN 接收队列 | 51 项断言、14 个模型场景，0 失败；未运行物理控制器 |
-| 新参考 BSP 的 ARMClang 编译 | 四个目标，每目标 35 个 C 对象，包括安装的 ST HAL |
-| 镜像打包 | 14 项 Python 测试，另有 C 端接受/拒绝互操作检查 |
+| 新参考 BSP 的 ARMClang 编译 | 四个目标，每目标 48 个 C 对象，包括安装的 ST HAL |
+| 镜像打包 | 28 项 Python 测试，另有 C 端接受/拒绝互操作检查 |
 | Ed25519 签名校验（L4） | RFC 8032 测试向量、Python 签名→C 验证交叉、篡改/无签名拒绝；含 ed25519 的四目标 GNU 链接与 ARMClang 编译均通过 |
 | GNU 完整只读目标 | 四个目标均完成编译、汇编和链接，检查了 ELF、向量表、SP、Reset、BIN 和地址范围 |
 
-主报告：`ota-core/evidence/verification.json`。2026-11-01 交接核对时为 `status=passed`，99 个已记录源码文件哈希与工作区匹配；这是复核既有证据，没有重跑测试。其中 `target_linked=true` 指四个 GNU 只读目标，`keil_target_linked=false`，`hardware_verified=false`，`signature_implemented=false`。报告的具体耗时与运行命令以当前 JSON 为准。
+主报告：`ota-core/evidence/verification.json`，当前 `status=passed`。`target_linked=true` 指四个 GNU 只读目标，`keil_target_linked=false`（ARMASM/armlink 在本机因 Windows DLL 重定位错误无法启动，改用 64 位 GNU Arm GCC 链接），`hardware_verified=false` 保守表示"机器可读矩阵里没有实机验收"，不代表没上过板。
 
 本轮完整只读镜像：
 
 | 目标 | BIN 字节数 | Flash 起点 |
 |---|---:|---|
-| explorer_ZG_loopback_READONLY | 12736 | 0x08000000 |
-| explorer_ZG_diagnostics_READONLY | 22248 | 0x08000000 |
-| explorer_ZE_loopback_READONLY | 12740 | 0x08000000 |
-| explorer_ZE_diagnostics_READONLY | 22256 | 0x08000000 |
+| explorer_ZG_loopback_READONLY | 16176 | 0x08000000 |
+| explorer_ZG_uart_READONLY | 44224 | 0x08000000 |
+| explorer_ZE_loopback_READONLY | 16172 | 0x08000000 |
+| explorer_ZE_uart_READONLY | 44224 | 0x08000000 |
 
 这些是独立的只读上板固件，链接区域为内部前 64 KiB。它们不是 0x08010000 的 App 升级 payload。完整产物在 `ota-core/firmware-builds/`；正常工作目录的构建产物在 `build/gnu-explorer/`。
 
@@ -213,16 +213,18 @@ python tools/package_project.py --include-firmware --output "工程目录外的�
 
 ## 8. 下一步与已知边界
 
-当前没有真机运行、物理 CAN、真实擦写、真实 IWDG、物理断电、刷写耗时或总线负载数据。升级包签名校验（Ed25519，L4）已实现并通过主机验证；完整 OTA 仍未实现。
+**已经做到的（2026-11-05，实机）**：完整 OTA 在实物上走通——合法签名包经 `0x34/0x36/0x37` 下发、loader 验签、擦内部 960 KiB、安装、TRIAL、跳 `0x08010000`，App 确认后回 `IDLE`，内部镜像读回的 SHA256 与构建产物一致；512 块整片恢复演练 512/512 通过（器件自算整片 CRC32 = 金标）；产品 UDS 路径真实擦写过 1 MiB 槽。串口时间线：`0x34` 13.78 s、`0x36` 每帧 0.33 s、`0x37` 0.22 s、安装到跳转 8.13 s。
 
-接下来的实物步骤：
+**仍未做到**：
 
-1. 核对 PCB、MCU 完整型号和实际 Flash 容量，记录实际 NOR/EEPROM 型号。
-2. 首次下载测试固件前，先备份原有内部 Flash。运行时“只读”不意味着下载测试固件不会改写其占用的内部 Flash。
-3. 按容量选择 ZG/ZE 静默内部回环固件，观察串口、LED 和 16 帧比较结果。
-4. 对照实际版本核对 CAN 跳线、终端及接线，运行只读诊断固件，用 USB-CAN 读取 UDS 版本和状态。
-5. 保存原有 NOR/EEPROM 数据，依据实际芯片数据手册实现并测量存储驱动，再验证完整升级与恢复。
-6. 之后才回填实测简历数字，以及推进签名和其他扩展。
+1. **物理断电**中断升级（现在的 420 个场景是模型，不是拔电）。
+2. **真实 CAN 总线**：板级 UDS 目前走 UART 上的 CAN 帧封装（`A5 5A | ver | dlc | id | data | crc16`），USB-CAN 适配器未到货，所以没有总线仲裁、错误帧、总线负载数据。
+3. **硬件 IWDG**：看门狗策略只跑了虚拟模型。
+4. 实物丝印未拍照确认（PCB 修订版/MCU 完整型号/NOR 型号），书面证据指向 V3 + ZGT6；未上电读取。
+5. `hardware_verified=false`、`keil_target_linked=false` 保持保守，它们描述的是机器可读矩阵，不是"没上过板"。
+6. EEPROM 偶发读失败（6 次复位里 2 次 `eeprom_status=1`），两次都安全停在 loader，根因未定位。
+
+**下一轮最该做的两件事**：把板子插上跑 `stages/board-lab/host/uds_gate_probe.py`，确认 44 字节状态记录与 `role` 位在实物上成立（App→loader 入口已在实机验证过，但那时还没有遥测字节）；然后做一次真实拔电中断。
 
 用户希望持续推进、少重复确认，重视 C 实现和真实硬件。软件可先审查、构建和验证；涉及当前未知的物理器件参数时，应明确未知项，不能用猜测把状态写成已验证。
 

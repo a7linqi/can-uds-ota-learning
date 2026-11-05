@@ -1,4 +1,4 @@
-COMMAND: C:\Users\li14\AppData\Local\Programs\Python\Python312\python.exe -m unittest discover -s tests_pc -v
+COMMAND: D:\workbuddy\binaries\python\versions\3.13.12\python.exe -m unittest discover -s tests_pc -v
 OTA_TEST_CC=D:/Project/Can/toolchain/tccbox-2025.10.27.data/purelib/tccbox/tcc_dist/tcc.exe
 test_bad_crc_stopped_before_sending (test_pc.CIntegration.test_bad_crc_stopped_before_sending) ... ok
 test_bad_sim_command_does_not_desynchronize (test_pc.CIntegration.test_bad_sim_command_does_not_desynchronize) ... ok
@@ -42,11 +42,13 @@ test_p2star_bounds_total_timeout (test_pc.ClientGuards.test_p2star_bounds_total_
 test_preflight_rejects_extra_trailer (test_pc.ClientGuards.test_preflight_rejects_extra_trailer) ... ok
 test_real_backend_requires_explicit_selection (test_pc.ClientGuards.test_real_backend_requires_explicit_selection) ... ok
 test_request_deadline_must_be_finite (test_pc.ClientGuards.test_request_deadline_must_be_finite) ... ok
+test_status_record_reports_gate_and_role (test_pc.ClientGuards.test_status_record_reports_gate_and_role) ... ok
+test_status_record_without_telemetry_still_parses (test_pc.ClientGuards.test_status_record_without_telemetry_still_parses) ... ok
 test_stmin_cannot_extend_deadline (test_pc.ClientGuards.test_stmin_cannot_extend_deadline) ... ok
 test_wrong_negative_sid (test_pc.ClientGuards.test_wrong_negative_sid) ... ok
 test_wrong_positive_sid (test_pc.ClientGuards.test_wrong_positive_sid) ... ok
 
 ----------------------------------------------------------------------
-Ran 45 tests in 4.441s
+Ran 47 tests in 4.596s
 
 OK

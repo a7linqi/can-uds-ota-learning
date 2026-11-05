@@ -15,6 +15,7 @@ typedef struct {
     uint32_t uart_started,uart_binary,uart_tx_count,uart_busy,uart_start_fail;
     uint8_t uart_tx[2048];
     int app_healthy,watchdog_start_fail,watchdog_reload_fail,eeprom_ignore_writes;
+    int is_application;
     uint32_t watchdog_starts,watchdog_feeds,watchdog_last_feed_ms,health_delay_ms;
     void (*idle_hook)(void);
 } mock_board_t;

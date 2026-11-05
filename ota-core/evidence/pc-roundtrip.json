@@ -26,7 +26,13 @@
         "state": 0,
         "boot_attempts": 0,
         "state_name": "IDLE",
-        "metadata_only": true
+        "metadata_only": true,
+        "record_bytes": 44,
+        "programming_allowed": false,
+        "job_error": false,
+        "pending_in_flight": false,
+        "role": "loader",
+        "service_deadline_misses": 0
       }
     },
     {
@@ -51,7 +57,13 @@
         "state": 4,
         "boot_attempts": 1,
         "state_name": "TRIAL",
-        "metadata_only": true
+        "metadata_only": true,
+        "record_bytes": 44,
+        "programming_allowed": false,
+        "job_error": false,
+        "pending_in_flight": false,
+        "role": "loader",
+        "service_deadline_misses": 0
       }
     },
     {
@@ -76,7 +88,13 @@
         "state": 0,
         "boot_attempts": 0,
         "state_name": "IDLE",
-        "metadata_only": true
+        "metadata_only": true,
+        "record_bytes": 44,
+        "programming_allowed": false,
+        "job_error": false,
+        "pending_in_flight": false,
+        "role": "loader",
+        "service_deadline_misses": 0
       }
     },
     {
@@ -101,7 +119,13 @@
         "state": 0,
         "boot_attempts": 0,
         "state_name": "IDLE",
-        "metadata_only": true
+        "metadata_only": true,
+        "record_bytes": 44,
+        "programming_allowed": false,
+        "job_error": false,
+        "pending_in_flight": false,
+        "role": "loader",
+        "service_deadline_misses": 0
       }
     },
     {
@@ -126,7 +150,13 @@
         "state": 1,
         "boot_attempts": 0,
         "state_name": "DOWNLOADING",
-        "metadata_only": true
+        "metadata_only": true,
+        "record_bytes": 44,
+        "programming_allowed": false,
+        "job_error": false,
+        "pending_in_flight": false,
+        "role": "loader",
+        "service_deadline_misses": 0
       }
     },
     {
@@ -151,7 +181,13 @@
         "state": 0,
         "boot_attempts": 0,
         "state_name": "IDLE",
-        "metadata_only": true
+        "metadata_only": true,
+        "record_bytes": 44,
+        "programming_allowed": false,
+        "job_error": false,
+        "pending_in_flight": false,
+        "role": "loader",
+        "service_deadline_misses": 0
       }
     }
   ],

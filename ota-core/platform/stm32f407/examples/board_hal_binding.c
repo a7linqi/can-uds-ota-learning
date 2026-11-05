@@ -31,6 +31,7 @@ void ota_bsp_log(const char *s) { ota_user_log(s); }
 void ota_bsp_heartbeat(void) { ota_user_heartbeat(); }
 int ota_bsp_force_loader(void) { return ota_user_force_loader(); }
 int ota_bsp_app_healthy(void) { return ota_user_app_healthy(); }
+int ota_bsp_is_application(void) { return ota_user_is_application(); }
 void ota_bsp_reset(void) { ota_arch_reset(); }
 int ota_bsp_can_start(void)
 {

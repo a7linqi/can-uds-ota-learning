@@ -9,6 +9,7 @@ void ota_bsp_log(const char *s) { (void)s; }
 void ota_bsp_heartbeat(void) {}
 int ota_bsp_force_loader(void) { return 1; }
 int ota_bsp_app_healthy(void) { return 0; }
+int ota_bsp_is_application(void) { return 0; }
 int ota_bsp_watchdog_start(void) { return -1; }
 int ota_bsp_watchdog_reload(void) { return -1; }
 int ota_bsp_quiesce(void) { return -1; }

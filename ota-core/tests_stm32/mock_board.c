@@ -23,6 +23,7 @@ void ota_bsp_log(const char *s) { (void)s; }
 void ota_bsp_heartbeat(void) {}
 int ota_bsp_force_loader(void) { return 1; }
 int ota_bsp_app_healthy(void) { M.now+=M.health_delay_ms; return M.app_healthy; }
+int ota_bsp_is_application(void) { return M.is_application; }
 int ota_bsp_watchdog_start(void)
 {
     M.watchdog_starts++; M.watchdog_last_feed_ms=M.now;

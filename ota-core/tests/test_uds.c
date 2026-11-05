@@ -171,9 +171,17 @@ void run_uds_tests(void)
 
     /* Project status DID is telemetry: no App CRC scan or write side effect. */
     req[0]=0x22u; req[1]=0x02u; req[2]=0u;
-    TEST_ASSERT(call(3)==1 && rl==43u);
+    TEST_ASSERT(call(3)==1 && rl==47u);
     TEST_ASSERT(resp[3]==1u && resp[4]==0u && resp[5]==UPDATE_IDLE);
     TEST_ASSERT(t_get_be32(resp+39)==FLASH_TOTAL_SIZE);
+    /* the trailing 4 bytes are pure pass-through: the board fills them, the
+     * server only carries them, so the host can read back the update gate */
+    B.server.diag[0]=0xA5u; B.server.diag[1]=0x01u;
+    B.server.diag[2]=0x00u; B.server.diag[3]=0x83u;
+    TEST_ASSERT(call(3)==1 && rl==47u);
+    TEST_ASSERT(resp[43]==0xA5u && resp[44]==0x01u &&
+                resp[45]==0x00u && resp[46]==0x83u);
+    memset(B.server.diag,0,sizeof B.server.diag);
     {
         metadata_t m;
         uint32_t writes;
@@ -181,7 +189,7 @@ void run_uds_tests(void)
         m.active_version=1u; m.min_version=1u; m.active_size=16u; m.active_crc=0x11223344u;
         m.pending_version=2u; m.pending_size=19u; m.pending_crc=0x55667788u;
         TEST_ASSERT(!metadata_save(&B.meta,&m)); writes=B.eeprom.write_ops;
-        TEST_ASSERT(call(3)==1 && rl==43u);
+        TEST_ASSERT(call(3)==1 && rl==47u);
         TEST_ASSERT(resp[4]==1u && resp[5]==UPDATE_READY && resp[6]==0u);
         TEST_ASSERT(t_get_be32(resp+7)==1u && t_get_be32(resp+11)==2u);
         TEST_ASSERT(t_get_be32(resp+15)==1u && t_get_be32(resp+19)==16u);
@@ -189,16 +197,16 @@ void run_uds_tests(void)
         TEST_ASSERT(t_get_be32(resp+31)==0x55667788u && t_get_be32(resp+35)==m.seq);
         TEST_ASSERT(B.eeprom.write_ops==writes);
         req[1]=0xF1u; req[2]=0x90u; req[3]=0x02u; req[4]=0u;
-        TEST_ASSERT(call(5)==1 && rl==62u);
+        TEST_ASSERT(call(5)==1 && rl==66u);
         TEST_ASSERT(resp[20]==2u && resp[21]==0u && resp[22]==1u);
         req[1]=2u; req[2]=0u; B.eeprom.read_fail_after=0;
         TEST_ASSERT(call(3)==1 && rl==3u && resp[2]==0x72u);
         B.eeprom.read_fail_after=-1;
-        /* 0x0200 needs 1 + 2 + 40 = 43 bytes. A 42-byte buffer is one short,
+        /* 0x0200 needs 1 + 2 + 44 = 47 bytes. A 46-byte buffer is one short,
          * so the server must answer responseTooLong (0x14) -- ISO 14229-1 --
          * and must NOT confuse it with the storage failure above (0x72). */
-        TEST_ASSERT(uds_handle(&B.server,req,3u,resp,42u)==3u && resp[2]==0x14u);
-        TEST_ASSERT(uds_handle(&B.server,req,3u,resp,43u)==43u && resp[0]==0x62u);
+        TEST_ASSERT(uds_handle(&B.server,req,3u,resp,46u)==3u && resp[2]==0x14u);
+        TEST_ASSERT(uds_handle(&B.server,req,3u,resp,47u)==47u && resp[0]==0x62u);
         TEST_ASSERT(B.eeprom.write_ops==writes);
     }
 

@@ -14,7 +14,7 @@ static void clear_pending(metadata_t *m)
 static int active_ok(boot_context_t *b,const metadata_t *m)
 {
     return m->active_size!=0u &&
-           image_validate_app(b->internal,m->active_size,m->active_crc)==0;
+           image_validate_app(b->internal,m->active_size,m->active_crc)==IMAGE_APP_VALID;
 }
 static int pending_ok(boot_context_t *b,const metadata_t *m)
 {
@@ -84,6 +84,12 @@ static int set_state(boot_context_t *b,metadata_t *m,uint32_t state)
     *m=next;
     return 0;
 }
+/* Three-way, because the caller must not treat "cannot read" as "is broken". */
+static int probe_active(boot_context_t *b,const metadata_t *m)
+{
+    if(m->active_size==0u) return IMAGE_APP_CORRUPT;
+    return image_validate_app(b->internal,m->active_size,m->active_crc);
+}
 
 boot_target_t boot_select(boot_context_t *b,metadata_t *meta_out)
 {
@@ -98,9 +104,30 @@ boot_target_t boot_select(boot_context_t *b,metadata_t *meta_out)
             if(metadata_save(b->store,&next)) goto done;
             m=next;
         } else {
-            /* While READY, only the backup area can change. The old app
-             * remains intact if a backup write/commit is interrupted. */
-            if(m.active_size && create_backup(b,&m)) goto done;
+            int keep=probe_active(b,&m);
+            if(keep==IMAGE_APP_UNREADABLE) goto done;
+            if(m.active_size && keep==IMAGE_APP_VALID) {
+                /* While READY, only the backup area can change. The old app
+                 * remains intact if a backup write/commit is interrupted. */
+                if(create_backup(b,&m)) goto done;
+            } else if(m.active_size) {
+                /* The installed application no longer validates, so there is
+                 * no recovery target left and nothing worth copying. Retiring
+                 * it is what lets a good package install over it: keeping the
+                 * stale size made create_backup fail on its first check and
+                 * wedged READY forever, even with a valid signed package
+                 * waiting in the download area.
+                 *
+                 * min_version has to go with it. metadata.c keeps
+                 * min_version == active_version with no active image, so
+                 * clearing only the size/crc pair is rejected as insane and
+                 * the record keeps its old contents -- the wedge would simply
+                 * move one layer down. */
+                next=m; next.active_version=0u; next.active_size=0u;
+                next.active_crc=0u; next.min_version=0u;
+                if(metadata_save(b->store,&next)) goto done;
+                m=next;
+            }
             if(set_state(b,&m,UPDATE_INSTALLING)) goto done;
         }
     }
@@ -158,6 +185,32 @@ int boot_confirm(boot_context_t *b)
     m.active_crc=m.pending_crc; m.min_version=m.active_version;
     clear_pending(&m);
     return metadata_save(b->store,&m);
+}
+int boot_request_loader(boot_context_t *b)
+{
+    metadata_t m;
+    if(!b || !b->store || metadata_load(b->store,&m)!=1) return -1;
+    if(m.boot_request==1u) return 0;
+    m.boot_request=1u;
+    return metadata_save(b->store,&m);
+}
+int boot_consume_boot_request(boot_context_t *b)
+{
+    metadata_t m;
+    if(!b || !b->store) return 1;
+    if(metadata_load(b->store,&m)!=1) {
+        /* The request cannot be read, so it cannot be ruled out either.
+         * boot_select already treats this same failure as "stay in the
+         * loader", and stopping is the only recoverable answer: booting the
+         * application after a tester asked to be let in leaves no way back
+         * without physical access. Measured on silicon, this failure mode
+         * silently swallowed the handshake and the board started the App. */
+        return 1;
+    }
+    if(m.boot_request==0u) return 0;
+    m.boot_request=0u;
+    (void)metadata_save(b->store,&m);
+    return 1;
 }
 int boot_accept_app_health(boot_context_t *b)
 {

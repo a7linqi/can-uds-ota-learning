@@ -19,7 +19,13 @@
         "state": 2,
         "boot_attempts": 0,
         "state_name": "READY",
-        "metadata_only": true
+        "metadata_only": true,
+        "record_bytes": 44,
+        "programming_allowed": false,
+        "job_error": false,
+        "pending_in_flight": false,
+        "role": "loader",
+        "service_deadline_misses": 0
       },
       "after": {
         "active_version": 0,
@@ -35,7 +41,13 @@
         "state": 4,
         "boot_attempts": 1,
         "state_name": "TRIAL",
-        "metadata_only": true
+        "metadata_only": true,
+        "record_bytes": 44,
+        "programming_allowed": false,
+        "job_error": false,
+        "pending_in_flight": false,
+        "role": "loader",
+        "service_deadline_misses": 0
       },
       "result": {
         "version": 1,
@@ -129,7 +141,13 @@
         "state": 4,
         "boot_attempts": 1,
         "state_name": "TRIAL",
-        "metadata_only": true
+        "metadata_only": true,
+        "record_bytes": 44,
+        "programming_allowed": false,
+        "job_error": false,
+        "pending_in_flight": false,
+        "role": "loader",
+        "service_deadline_misses": 0
       },
       "after": {
         "active_version": 0,
@@ -145,7 +163,13 @@
         "state": 4,
         "boot_attempts": 1,
         "state_name": "TRIAL",
-        "metadata_only": true
+        "metadata_only": true,
+        "record_bytes": 44,
+        "programming_allowed": false,
+        "job_error": false,
+        "pending_in_flight": false,
+        "role": "loader",
+        "service_deadline_misses": 0
       },
       "result": {
         "reset_not_retried": true,

@@ -66,15 +66,15 @@ static int validate_payload(flash_port_t p,uint32_t offset,uint32_t size,uint32_
 {
     uint8_t chunk[256];
     uint32_t off=0u,crc=0u;
-    if(!p.read || size<8u || size>APP_SIZE) return -1;
+    if(!p.read || size<8u || size>APP_SIZE) return IMAGE_APP_CORRUPT;
     while(off<size) {
         uint32_t n=size-off;
         if(n>sizeof chunk) n=sizeof chunk;
-        if(p.read(p.user,offset+off,chunk,n)) return -1;
-        if(off==0u && !vectors_ok(chunk,size)) return -1;
+        if(p.read(p.user,offset+off,chunk,n)) return IMAGE_APP_UNREADABLE;
+        if(off==0u && !vectors_ok(chunk,size)) return IMAGE_APP_CORRUPT;
         crc=crc32_update(crc,chunk,n); off+=n;
     }
-    return crc==expected ? 0 : -1;
+    return crc==expected ? IMAGE_APP_VALID : IMAGE_APP_CORRUPT;
 }
 int image_validate(flash_port_t p,uint32_t offset,uint32_t *version,uint32_t *size)
 {

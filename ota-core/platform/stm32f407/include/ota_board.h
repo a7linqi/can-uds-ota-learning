@@ -19,6 +19,10 @@ void ota_bsp_log(const char *message);
 void ota_bsp_heartbeat(void);
 int ota_bsp_force_loader(void);
 int ota_bsp_app_healthy(void);
+/* Which of the two images is running. The application asks the next reset to
+ * stay in the loader on 10 02; the loader must not, or it would keep re-arming
+ * the request and never let a finished install boot. */
+int ota_bsp_is_application(void);
 int ota_bsp_quiesce(void);
 void ota_bsp_reset(void);
 /* Implemented by each firmware main. Long SPI WIP/ACK loops may call this

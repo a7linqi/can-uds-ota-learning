@@ -1,4 +1,4 @@
-COMMAND: C:\Users\li14\AppData\Local\Programs\Python\Python312\python.exe run_tests.py --cc D:/Project/Can/toolchain/tccbox-2025.10.27.data/purelib/tccbox/tcc_dist/tcc.exe --capacity 512 --in-memory
+COMMAND: D:\workbuddy\binaries\python\versions\3.13.12\python.exe run_tests.py --cc D:/Project/Can/toolchain/tccbox-2025.10.27.data/purelib/tccbox/tcc_dist/tcc.exe --capacity 512 --in-memory
 Compile: D:/Project/Can/toolchain/tccbox-2025.10.27.data/purelib/tccbox/tcc_dist/tcc.exe -std=c99 -Wall -Wextra -Iinclude -Isrc/port/host -Ithird_party/ed25519 -DFLASH_TOTAL_SIZE=524288u src\core\boot.c src\core\can_uart.c src\core\crc32.c src\core\image.c src\core\isotp.c src\core\metadata.c src\core\signature.c src\core\uds.c src\core\watchdog_policy.c src\port\host\flash_ram.c tests\bench.c tests\test_boot.c tests\test_crc.c tests\test_dtc.c tests\test_input_edges.c tests\test_isotp.c tests\test_protocol_edges.c tests\test_signature.c tests\test_uart_codec.c tests\test_uart_fuzz.c tests\test_uds.c tests\test_uds_bounds.c tests\test_watchdog.c third_party\ed25519\fe.c third_party\ed25519\ge.c third_party\ed25519\keypair.c third_party\ed25519\sc.c third_party\ed25519\sha512.c third_party\ed25519\sign.c third_party\ed25519\verify.c -run tests/test_main.c
 ota-core host tests
 [crc]
@@ -19,6 +19,8 @@ uart fuzz / resync:
 [signed UDS commit/install/recovery paths]
 [signature: download/install/restore paths]
 [watchdog-driven reset model]
+[boot/READY while the installed app does not validate]
+[boot/application asks the next reset to stay in the loader]
 [EEPROM transaction cuts]
 [application-confirmation transaction cuts]
 [download/commit reset sweep]
@@ -42,5 +44,5 @@ uart fuzz / resync:
 [I] uds response buffer preconditions
 [dtc]
 
-3385 checks, 0 failures
+3421 checks, 0 failures
 420 storage power-cut scenarios (host model)

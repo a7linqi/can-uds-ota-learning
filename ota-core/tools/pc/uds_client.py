@@ -111,16 +111,30 @@ class UdsClient:
             raise ProtocolError("non-ASCII identification DID") from error
     def status(self):
         data=self.read_did(0x0200)
-        if len(data)!=40 or data[0]!=1 or data[1]>1 or data[2]>5 or data[3]>3:
+        # 44 bytes is the current record: the first 40 are the metadata snapshot,
+        # the last 4 are scheduler telemetry the board fills on every poll. A
+        # 40-byte answer means the board still runs a build from before that
+        # field existed, which is worth reporting rather than rejecting.
+        if len(data) not in (40,44) or data[0]!=1 or data[1]>1 or data[2]>5 or data[3]>3:
             raise ProtocolError("unsupported/malformed update-status record")
         names=("active_version","pending_version","min_version","active_size","pending_size",
                "active_crc32","pending_crc32","metadata_sequence","flash_bytes")
-        result=dict(zip(names,struct.unpack(">9I",data[4:])))
+        result=dict(zip(names,struct.unpack(">9I",data[4:40])))
         if result["flash_bytes"] not in (512*1024,1024*1024):
             raise ProtocolError("unsupported ECU capacity in status record")
         result.update(metadata_valid=bool(data[1]),state=data[2],boot_attempts=data[3],
                       state_name=("IDLE","DOWNLOADING","READY","INSTALLING","TRIAL","RESTORING")[data[2]],
-                      metadata_only=True)
+                      metadata_only=True,record_bytes=len(data))
+        if len(data)==44:
+            # Without this the two reasons a write service can answer NRC 0x22
+            # are indistinguishable from the host: the application is built
+            # without OTA_ENABLE_FLASHING, or a loader job closed the gate.
+            result.update(programming_allowed=bool(data[40]),job_error=bool(data[41]),
+                          pending_in_flight=bool(data[42]),
+                          role=("application" if data[43]&0x80 else "loader"),
+                          service_deadline_misses=data[43]&0x7F)
+        else:
+            result.update(programming_allowed=None,role=None)
         return result
     def programming(self):
         response=self.request(b"\x10\x02")

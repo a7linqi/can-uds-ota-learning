@@ -21,6 +21,7 @@ void ota_user_log(const char *s);
 void ota_user_heartbeat(void);
 int ota_user_force_loader(void);
 int ota_user_app_healthy(void);
+int ota_user_is_application(void);
 int ota_user_quiesce_peripherals(void);
 void ota_user_can_rx(const can_frame_t *frame);
 void ota_user_uart_rx(uint8_t byte);

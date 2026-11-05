@@ -50,12 +50,23 @@ failed:
     d->job_error=1u; d->programming_allowed=0u;
     return -1;
 }
+/* 10 02 only becomes a loader handoff when an application is the one asking.
+ * The loader is already where that request would send it; letting it write the
+ * flag would re-arm the stop on every programming session and the finished
+ * install could never be selected. */
+static int diag_request_bootloader(void *user)
+{
+    if(!ota_bsp_is_application()) return 0;
+    return boot_request_loader((boot_context_t *)user)==0;
+}
 static void diag_common(ota_stm32_diag_t *d,ota_stm32_ports_t *p)
 {
     d->storage=p;
     isotp_init(&d->link,&d->io.port,0x7E8u,0x7E0u);
     isotp_set_flow(&d->link,8u,0u);
     uds_init(&d->uds,&p->boot,&d->io.port);
+    d->uds.request_bootloader=diag_request_bootloader;
+    d->uds.request_bootloader_user=&p->boot;
     d->programming_allowed=(uint8_t)(OTA_ENABLE_FLASHING && p->storage_ready);
     p->service=job_service; p->service_user=d;
 }
@@ -85,6 +96,11 @@ int ota_stm32_diag_poll(ota_stm32_diag_t *d)
     can_frame_t frame;
     int event;
     uint32_t accepted=0u;
+    d->uds.diag[0]=d->programming_allowed;
+    d->uds.diag[1]=d->job_error;
+    d->uds.diag[2]=d->pending_in_flight;
+    d->uds.diag[3]=(uint8_t)((ota_bsp_is_application()?0x80u:0u) |
+                             (d->service_deadline_misses & 0x7Fu));
     if(!d->io.poll || d->io.poll(d->io.port.user)) return -1;
     /* Limit work so a noisy RX source cannot starve timeouts/TX. */
     while(accepted++<OTA_RX_QUEUE && d->io.pop && d->io.pop(d->io.port.user,&frame)) {
@@ -124,6 +140,21 @@ int ota_stm32_diag_poll(ota_stm32_diag_t *d)
             goto finish_tx;
         }
         d->job_error=0u; d->pending_in_flight=0u;
+        /* Two different reasons can close the gate, and they look identical on
+         * the wire, so keep them apart here:
+         *   - built closed: the application is compiled with
+         *     OTA_ENABLE_FLASHING=0 and may only hand the next reset over.
+         *     NRC 0x22 for 0x34 there is the correct answer, not a defect.
+         *   - closed by failure: a loader job missed its deadline or lost the
+         *     link. That must not turn into a fuse, so a new programming
+         *     session re-evaluates the gate from the build switch and storage
+         *     readiness instead of staying shut until a power cycle.
+         * The status DID carries the current gate in diag[0] and the role in
+         * diag[3] bit 7 so a host can tell the two apart without guessing. */
+        if(sid==0x10u && d->request_len>1u &&
+           (d->request[1]&0x7Fu)==UDS_SESSION_PROGRAMMING)
+            d->programming_allowed=(uint8_t)(OTA_ENABLE_FLASHING &&
+                                             d->storage->storage_ready);
         if(!d->programming_allowed && (sid==0x34u || sid==0x36u || sid==0x37u || sid==0x31u)) {
             d->response[0]=0x7Fu; d->response[1]=sid; d->response[2]=0x22u; length=3u;
         } else {

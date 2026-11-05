@@ -250,6 +250,38 @@ class ClientGuards(unittest.TestCase):
     def test_wrong_negative_sid(self):
         transport=Scripted([Frame(0x7E8,b"\x03\x7F\x22\x31")])
         with self.assertRaises(ProtocolError): UdsClient(IsoTpClient(transport)).request(b"\x11\x01")
+    @staticmethod
+    def status_answer(record):
+        """Spread a 62 02 00 answer over ISO-TP so the parser sees real frames."""
+        payload=b"\x62\x02\x00"+record
+        frames=[Frame(0x7E8,bytes([0x10,len(payload)])+payload[:6])]
+        rest,index=payload[6:],1
+        while rest:
+            piece,rest=rest[:7],rest[7:]
+            frames.append(Frame(0x7E8,bytes([0x20|index])+piece+bytes(7-len(piece))))
+            index+=1
+        return frames
+    def test_status_record_without_telemetry_still_parses(self):
+        # A board still running the 40-byte build must stay readable: the host
+        # has to be able to inspect the old firmware it is about to replace.
+        record=bytes([1,1,0,0])+struct.pack(">9I",1,0,1,16,0,0x11223344,0,7,1024*1024)
+        client=UdsClient(IsoTpClient(Scripted(self.status_answer(record))))
+        status=client.status()
+        self.assertEqual(status["record_bytes"],40)
+        self.assertIsNone(status["role"])
+    def test_status_record_reports_gate_and_role(self):
+        # Two reasons can produce NRC 0x22 for a write service; the host must be
+        # able to tell "the App is not allowed to write" from "the gate failed".
+        record=bytes([1,1,0,0])+struct.pack(">9I",5,7,5,44280,44376,
+                                            0x11223344,0x55667788,43,1024*1024)
+        app=UdsClient(IsoTpClient(Scripted(self.status_answer(record+bytes([0,0,0,0x80])))))
+        status=app.status()
+        self.assertEqual((status["record_bytes"],status["role"],
+                          status["programming_allowed"]), (44,"application",False))
+        loader=UdsClient(IsoTpClient(Scripted(self.status_answer(record+bytes([1,0,0,3])))))
+        status=loader.status()
+        self.assertEqual((status["role"],status["programming_allowed"],
+                          status["service_deadline_misses"]), ("loader",True,3))
     def test_p2star_bounds_total_timeout(self):
         transport=Scripted([Frame(0x7E8,b"\x03\x7F\x10\x78")])
         client=UdsClient(IsoTpClient(transport),total_timeout=0.1)

@@ -126,6 +126,13 @@ static uint16_t handle_session(uds_server_t *s, const uint8_t *req, uint16_t req
     s->seed_valid = 0u;
     s->seed = 0u;
     s->dl_active = 0u;
+    /* Entering 02 is the application's only way to hand the next reset to the
+     * loader. The flag is persisted before the positive response goes out, so
+     * a tester that reboots on 50 02 is already guaranteed the loader stop. */
+    if (sub == UDS_SESSION_PROGRAMMING && s->request_bootloader != 0) {
+        s->boot_request_accepted =
+            (uint8_t)(s->request_bootloader(s->request_bootloader_user) != 0);
+    }
     if ((req[1] & 0x80u) != 0u) {
         return 0u; /* positive response suppressed */
     }
@@ -199,6 +206,8 @@ static int append_did(uds_server_t *s, uint16_t did, uint8_t *resp, uint16_t *po
         put_be32(status+20,m.pending_size); put_be32(status+24,m.active_crc);
         put_be32(status+28,m.pending_crc); put_be32(status+32,m.seq);
         put_be32(status+36,FLASH_TOTAL_SIZE);
+        status[40]=s->diag[0]; status[41]=s->diag[1];
+        status[42]=s->diag[2]; status[43]=s->diag[3];
         data=status; len=UDS_UPDATE_STATUS_SIZE;
         break;
     }

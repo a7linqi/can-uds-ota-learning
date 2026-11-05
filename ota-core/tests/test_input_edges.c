@@ -452,12 +452,12 @@ static void did_combination_edges(void)
     n = uds_handle(&B.server, req, 5u, resp, sizeof resp);
     TEST_ASSERT(n == 3u && resp[2] == 0x31u);
 
-    /* 0x0200 status: 1 + 2 + 40 = 43, exact boundary 42 must fail cleanly */
+    /* 0x0200 status: 1 + 2 + 44 = 47, exact boundary 46 must fail cleanly */
     req[0] = 0x22u; req[1] = 0x02u; req[2] = 0x00u;
-    n = uds_handle(&B.server, req, 3u, resp, 43u);
-    TEST_ASSERT(n == 43u);
-    TEST_ASSERT(resp[0] == 0x62u && resp[3] == UDS_UPDATE_STATUS_SIZE - 40u + 1u);
-    n = uds_handle(&B.server, req, 3u, resp, 42u);
+    n = uds_handle(&B.server, req, 3u, resp, 47u);
+    TEST_ASSERT(n == 47u);
+    TEST_ASSERT(resp[0] == 0x62u && resp[3] == 1u);
+    n = uds_handle(&B.server, req, 3u, resp, 46u);
     TEST_ASSERT(n == 3u);
 }
 

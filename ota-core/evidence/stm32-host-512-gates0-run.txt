@@ -1,2 +1,2 @@
-COMMAND: /workspace/ota-core/build/l2_checks/adapters_512_0
-STM32 adapter mocks: 232 checks, 0 failures
+COMMAND: D:\Project\Can-learning\ota-core\build\l2_checks\adapters_512_0.exe
+STM32 adapter mocks: 258 checks, 0 failures

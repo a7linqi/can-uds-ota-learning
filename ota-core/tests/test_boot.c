@@ -461,6 +461,115 @@ static void first_install_recovery(void)
     B.eeprom.ignore_writes=1;
     TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_LOADER);
 }
+static void broken_active_with_pending(void)
+{
+    metadata_t m;
+    printf("[boot/READY while the installed app does not validate]\n");
+
+    /* Broken content. The recovery target is genuinely gone, so the pending
+     * package must be installed rather than retried against a backup that can
+     * never be created. Before this fix boot_select answered LOADER here on
+     * every reset and READY never advanced. */
+    restore_fixture(&Ready);
+    TEST_ASSERT(metadata_load(&B.meta,&m)==1 && m.active_version==1u);
+    B.internal_mem[APP_OFFSET+500u]^=0x5Au;
+    TEST_ASSERT(image_validate_app(B.boot.internal,m.active_size,
+                                   m.active_crc)==IMAGE_APP_CORRUPT);
+    TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_APP);
+    TEST_ASSERT(m.state==UPDATE_TRIAL && m.pending_version==2u);
+    TEST_ASSERT(m.active_version==0u && m.active_size==0u && m.active_crc==0u);
+    TEST_ASSERT(running_version(2u));
+    TEST_ASSERT(boot_confirm(&B.boot)==0);
+    TEST_ASSERT(metadata_load(&B.meta,&m)==1 && m.state==UPDATE_IDLE &&
+                m.active_version==2u);
+
+    /* The same bytes, but unreadable. A bus error is not evidence of a broken
+     * image: stay in READY, keep the recovery target, retry on the next reset
+     * instead of throwing away a possibly healthy application. */
+    restore_fixture(&Ready);
+    B.flash.read_fail_after=0;
+    TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_LOADER);
+    TEST_ASSERT(metadata_load(&B.meta,&m)==1 && m.state==UPDATE_READY);
+    TEST_ASSERT(m.active_version==1u && m.active_size==1003u);
+    TEST_ASSERT(m.pending_version==2u);
+    B.flash.read_fail_after=-1;
+    bench_reboot(&B);
+    TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_APP);
+    TEST_ASSERT(m.state==UPDATE_TRIAL && running_version(2u));
+    TEST_ASSERT(boot_confirm(&B.boot)==0 && running_version(2u));
+}
+
+static int boot_hook_calls;
+static int boot_hook_result;
+/* Not a shortcut: it runs the same boot_request_loader the board hook runs, so
+ * a failure to persist shows up here rather than being hidden by a stand-in
+ * that only returns a constant. result 0 stands for "this image is the loader,
+ * so ota_bsp_is_application() said no". */
+static int boot_hook(void *user)
+{
+    boot_hook_calls++;
+    if(!boot_hook_result) return 0;
+    return boot_request_loader((boot_context_t *)user)==0;
+}
+
+static void app_to_loader_handshake(void)
+{
+    metadata_t m;
+    printf("[boot/application asks the next reset to stay in the loader]\n");
+
+    restore_fixture(&Idle);
+    B.server.request_bootloader=boot_hook;
+    B.server.request_bootloader_user=&B.boot;
+
+    /* 10 02 is answered positively by the application, and the request is
+     * already durable before that response leaves: a tester that reboots on
+     * 50 02 cannot race the flag. */
+    boot_hook_calls=0; boot_hook_result=1;
+    req[0]=0x10u; req[1]=0x02u;
+    TEST_ASSERT(call(2u)==1 && resp[0]==0x50u && resp[1]==0x02u);
+    TEST_ASSERT(boot_hook_calls==1 && B.server.boot_request_accepted==1u);
+    TEST_ASSERT(metadata_load(&B.meta,&m)==1 && m.boot_request==1u);
+    TEST_ASSERT(m.state==UPDATE_IDLE && m.active_version==1u);
+
+    /* It survives the reset and is consumed exactly once. */
+    bench_reboot(&B);
+    TEST_ASSERT(metadata_load(&B.meta,&m)==1 && m.boot_request==1u);
+    TEST_ASSERT(boot_consume_boot_request(&B.boot)==1);
+    TEST_ASSERT(boot_consume_boot_request(&B.boot)==0);
+    TEST_ASSERT(metadata_load(&B.meta,&m)==1 && m.boot_request==0u);
+
+    /* The application itself is healthy, so a loader that ignored the request
+     * would have jumped: this is what makes the test meaningful. */
+    TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_APP && running_version(1u));
+
+    /* The loader answers 10 02 too, but must never arm the flag: it would
+     * survive every reset and no finished install could ever be selected. */
+    boot_hook_calls=0; boot_hook_result=0;
+    B.server.request_bootloader=boot_hook;
+    B.server.request_bootloader_user=&B.boot;
+    req[0]=0x10u; req[1]=0x02u;
+    TEST_ASSERT(call(2u)==1 && resp[0]==0x50u);
+    TEST_ASSERT(boot_hook_calls==1 && B.server.boot_request_accepted==0u);
+    TEST_ASSERT(metadata_load(&B.meta,&m)==1 && m.boot_request==0u);
+
+    /* Round trip: ask, reset, land in the loader, download v2, install v2.
+     * This is the sequence that was impossible before -- the second upgrade
+     * needed a metadata wipe to simulate an empty part. */
+    restore_fixture(&Idle);
+    B.server.request_bootloader=boot_hook;
+    B.server.request_bootloader_user=&B.boot;
+    boot_hook_result=1;
+    req[0]=0x10u; req[1]=0x02u;
+    TEST_ASSERT(call(2u)==1 && resp[0]==0x50u);
+    bench_reboot(&B);  /* reboot also drops the hook, as a loader would have */
+    TEST_ASSERT(boot_consume_boot_request(&B.boot)==1);
+    TEST_ASSERT(download(make_image(2u,1503u,0))==0);
+    TEST_ASSERT(metadata_load(&B.meta,&m)==1 && m.boot_request==0u);
+    TEST_ASSERT(boot_select(&B.boot,&m)==BOOT_TARGET_APP && m.state==UPDATE_TRIAL);
+    TEST_ASSERT(boot_confirm(&B.boot)==0 && running_version(2u));
+    TEST_ASSERT(boot_area_ok());
+}
+
 static void confirmation_cuts(void)
 {
     uint32_t cut;
@@ -624,6 +733,8 @@ void run_boot_tests(void)
     signature_paths();
     watchdog_recovery();
     first_install_recovery();
+    broken_active_with_pending();
+    app_to_loader_handshake();
     metadata_faults();
     confirmation_cuts();
     download_cuts();

@@ -20,7 +20,7 @@ static void encode(const metadata_t *m, uint8_t *raw)
     const uint32_t words[16] = {
         m->magic,m->seq,m->state,m->active_version,m->active_size,m->active_crc,
         m->pending_version,m->pending_size,m->pending_crc,m->boot_attempts,
-        m->min_version,m->reserved[0],m->reserved[1],m->reserved[2],m->crc,m->commit
+        m->min_version,m->boot_request,m->reserved[0],m->reserved[1],m->crc,m->commit
     };
     uint32_t i;
     for(i=0;i<16u;i++) put_le(raw+4u*i,words[i]);
@@ -32,8 +32,8 @@ static void decode(metadata_t *m, const uint8_t *raw)
     m->active_crc=get_le(raw+20); m->pending_version=get_le(raw+24);
     m->pending_size=get_le(raw+28); m->pending_crc=get_le(raw+32);
     m->boot_attempts=get_le(raw+36); m->min_version=get_le(raw+40);
-    m->reserved[0]=get_le(raw+44); m->reserved[1]=get_le(raw+48);
-    m->reserved[2]=get_le(raw+52); m->crc=get_le(raw+56);
+    m->boot_request=get_le(raw+44); m->reserved[0]=get_le(raw+48);
+    m->reserved[1]=get_le(raw+52); m->crc=get_le(raw+56);
     m->commit=get_le(raw+60);
 }
 static int sane(const metadata_t *m)
@@ -41,7 +41,7 @@ static int sane(const metadata_t *m)
     if(m->state>UPDATE_RESTORING || m->active_size>APP_SIZE ||
        m->pending_size>APP_SIZE || m->boot_attempts>MAX_BOOT_ATTEMPTS)
         return 0;
-    if(m->reserved[0] || m->reserved[1] || m->reserved[2]) return 0;
+    if(m->boot_request>1u || m->reserved[0] || m->reserved[1]) return 0;
     if(m->active_size==0u) {
         if(m->active_version || m->active_crc || m->min_version) return 0;
     } else if(m->active_size<8u || m->active_version==0u ||
@@ -111,6 +111,8 @@ int metadata_save(metadata_store_t *s, metadata_t *m)
     if(have<0) return -1;
     target=offsets[have ? (1-index) : 0];
     next=*m; next.magic=META_MAGIC; next.seq=have ? current.seq+1u : 1u;
+    /* reserved[] is scratch space and is cleared; boot_request is state and
+     * must survive every save, so the caller owns it. */
     memset(next.reserved,0,sizeof next.reserved);
     next.commit=META_COMMITTED; next.crc=0u;
     encode(&next,raw); next.crc=crc32_calc(raw,56u); encode(&next,raw);

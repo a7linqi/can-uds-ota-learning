@@ -14,7 +14,11 @@
 #define UDS_MAX_DOWNLOAD_DATA     (UDS_MAX_DOWNLOAD_BLOCK - 2u)
 #define UDS_S3_TIMEOUT_MS         5000u
 #define UDS_DID_UPDATE_STATUS     0x0200u /* project-specific, read-only */
-#define UDS_UPDATE_STATUS_SIZE    40u
+/* 40 bytes of update state plus 4 bytes of transport/gate state. The extra
+ * four were added after a handshake failure on silicon could not be told
+ * apart from a closed capability gate by any host-visible signal: the DID
+ * answered identically in both cases. */
+#define UDS_UPDATE_STATUS_SIZE    44u
 
 /* ---- 0x19 / 0x14 diagnostic trouble codes ---------------------------------
  * RAM only: the table lives in uds_server_t, so it survives S3 timeouts and
@@ -73,6 +77,19 @@ typedef struct {
     uint8_t  dl_next_counter;
 
     uint8_t  reset_requested;
+    /* Set by handle_session when the programming session was entered and the
+     * hook recorded "stop in the loader next reset". Read-only to the tester
+     * via DID 0x0200 so a host can confirm the handshake actually landed. */
+    uint8_t  boot_request_accepted;
+    /* Transport/gate observability, refreshed by the platform diagnostic
+     * layer each poll and published as status[40..43]. Core code never reads
+     * it; it exists so a host can tell "refused by policy" from "refused
+     * because the transport just failed". */
+    uint8_t  diag[4];
+    /* Called on 10 02. Returns 1 when the request is now durable. A loader
+     * leaves this NULL: it is already where the request would send it. */
+    int (*request_bootloader)(void *user);
+    void *request_bootloader_user;
     uint32_t request_count;
     uint32_t last_request_ms;
 

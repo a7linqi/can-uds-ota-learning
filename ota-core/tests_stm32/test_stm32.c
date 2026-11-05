@@ -182,7 +182,8 @@ static void status_checks(void)
     receive(status,sizeof status);
     CHECK(D.long_announced && M.sent_count==1u && M.sent[0].data[3]==0x78u);
     CHECK(!ota_stm32_diag_poll(&D));
-    CHECK(M.sent_count==2u && M.sent[1].data[0]==0x10u && M.sent[1].data[1]==43u);
+    CHECK(M.sent_count==2u && M.sent[1].data[0]==0x10u &&
+          M.sent[1].data[1]==(uint8_t)(3u+UDS_UPDATE_STATUS_SIZE));
     receive(flow,sizeof flow);
     for(i=0u;i<8u;i++) CHECK(!ota_stm32_diag_poll(&D));
     CHECK(!isotp_busy(&D.link) && !D.request_pending);
@@ -282,6 +283,82 @@ static void pending_checks(void)
     CHECK(M.sent[M.sent_count-1u].data[1]==0x7Fu && M.sent[M.sent_count-1u].data[3]==0x22u);
 #endif
 }
+/* The most expensive confusion in this project so far: a tester reads the
+ * status DID and then sends 0x34 to the *application*, sees NRC 0x22 and reads
+ * it as "the gate is stuck". The refusal is the design -- the App is built with
+ * OTA_ENABLE_FLASHING=0 and may only hand the next reset to the loader -- but
+ * the two causes look identical on the wire. So pin down both halves: which
+ * role refuses, and that the status DID exposes the gate and the role so a host
+ * can tell "closed by build" from "closed by failure". */
+static void gate_checks(void)
+{
+    const uint8_t session[]={2,0x10,2};
+#if !OTA_ENABLE_FLASHING
+    const uint8_t download[]={0x10,0x0B,0x34,0,0x44,8,1,0};
+    const uint8_t next[]={0x21,0,0,0,6,0};
+    const uint8_t status[]={3,0x22,0x02,0};
+#endif
+    metadata_t m;
+    uint32_t writes;
+
+    /* -- application role: the 0x34 refusal and the handoff on one wire -- */
+    fresh(); M.is_application=1; ota_stm32_diag_init(&D,&P);
+    memset(&m,0,sizeof m);
+    CHECK(!metadata_save(&P.store,&m)); /* a board always has a valid record */
+    CHECK(P.storage_ready);
+    CHECK(!ota_stm32_diag_poll(&D));
+    CHECK((D.uds.diag[3]&0x80u)!=0u && !D.uds.diag[1]);
+    /* the shipped App is the gate-off build; the gate-on run below proves the
+     * build switch, not the role, is what closes it */
+    CHECK(D.programming_allowed==(OTA_ENABLE_FLASHING?1u:0u));
+    receive(session,sizeof session);
+    CHECK(M.sent[M.sent_count-1u].data[1]==0x50u);
+    CHECK(D.uds.boot_request_accepted==1u);
+    CHECK(metadata_load(&P.store,&m)==1 && m.boot_request==1u);
+    writes=M.ee_writes;
+#if OTA_ENABLE_FLASHING
+    (void)writes;
+#else
+    D.uds.session=UDS_SESSION_PROGRAMMING; D.uds.unlocked=1u;
+    receive(download,sizeof download); receive(next,sizeof next);
+    CHECK(M.sent[M.sent_count-1u].data[1]==0x7Fu &&
+          M.sent[M.sent_count-1u].data[2]==0x34u &&
+          M.sent[M.sent_count-1u].data[3]==0x22u);
+    CHECK(!M.nor_erases && M.ee_writes==writes);
+    /* reading the status DID first must not change that verdict either way */
+    receive(status,sizeof status);
+    CHECK(!ota_stm32_diag_poll(&D) && D.uds.diag[0]==0u);
+#endif
+
+    /* -- same request, loader role: the build switch is the only difference -- */
+    fresh(); M.is_application=0; ota_stm32_diag_init(&D,&P);
+    memset(&m,0,sizeof m);
+    CHECK(!metadata_save(&P.store,&m));
+    CHECK(P.storage_ready);
+    /* the loader is already where a handoff would send it: re-arming the stop
+     * flag there would make a finished install unreachable */
+    writes=M.ee_writes;
+    receive(session,sizeof session);
+    CHECK(M.sent[M.sent_count-1u].data[1]==0x50u);
+    CHECK(D.uds.boot_request_accepted==0u && M.ee_writes==writes);
+#if OTA_ENABLE_FLASHING
+    CHECK(D.programming_allowed);
+    CHECK(!ota_stm32_diag_poll(&D));
+    CHECK(D.uds.diag[0]==1u && !(D.uds.diag[3]&0x80u));
+#else
+    CHECK(!D.programming_allowed);
+#endif
+
+#if OTA_ENABLE_FLASHING
+    /* -- the gate is a capability, not a fuse -- */
+    fresh(); ota_stm32_diag_init(&D,&P);
+    M.nor_erase_delay_ms=1001u;
+    queue_download();
+    CHECK(ota_stm32_diag_poll(&D)<0 && !D.programming_allowed);
+    receive(session,sizeof session);
+    CHECK(D.programming_allowed && D.service_deadline_misses==1u);
+#endif
+}
 static void uart_feed(const can_frame_t *f)
 {
     uint8_t raw[CAN_UART_MAX_FRAME];
@@ -341,7 +418,7 @@ int main(void)
 {
     init_sign_key();
     storage_checks(); can_checks(); diagnostics_checks(); handoff_checks();
-    pending_checks(); status_checks(); uart_checks();
+    pending_checks(); status_checks(); gate_checks(); uart_checks();
     printf("STM32 adapter mocks: %d checks, %d failures\n",checks,failures);
     return failures?1:0;
 }

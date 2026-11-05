@@ -25,7 +25,18 @@ void image_header_decode(image_header_t *h, const uint8_t in[IMAGE_HEADER_SIZE])
 int image_read_header(flash_port_t external, uint32_t offset, image_header_t *h);
 int image_validate(flash_port_t external, uint32_t offset,
                    uint32_t *version, uint32_t *payload_size);
-/* Internal APP_OFFSET contains payload/vectors, NOT a container header. */
+/* Internal APP_OFFSET contains payload/vectors, NOT a container header.
+ *
+ * Why this one call has three outcomes while the others answer yes/no: the
+ * boot selector has to tell "this application is wrong" from "this application
+ * could not be read". The first means the recovery target is already gone and
+ * the only useful move is to install over it; the second means the flash bus
+ * hiccuped and the next reset may well read the same image fine. Collapsing
+ * both into -1 is what let an unreadable-but-possibly-good App wedge the
+ * update state machine in READY forever. */
+#define IMAGE_APP_VALID      0
+#define IMAGE_APP_CORRUPT  (-1)
+#define IMAGE_APP_UNREADABLE (-2)
 int image_validate_app(flash_port_t internal, uint32_t size, uint32_t crc);
 /* Only BACKUP_OFFSET with flags == 0 is accepted by this CRC-only path.
  * The backup holds a

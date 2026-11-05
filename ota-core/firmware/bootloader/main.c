@@ -53,6 +53,8 @@ int main(void)
      * internal flash, so these lines are the only sign of life for ~30 s. */
     if(!storage.storage_ready)
         ota_bsp_log("loader: storage not ready, staying in the loader");
+    else if(boot_consume_boot_request(&storage.boot))
+        ota_bsp_log("loader: stop requested by the application");
     else if(!ota_bsp_force_loader()) {
         ota_bsp_log("loader: selecting boot target");
         if(boot_select(&storage.boot,0)==BOOT_TARGET_APP) {

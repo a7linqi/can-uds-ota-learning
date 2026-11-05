@@ -336,6 +336,7 @@ void ota_user_heartbeat(void) { if(initialized) HAL_GPIO_TogglePin(GPIOF,GPIO_PI
  * loader forever; a loader may jump; an application claims health. */
 int ota_user_force_loader(void) { return OTA_EXPLORER_BOOT_ROLE==1 ? 0 : 1; }
 int ota_user_app_healthy(void) { return OTA_EXPLORER_BOOT_ROLE==2 ? 1 : 0; }
+int ota_user_is_application(void) { return OTA_EXPLORER_BOOT_ROLE==2 ? 1 : 0; }
 void ota_user_can_rx(const can_frame_t *frame) { ota_bootloader_can_rx(frame); }
 int ota_user_quiesce_peripherals(void)
 {

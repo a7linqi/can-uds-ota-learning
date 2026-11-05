@@ -104,9 +104,9 @@ static void response_too_long_cases(void)
     TEST_ASSERT(probe(vin1, 3u, 20u, "vin/20") == 20u && raw[GUARD] == 0x62u);
     TEST_ASSERT(probe(vin1, 3u, 19u, "vin/19") == 3u && raw[GUARD + 2u] == 0x14u);
 
-    /* 0x0200 carries 40 bytes, so 42 is one short and 43 is exactly enough */
-    TEST_ASSERT(probe(status, 3u, 42u, "status/42") == 3u && raw[GUARD + 2u] == 0x14u);
-    TEST_ASSERT(probe(status, 3u, 43u, "status/43") == 43u && raw[GUARD] == 0x62u);
+    /* 0x0200 carries 44 bytes, so 46 is one short and 47 is exactly enough */
+    TEST_ASSERT(probe(status, 3u, 46u, "status/46") == 3u && raw[GUARD + 2u] == 0x14u);
+    TEST_ASSERT(probe(status, 3u, 47u, "status/47") == 47u && raw[GUARD] == 0x62u);
 
     /* two DIDs fit in 39 bytes, three do not fit in 42 */
     TEST_ASSERT(probe(vin3, 5u, 39u, "2vin/39") == 39u && raw[GUARD] == 0x62u);
@@ -120,7 +120,7 @@ static void storage_failure_still_0x72(void)
     static const uint8_t status[] = {0x22u, 0x02u, 0x00u};
 
     UB.eeprom.read_fail_after = 0;
-    (void)probe(status, 3u, 43u, "status/43/eeprom-fail");
+    (void)probe(status, 3u, 47u, "status/47/eeprom-fail");
     TEST_ASSERT(raw[GUARD] == 0x7Fu && raw[GUARD + 2u] == 0x72u);
     UB.eeprom.read_fail_after = -1;
 }
