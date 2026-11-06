@@ -1,12 +1,14 @@
 # 一条命令验证当前源码
 
-2026-11-05 傍晚（`--gcc` 全量重跑，加入 I2C 总线清除 `i2c_bus_clear()` 之后）：每容量 3421 个 C 断言（ZG/ZE 一致）、420 个模型断电场景、PC 47 项、SPI NOR 740 项、Python 工具 28 项、固件入口 35+35+51 项、STM32 适配器主机模型 258（门控关闭）/325（门控打开）项；四套 GNU 只读镜像完整链接（ZG 回环 16372 B、ZG 串口台架 **44432 B**、ZE 回环 16372 B、ZE 串口台架 **44440 B**），参考 BSP 每目标编译 48 个 ARM C 对象。快照 136 个源码哈希，`status=passed`，**201.8 s**。`python-can virtual` 本轮未执行（`performed_this_run=false`）。`keil_target_linked=false`、`hardware_verified=false` 描述的是机器可读矩阵，**不是"没上过板"**——上板结果见 [参考板文档](EXPLORER_REFERENCE.md) 与 `stages/board-lab/STAGE_D_EVIDENCE.md`：完整升级链在实物走通，连续三轮升级后读回内部 Flash 与构建产物逐字节相同。
+2026-11-05 安全启动凭证阶段（当前源码 `cb2c92c`）：每容量 **3502 个 C 断言 / 429 个模型断电场景**，0 失败；PC 47、STM32 适配器 258/325、固件入口 35+35+51 等沿用上一轮通过记录。以下 3421/420、3385/420 是同日较早的全量重跑，保留作历史记录；引用“当前结果”时以 3502/429 为准，发布 zip 前先确认 `evidence/verification.json` 已按当前源码重跑。
 
-2026-11-05 当前源码矩阵（`--gcc` 全量重跑）：每容量 3385 个 C 断言（ZG/ZE 一致）、420 个模型断电场景、PC 45 项、SPI NOR 740 项（31 个传输注入点，含 5 个跨页拆分用例）、python-can virtual 7 项、Python 工具 28 项、固件入口 35+35+51 项、STM32 适配器主机模型 232/298 项；四套 GNU 只读镜像完整链接（ZG 回环 16176 B、ZG 串口台架 43984 B、ZE 回环 16172 B、ZE 串口台架 43984 B），参考 BSP 每目标编译 46 个 ARM C 对象。NOR 写路径与更新闸门共 8 个编译变体：写钩子关闭、自检指向槽外扇区、双开关同时打开必须成功；自检指向镜像槽、自检缺地址、只开 `OTA_ENABLE_FLASHING`、只开 `OTA_EXPLORER_UPDATE_CAPABLE`、开了更新但关掉写钩子必须被 `#error` 拒绝。快照 132 个源码哈希，`status=passed`，153.4 s。`keil_target_linked=false`、`hardware_verified=false`：以上都不是实机结果；实机进度另见 [参考板文档](EXPLORER_REFERENCE.md)。
+2026-11-05 傍晚（历史记录，`--gcc` 全量重跑，加入 I2C 总线清除 `i2c_bus_clear()` 之后）：每容量 3421 个 C 断言（ZG/ZE 一致）、420 个模型断电场景、PC 47 项、SPI NOR 740 项、Python 工具 28 项、固件入口 35+35+51 项、STM32 适配器主机模型 258（门控关闭）/325（门控打开）项；四套 GNU 只读镜像完整链接（ZG 回环 16372 B、ZG 串口台架 **44432 B**、ZE 回环 16372 B、ZE 串口台架 **44440 B**），参考 BSP 每目标编译 48 个 ARM C 对象。快照 136 个源码哈希，`status=passed`，**201.8 s**。`python-can virtual` 本轮未执行（`performed_this_run=false`）。`keil_target_linked=false`、`hardware_verified=false` 描述的是机器可读矩阵，**不是"没上过板"**——上板结果见 [参考板文档](EXPLORER_REFERENCE.md) 与 `stages/board-lab/STAGE_D_EVIDENCE.md`：完整升级链在实物走通，连续三轮升级后读回内部 Flash 与构建产物逐字节相同。
 
-v0.13 的完整矩阵已通过，详见 [核心复核记录](CORE_REVIEW_20261102.md)：每容量 3138 个 C 断言、420 个模型断电场景，Python 工具 22 项、实际 python-can virtual 后端 7 项、Python 包到 C 校验 8 组。四套参考目标各编译 43 个 ARM C 对象，GNU 各 45 个对象并完成 ELF/BIN/MAP 链接检查。实物 SWD 识别已单独记录，项目固件尚未上板运行。
+2026-11-05 较早一轮源码矩阵（`--gcc` 全量重跑）：每容量 3385 个 C 断言（ZG/ZE 一致）、420 个模型断电场景、PC 45 项、SPI NOR 740 项（31 个传输注入点，含 5 个跨页拆分用例）、python-can virtual 7 项、Python 工具 28 项、固件入口 35+35+51 项、STM32 适配器主机模型 232/298 项；四套 GNU 只读镜像完整链接（ZG 回环 16176 B、ZG 串口台架 43984 B、ZE 回环 16172 B、ZE 串口台架 43984 B），参考 BSP 每目标编译 46 个 ARM C 对象。NOR 写路径与更新闸门共 8 个编译变体：写钩子关闭、自检指向槽外扇区、双开关同时打开必须成功；自检指向镜像槽、自检缺地址、只开 `OTA_ENABLE_FLASHING`、只开 `OTA_EXPLORER_UPDATE_CAPABLE`、开了更新但关掉写钩子必须被 `#error` 拒绝。快照 132 个源码哈希，`status=passed`，153.4 s。`keil_target_linked=false`、`hardware_verified=false`：以上都不是实机结果；实机进度另见 [参考板文档](EXPLORER_REFERENCE.md)。
 
-2026-11-04 UART 台架阶段：新增 26 条 CAN-over-UART 编解码断言，主机 C 基线为 3164 条/容量；STM32 适配器主机模型 232（门控关闭）/298（门控打开）条断言；Python 工具 28 项。真实串口、擦写、跳转和断电仍未执行，详见 [UART 台架说明](UART_BENCH.md)。
+v0.13 的完整矩阵已通过，详见 [核心复核记录](CORE_REVIEW_20261102.md)：每容量 3138 个 C 断言、420 个模型断电场景，Python 工具 22 项、实际 python-can virtual 后端 7 项、Python 包到 C 校验 8 组。四套参考目标各编译 43 个 ARM C 对象，GNU 各 45 个对象并完成 ELF/BIN/MAP 链接检查。实物 SWD 识别已单独记录；项目固件后续已上板运行，签名安装、连续升级和 TRIAL 回滚见 [参考板文档](EXPLORER_REFERENCE.md)。
+
+2026-11-04 UART 台架阶段：新增 26 条 CAN-over-UART 编解码断言，主机 C 基线为 3164 条/容量；STM32 适配器主机模型 232（门控关闭）/298（门控打开）条断言；Python 工具 28 项。该阶段真实串口、擦写、跳转和断电尚未执行；后续已完成前三项，断电仍未执行，详见 [UART 台架说明](UART_BENCH.md)。
 
 v0.12 增加探索者只读 BSP 验证：实际回环入口与接收队列的主机模型为 51 项断言、14 个场景；这不是物理 CAN 实验。给出 ARM/ST/CMSIS 参数时，另检查四个参考目标，每目标编译 35 个 C 对象。
 

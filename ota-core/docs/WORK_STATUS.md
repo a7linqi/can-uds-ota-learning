@@ -1,5 +1,7 @@
 # Engineering checkpoint
 
+> Reverse-chronological log. Older entries describe their capture-time state, not current conclusions. For the current status see [README](../README.md) and [VERIFICATION](VERIFICATION.md).
+
 Secure boot, and an attacker hired to defeat it (2026-11-05, Asia/Shanghai):
 - The loader used to jump on CRC32 alone. Anyone with a debug probe could write a self-consistent image, repair `active_crc` in the EEPROM record and get it executed. `boot_select()` now requires a **ticket**: the 32-byte container header plus the 64-byte Ed25519 signature of the installed image, stored in the last 96 bytes of the app area (`APP_TICKET_OFFSET`).
 - Placement is the design decision that removes a whole class of bugs: the erase that removes an app removes its proof in the same call, so a stale ticket can never be paired with a replaced image, and no second storage format has to be kept in sync with the install transaction. Cost: an app may be at most `APP_SIZE - 96` (960 KiB - 96 B here; shipped apps are 44 KiB).
