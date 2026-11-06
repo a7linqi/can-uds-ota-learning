@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>embedded_upgrade_roadmap_gantt</title>
+<style>
+:root {
+  color-scheme: light;
+
+  --bg-base-default: #ffffff;
+  --bg-base-secondary: #f5f5f5;
+  --bg-base-tertiary: #e5e5e5;
+  --bg-overlay-l1: rgba(115, 115, 115, 0.08);
+  --bg-overlay-l2: rgba(115, 115, 115, 0.12);
+  --bg-overlay-l3: rgba(115, 115, 115, 0.16);
+  --bg-overlay-l4: rgba(115, 115, 115, 0.20);
+  --bg-brand: #4b3fe3;
+  --bg-brand-hover: #6a6fff;
+  --bg-brand-active: #3f31c6;
+  --text-default: #171717;
+  --text-secondary: #404040;
+  --text-tertiary: #737373;
+  --text-disabled: #a1a1a1;
+  --text-brand: #4b3fe3;
+  --text-onbrand: #ffffff;
+  --border-neutral-l1: rgba(115, 115, 115, 0.12);
+  --border-neutral-l2: rgba(115, 115, 115, 0.18);
+  --border-neutral-l3: rgba(115, 115, 115, 0.36);
+  --status-primary-default: #2f74ff;
+  --status-primary-surface-l1: rgba(47, 116, 255, 0.12);
+  --status-success-default: #15a877;
+  --status-success-surface-l1: rgba(64, 176, 139, 0.12);
+  --status-alert-default: #fea900;
+  --status-alert-surface-l1: rgba(254, 169, 0, 0.14);
+  --status-warning-default: #e27900;
+  --status-warning-surface-l1: rgba(226, 121, 0, 0.12);
+  --status-error-default: #e8463a;
+  --status-error-surface-l1: rgba(232, 70, 58, 0.12);
+  --radius-sm-8: 8px;
+  --radius-md-12: 12px;
+  --spacer-4: 4px;
+  --spacer-8: 8px;
+  --spacer-12: 12px;
+  --spacer-16: 16px;
+  --spacer-20: 20px;
+  --spacer-24: 24px;
+  --font-family-default: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-family-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --viz-series-coral: #f87454;
+  --viz-series-amber: #edaa45;
+  --viz-series-mint: #1dc981;
+  --viz-series-teal: #59e8e8;
+  --viz-series-sky: #22a5f7;
+  --viz-series-violet: #b655fc;
+  --viz-series-magenta: #fb9dd7;
+  --viz-series-indigo: #b6a3ff;
+  --viz-series-lime: #a6ea39;
+  --viz-series-slate: #859ead;
+  --viz-ui-chart-axis: var(--border-neutral-l2);
+  --viz-ui-chart-tick: var(--text-secondary);
+  --viz-ui-legend-label: var(--text-secondary);
+  --viz-ui-legend-value: var(--text-default);
+  --color-background-primary: var(--bg-base-default);
+  --color-background-secondary: var(--bg-base-secondary);
+  --color-background-overlay-l1: var(--bg-overlay-l1);
+  --color-background-overlay-l2: var(--bg-overlay-l2);
+  --color-text-primary: var(--text-default);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-border-secondary: var(--border-neutral-l2);
+  --color-border-tertiary: var(--border-neutral-l1);
+  --border-radius-lg: var(--radius-sm-8);
+  --border-radius-xl: var(--radius-md-12);
+  --font-sans: var(--font-family-default);
+  --font-mono: var(--font-family-mono);
+  --w-bg: var(--bg-base-default);
+  --w-surface: var(--bg-base-secondary);
+  --w-surface-soft: var(--bg-overlay-l1);
+  --w-surface-hover: var(--bg-overlay-l2);
+  --w-text: var(--text-default);
+  --w-text-2: var(--text-secondary);
+  --w-text-3: var(--text-tertiary);
+  --w-border: var(--border-neutral-l1);
+  --w-border-strong: var(--border-neutral-l2);
+  --w-brand: var(--bg-brand);
+  --w-info: var(--status-primary-default);
+  --w-success: var(--status-success-default);
+  --w-warning: var(--status-warning-default);
+  --w-danger: var(--status-error-default);
+  --w-radius-sm: var(--radius-sm-8);
+  --w-radius-md: var(--radius-md-12);
+  --w-font: var(--font-family-default);
+  --w-mono: var(--font-family-mono);
+  --w-series-1: var(--viz-series-sky);
+  --w-series-2: var(--viz-series-mint);
+  --w-series-3: var(--viz-series-amber);
+  --w-series-4: var(--viz-series-violet);
+  --w-chart-axis: var(--viz-ui-chart-axis);
+  --w-chart-tick: var(--viz-ui-chart-tick);
+
+
+  --color-coral-1: #fff5f5;
+  --color-coral-2: #ffe3e3;
+  --color-coral-3: #ffc9c9;
+  --color-coral-4: #ffa8a8;
+  --color-coral-5: #ff8787;
+  --color-coral-6: #ff6b6b;
+  --color-coral-7: #fa5252;
+  --color-coral-8: #f03e3e;
+  --color-coral-9: #e03131;
+  --color-coral-10: #c92a2a;
+  --color-amber-1: #fff9db;
+  --color-amber-2: #fff3bf;
+  --color-amber-3: #ffec99;
+  --color-amber-4: #ffe066;
+  --color-amber-5: #ffd43b;
+  --color-amber-6: #fcc419;
+  --color-amber-7: #fab005;
+  --color-amber-8: #f59f00;
+  --color-amber-9: #f08c00;
+  --color-amber-10: #e67700;
+  --color-lime-1: #f4fce3;
+  --color-lime-2: #e9fac8;
+  --color-lime-3: #d8f5a2;
+  --color-lime-4: #c0eb75;
+  --color-lime-5: #a9e34b;
+  --color-lime-6: #94d82d;
+  --color-lime-7: #82c91e;
+  --color-lime-8: #74b816;
+  --color-lime-9: #66a80f;
+  --color-lime-10: #5c940d;
+  --color-mint-1: #e6fcf5;
+  --color-mint-2: #c3fae8;
+  --color-mint-3: #96f2d7;
+  --color-mint-4: #63e6be;
+  --color-mint-5: #38d9a9;
+  --color-mint-6: #20c997;
+  --color-mint-7: #12b886;
+  --color-mint-8: #0ca678;
+  --color-mint-9: #099268;
+  --color-mint-10: #087f5b;
+  --color-teal-1: #e6fcfc;
+  --color-teal-2: #c3fafa;
+  --color-teal-3: #96f2f2;
+  --color-teal-4: #63e6e6;
+  --color-teal-5: #38d9d9;
+  --color-teal-6: #20c9c9;
+  --color-teal-7: #12b8b8;
+  --color-teal-8: #0ca6a6;
+  --color-teal-9: #099292;
+  --color-teal-10: #087f7f;
+  --color-sky-1: #e7f5ff;
+  --color-sky-2: #d0ebff;
+  --color-sky-3: #a5d8ff;
+  --color-sky-4: #74c0fc;
+  --color-sky-5: #4dabf7;
+  --color-sky-6: #339af0;
+  --color-sky-7: #228be6;
+  --color-sky-8: #1c7ed6;
+  --color-sky-9: #1971c2;
+  --color-sky-10: #1864ab;
+  --color-indigo-1: #edf2ff;
+  --color-indigo-2: #dbe4ff;
+  --color-indigo-3: #bac8ff;
+  --color-indigo-4: #91a7ff;
+  --color-indigo-5: #748ffc;
+  --color-indigo-6: #5c7cfa;
+  --color-indigo-7: #4c6ef5;
+  --color-indigo-8: #4263eb;
+  --color-indigo-9: #3b5bdb;
+  --color-indigo-10: #364fc7;
+  --color-violet-1: #f3f0ff;
+  --color-violet-2: #e5dbff;
+  --color-violet-3: #d0bfff;
+  --color-violet-4: #b197fc;
+  --color-violet-5: #9775fa;
+  --color-violet-6: #845ef7;
+  --color-violet-7: #7950f2;
+  --color-violet-8: #7048e8;
+  --color-violet-9: #6741d9;
+  --color-violet-10: #5f3dc4;
+  --color-magenta-1: #fff0f6;
+  --color-magenta-2: #ffdeeb;
+  --color-magenta-3: #fcc2d7;
+  --color-magenta-4: #faa2c1;
+  --color-magenta-5: #f783ac;
+  --color-magenta-6: #f06595;
+  --color-magenta-7: #e64980;
+  --color-magenta-8: #d6336c;
+  --color-magenta-9: #c2255c;
+  --color-magenta-10: #a61e4d;
+  --color-slate-1: #f8f9fa;
+  --color-slate-2: #f1f3f5;
+  --color-slate-3: #e9ecef;
+  --color-slate-4: #dee2e6;
+  --color-slate-5: #ced4da;
+  --color-slate-6: #adb5bd;
+  --color-slate-7: #868e96;
+  --color-slate-8: #495057;
+  --color-slate-9: #343a40;
+  --color-slate-10: #212529;
+
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+  --bg-base-default: #171717;
+  --bg-base-secondary: #262626;
+  --bg-base-tertiary: #404040;
+  --bg-overlay-l1: rgba(212, 212, 212, 0.04);
+  --bg-overlay-l2: rgba(212, 212, 212, 0.06);
+  --bg-overlay-l3: rgba(212, 212, 212, 0.08);
+  --bg-overlay-l4: rgba(212, 212, 212, 0.12);
+  --text-default: #e5e5e5;
+  --text-secondary: #a3a3a3;
+  --text-tertiary: #737373;
+  --text-disabled: #404040;
+  --text-brand: #6a6fff;
+  --border-neutral-l1: rgba(212, 212, 212, 0.10);
+  --border-neutral-l2: rgba(212, 212, 212, 0.16);
+  --border-neutral-l3: rgba(212, 212, 212, 0.20);
+  --status-primary-default: #387bff;
+  --status-primary-surface-l1: rgba(53, 121, 255, 0.18);
+  --status-success-default: #33c192;
+  --status-success-surface-l1: rgba(0, 165, 110, 0.18);
+  --status-alert-default: #d29d00;
+  --status-alert-surface-l1: rgba(210, 157, 0, 0.16);
+  --status-warning-default: #d27e24;
+  --status-warning-surface-l1: rgba(210, 126, 36, 0.16);
+  --status-error-default: #f65a5a;
+  --status-error-surface-l1: rgba(246, 70, 70, 0.18);
+  --viz-series-teal: #78f2f2;
+
+  }
+}
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  font-family: var(--font-family-default);
+}
+#widget-root {
+  width: 100%;
+  box-sizing: border-box;
+}
+* {
+  box-sizing: border-box;
+}
+.t { font-size: 14px; fill: var(--text-default); }
+.ts { font-size: 12px; fill: var(--text-secondary); }
+.th { font-size: 14px; fill: var(--text-default); font-weight: 500; }
+.box { fill: var(--bg-base-secondary); stroke: var(--border-neutral-l2); }
+.arr { stroke: var(--text-tertiary); fill: none; stroke-width: 1.5; }
+.leader { stroke: var(--text-tertiary); stroke-width: 0.5; stroke-dasharray: 4 3; fill: none; }
+.node { cursor: pointer; }
+.node:hover rect, .node:hover .box { filter: brightness(0.97); }
+.node:hover text { opacity: 0.8; }
+
+g.c-coral>rect,g.c-coral>ellipse,g.c-coral>circle,g.c-coral>polygon,
+rect.c-coral,ellipse.c-coral,circle.c-coral,polygon.c-coral{fill:var(--color-coral-1);stroke:var(--color-coral-7)}
+.c-coral>.th,.c-coral>.t{fill:var(--color-coral-9)}
+.c-coral>.ts{fill:var(--color-coral-7)}
+@media (prefers-color-scheme: dark){
+  g.c-coral>rect,g.c-coral>ellipse,g.c-coral>circle,g.c-coral>polygon,
+  rect.c-coral,ellipse.c-coral,circle.c-coral,polygon.c-coral{fill:var(--color-coral-9);stroke:var(--color-coral-5)}
+  .c-coral>.th,.c-coral>.t{fill:var(--color-coral-3)}
+  .c-coral>.ts{fill:var(--color-coral-5)}
+}
+
+
+g.c-amber>rect,g.c-amber>ellipse,g.c-amber>circle,g.c-amber>polygon,
+rect.c-amber,ellipse.c-amber,circle.c-amber,polygon.c-amber{fill:var(--color-amber-1);stroke:var(--color-amber-7)}
+.c-amber>.th,.c-amber>.t{fill:var(--color-amber-9)}
+.c-amber>.ts{fill:var(--color-amber-7)}
+@media (prefers-color-scheme: dark){
+  g.c-amber>rect,g.c-amber>ellipse,g.c-amber>circle,g.c-amber>polygon,
+  rect.c-amber,ellipse.c-amber,circle.c-amber,polygon.c-amber{fill:var(--color-amber-9);stroke:var(--color-amber-5)}
+  .c-amber>.th,.c-amber>.t{fill:var(--color-amber-3)}
+  .c-amber>.ts{fill:var(--color-amber-5)}
+}
+
+
+g.c-lime>rect,g.c-lime>ellipse,g.c-lime>circle,g.c-lime>polygon,
+rect.c-lime,ellipse.c-lime,circle.c-lime,polygon.c-lime{fill:var(--color-lime-1);stroke:var(--color-lime-7)}
+.c-lime>.th,.c-lime>.t{fill:var(--color-lime-9)}
+.c-lime>.ts{fill:var(--color-lime-7)}
+@media (prefers-color-scheme: dark){
+  g.c-lime>rect,g.c-lime>ellipse,g.c-lime>circle,g.c-lime>polygon,
+  rect.c-lime,ellipse.c-lime,circle.c-lime,polygon.c-lime{fill:var(--color-lime-9);stroke:var(--color-lime-5)}
+  .c-lime>.th,.c-lime>.t{fill:var(--color-lime-3)}
+  .c-lime>.ts{fill:var(--color-lime-5)}
+}
+
+
+g.c-mint>rect,g.c-mint>ellipse,g.c-mint>circle,g.c-mint>polygon,
+rect.c-mint,ellipse.c-mint,circle.c-mint,polygon.c-mint{fill:var(--color-mint-1);stroke:var(--color-mint-7)}
+.c-mint>.th,.c-mint>.t{fill:var(--color-mint-9)}
+.c-mint>.ts{fill:var(--color-mint-7)}
+@media (prefers-color-scheme: dark){
+  g.c-mint>rect,g.c-mint>ellipse,g.c-mint>circle,g.c-mint>polygon,
+  rect.c-mint,ellipse.c-mint,circle.c-mint,polygon.c-mint{fill:var(--color-mint-9);stroke:var(--color-mint-5)}
+  .c-mint>.th,.c-mint>.t{fill:var(--color-mint-3)}
+  .c-mint>.ts{fill:var(--color-mint-5)}
+}
+
+
+g.c-teal>rect,g.c-teal>ellipse,g.c-teal>circle,g.c-teal>polygon,
+rect.c-teal,ellipse.c-teal,circle.c-teal,polygon.c-teal{fill:var(--color-teal-1);stroke:var(--color-teal-7)}
+.c-teal>.th,.c-teal>.t{fill:var(--color-teal-9)}
+.c-teal>.ts{fill:var(--color-teal-7)}
+@media (prefers-color-scheme: dark){
+  g.c-teal>rect,g.c-teal>ellipse,g.c-teal>circle,g.c-teal>polygon,
+  rect.c-teal,ellipse.c-teal,circle.c-teal,polygon.c-teal{fill:var(--color-teal-9);stroke:var(--color-teal-5)}
+  .c-teal>.th,.c-teal>.t{fill:var(--color-teal-3)}
+  .c-teal>.ts{fill:var(--color-teal-5)}
+}
+
+
+g.c-sky>rect,g.c-sky>ellipse,g.c-sky>circle,g.c-sky>polygon,
+rect.c-sky,ellipse.c-sky,circle.c-sky,polygon.c-sky{fill:var(--color-sky-1);stroke:var(--color-sky-7)}
+.c-sky>.th,.c-sky>.t{fill:var(--color-sky-9)}
+.c-sky>.ts{fill:var(--color-sky-7)}
+@media (prefers-color-scheme: dark){
+  g.c-sky>rect,g.c-sky>ellipse,g.c-sky>circle,g.c-sky>polygon,
+  rect.c-sky,ellipse.c-sky,circle.c-sky,polygon.c-sky{fill:var(--color-sky-9);stroke:var(--color-sky-5)}
+  .c-sky>.th,.c-sky>.t{fill:var(--color-sky-3)}
+  .c-sky>.ts{fill:var(--color-sky-5)}
+}
+
+
+g.c-indigo>rect,g.c-indigo>ellipse,g.c-indigo>circle,g.c-indigo>polygon,
+rect.c-indigo,ellipse.c-indigo,circle.c-indigo,polygon.c-indigo{fill:var(--color-indigo-1);stroke:var(--color-indigo-7)}
+.c-indigo>.th,.c-indigo>.t{fill:var(--color-indigo-9)}
+.c-indigo>.ts{fill:var(--color-indigo-7)}
+@media (prefers-color-scheme: dark){
+  g.c-indigo>rect,g.c-indigo>ellipse,g.c-indigo>circle,g.c-indigo>polygon,
+  rect.c-indigo,ellipse.c-indigo,circle.c-indigo,polygon.c-indigo{fill:var(--color-indigo-9);stroke:var(--color-indigo-5)}
+  .c-indigo>.th,.c-indigo>.t{fill:var(--color-indigo-3)}
+  .c-indigo>.ts{fill:var(--color-indigo-5)}
+}
+
+
+g.c-violet>rect,g.c-violet>ellipse,g.c-violet>circle,g.c-violet>polygon,
+rect.c-violet,ellipse.c-violet,circle.c-violet,polygon.c-violet{fill:var(--color-violet-1);stroke:var(--color-violet-7)}
+.c-violet>.th,.c-violet>.t{fill:var(--color-violet-9)}
+.c-violet>.ts{fill:var(--color-violet-7)}
+@media (prefers-color-scheme: dark){
+  g.c-violet>rect,g.c-violet>ellipse,g.c-violet>circle,g.c-violet>polygon,
+  rect.c-violet,ellipse.c-violet,circle.c-violet,polygon.c-violet{fill:var(--color-violet-9);stroke:var(--color-violet-5)}
+  .c-violet>.th,.c-violet>.t{fill:var(--color-violet-3)}
+  .c-violet>.ts{fill:var(--color-violet-5)}
+}
+
+
+g.c-magenta>rect,g.c-magenta>ellipse,g.c-magenta>circle,g.c-magenta>polygon,
+rect.c-magenta,ellipse.c-magenta,circle.c-magenta,polygon.c-magenta{fill:var(--color-magenta-1);stroke:var(--color-magenta-7)}
+.c-magenta>.th,.c-magenta>.t{fill:var(--color-magenta-9)}
+.c-magenta>.ts{fill:var(--color-magenta-7)}
+@media (prefers-color-scheme: dark){
+  g.c-magenta>rect,g.c-magenta>ellipse,g.c-magenta>circle,g.c-magenta>polygon,
+  rect.c-magenta,ellipse.c-magenta,circle.c-magenta,polygon.c-magenta{fill:var(--color-magenta-9);stroke:var(--color-magenta-5)}
+  .c-magenta>.th,.c-magenta>.t{fill:var(--color-magenta-3)}
+  .c-magenta>.ts{fill:var(--color-magenta-5)}
+}
+
+
+g.c-slate>rect,g.c-slate>ellipse,g.c-slate>circle,g.c-slate>polygon,
+rect.c-slate,ellipse.c-slate,circle.c-slate,polygon.c-slate{fill:var(--color-slate-1);stroke:var(--color-slate-7)}
+.c-slate>.th,.c-slate>.t{fill:var(--color-slate-9)}
+.c-slate>.ts{fill:var(--color-slate-7)}
+@media (prefers-color-scheme: dark){
+  g.c-slate>rect,g.c-slate>ellipse,g.c-slate>circle,g.c-slate>polygon,
+  rect.c-slate,ellipse.c-slate,circle.c-slate,polygon.c-slate{fill:var(--color-slate-9);stroke:var(--color-slate-5)}
+  .c-slate>.th,.c-slate>.t{fill:var(--color-slate-3)}
+  .c-slate>.ts{fill:var(--color-slate-5)}
+}
+
+</style>
+</head>
+<body>
+<div id="widget-root">
+<style>
+:root {
+  color-scheme: light;
+  --surface: #F7F7F8;
+  --surface-muted: #EFEFF2;
+  --text: #171717;
+  --text-muted: #52525B;
+  --border: rgba(23, 23, 23, 0.12);
+  --brand: #4B3FE3;
+  --brand-soft: #F2F7FF;
+  --brand-soft-strong: #E5EAFF;
+  --brand-text: #1A1759;
+  --brand-on: #FFFFFF;
+  --chart-series-1: #3C2ECA;
+  --chart-series-2: #A9AEFF;
+  --chart-series-3: #6F6FFF;
+  --chart-other: #D3D4DA;
+  --radius: 8px;
+  --radius-card: 12px;
+  --radius-full: 999px;
+  --spacer-4: 4px;
+  --spacer-8: 8px;
+  --spacer-12: 12px;
+  --spacer-16: 16px;
+  --spacer-20: 20px;
+  --spacer-24: 24px;
+  --font-sans: "SF Pro Text", "PingFang SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-metric: "Inter", "SF Pro Text", "PingFang SC", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-strong: 600;
+  --text-caption: 12px/18px;
+  --text-body: 14px/20px;
+  --text-title: 16px/24px;
+  --text-code: 13px/20px;
+}
+:root[data-widget-theme="dark"] {
+  color-scheme: dark;
+  --surface: #171717;
+  --surface-muted: #262626;
+  --text: #E5E5E5;
+  --text-muted: #A1A1AA;
+  --border: rgba(229, 229, 229, 0.12);
+  --brand: #6054F1;
+  --brand-soft: #1A1759;
+  --brand-soft-strong: #3C2ECA;
+  --brand-text: #CFD8FF;
+  --chart-series-1: #4B3FE3;
+  --chart-series-2: #A9AEFF;
+}
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: dark; --surface: #171717; --surface-muted: #262626; --text: #E5E5E5; --text-muted: #A1A1AA; --border: rgba(229,229,229,0.12); --brand: #6054F1; --brand-soft: #1A1759; --brand-soft-strong: #3C2ECA; --brand-text: #CFD8FF; --chart-series-1: #4B3FE3; }
+}
+.widget { color: var(--text); background: transparent; font: var(--weight-regular) var(--text-body) var(--font-sans); letter-spacing: 0; width: 100%; }
+.ganttCard { position: relative; box-sizing: border-box; width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: var(--spacer-20); }
+.ganttHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--spacer-16); }
+.ganttTitleBlock { display: grid; gap: var(--spacer-4); min-width: 0; }
+.ganttTitle { margin: 0; color: var(--text); font: var(--weight-medium) var(--text-title) var(--font-sans); }
+.ganttSub { margin: 0; color: var(--text-muted); font: var(--weight-regular) var(--text-caption) var(--font-sans); }
+.summaryRow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--spacer-8); margin-top: var(--spacer-16); }
+.summaryItem { min-width: 0; padding: var(--spacer-8) var(--spacer-12); background: color-mix(in srgb, var(--surface-muted) 48%, var(--surface)); border: 1px solid color-mix(in srgb, var(--border) 68%, transparent); border-radius: var(--radius); }
+.summaryValue { display: block; color: var(--text); font: var(--weight-medium) var(--text-title) var(--font-sans); font-variant-numeric: tabular-nums; }
+.summaryItem[data-focal="true"] .summaryValue { color: var(--brand); }
+.summaryLabel { display: block; color: var(--text-muted); font: var(--weight-regular) var(--text-caption) var(--font-sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ganttGrid { display: grid; grid-template-columns: minmax(132px, 190px) minmax(0, 1fr); margin-top: var(--spacer-16); border: 1px solid color-mix(in srgb, var(--border) 58%, transparent); border-radius: var(--radius-card); overflow: hidden; }
+.taskHead, .timelineHead { min-width: 0; background: color-mix(in srgb, var(--surface-muted) 68%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--border) 58%, transparent); }
+.taskHead { display: flex; align-items: end; padding: var(--spacer-12); color: var(--text-muted); border-right: 1px solid color-mix(in srgb, var(--border) 58%, transparent); font: var(--weight-medium) var(--text-caption) var(--font-sans); }
+.timelineHead { display: grid; grid-template-rows: 30px 30px; }
+.timelineBand { display: flex; align-items: center; justify-content: space-between; gap: var(--spacer-8); padding: 0 var(--spacer-12); color: var(--text-muted); border-bottom: 1px solid color-mix(in srgb, var(--border) 58%, transparent); font: var(--weight-medium) var(--text-caption) var(--font-sans); }
+.todayBadge { color: var(--brand); font: var(--weight-medium) var(--text-caption) var(--font-sans); font-variant-numeric: tabular-nums; }
+.tickRow { display: grid; align-items: center; }
+.tickLabel { min-width: 0; padding: 0 var(--spacer-8); color: var(--text-muted); border-left: 1px solid color-mix(in srgb, var(--border) 58%, transparent); font: var(--weight-regular) var(--text-caption) var(--font-sans); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tickLabel:first-child { border-left: 0; }
+.taskNames { display: grid; grid-template-rows: repeat(6, 52px); background: var(--surface); border-right: 1px solid color-mix(in srgb, var(--border) 58%, transparent); }
+.taskName { display: flex; align-items: center; gap: var(--spacer-8); min-width: 0; padding: 0 var(--spacer-12); border-bottom: 1px solid color-mix(in srgb, var(--border) 58%, transparent); }
+.taskName:last-child { border-bottom: 0; }
+.taskDot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--chart-series-1); }
+.taskName[data-critical="false"] .taskDot { background: var(--chart-series-2); }
+.taskText { min-width: 0; }
+.taskLabel { display: block; color: var(--text); font: var(--weight-medium) var(--text-caption) var(--font-sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.taskOwner { display: block; color: var(--text-muted); font: var(--weight-regular) var(--text-caption) var(--font-sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trackWrap { position: relative; display: grid; grid-template-rows: repeat(6, 52px); min-width: 0; background-image: linear-gradient(to bottom, color-mix(in srgb, var(--border) 58%, transparent) 1px, transparent 1px); background-size: 100% 52px; }
+.calendarBand, .gridLayer, .todayLine, .dependencyLayer { position: absolute; inset: 0; pointer-events: none; }
+.calendarBand { top: 0; bottom: 0; left: var(--x); z-index: 0; width: var(--w); background: color-mix(in srgb, var(--surface-muted) 28%, transparent); opacity: 0.42; }
+.gridLayer { z-index: 1; display: grid; }
+.gridLine { min-width: 0; border-left: 1px solid color-mix(in srgb, var(--border) 58%, transparent); }
+.gridLine:first-child { border-left: 0; }
+.todayLine { left: var(--today-x); width: 0; border-left: 1.5px solid var(--brand); opacity: 0.86; z-index: 2; }
+.todayLine::before { content: ""; position: absolute; top: 0; left: -4px; width: 7px; height: 7px; border-radius: var(--radius-full); background: var(--brand); }
+.dependencyLayer { z-index: 3; width: 100%; height: 100%; overflow: visible; }
+.dependencyPath { fill: none; stroke: color-mix(in srgb, var(--text-muted) 42%, transparent); stroke-width: 1.15; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.lane { position: relative; min-width: 0; }
+.taskBar { position: absolute; top: 12px; left: var(--x); z-index: 4; box-sizing: border-box; width: var(--w); min-width: 44px; max-width: calc(100% - var(--x)); height: 28px; padding: 0 var(--spacer-8); color: var(--brand-on); background: color-mix(in srgb, var(--brand) 86%, var(--surface)); border: 1px solid color-mix(in srgb, var(--brand) 88%, var(--surface)); border-radius: var(--radius); box-shadow: none; cursor: default; overflow: hidden; text-align: left; font: inherit; }
+.taskBar[data-critical="false"] { color: var(--brand-text); background: color-mix(in srgb, var(--chart-series-2) 46%, var(--surface)); border-color: color-mix(in srgb, var(--chart-series-2) 78%, var(--surface)); }
+.taskBar:focus-visible { outline: 2px solid color-mix(in srgb, var(--brand) 52%, transparent); outline-offset: 2px; }
+.taskBar.is-active { transform: translateY(-1px); }
+.barLabel { position: relative; z-index: 1; display: block; font: var(--weight-medium) var(--text-caption) var(--font-sans); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chartTooltip { --tooltip-x: 0px; --tooltip-y: 0px; position: absolute; top: 0; left: 0; z-index: 20; min-width: 196px; padding: 8px 10px; color: var(--text); background: color-mix(in srgb, var(--surface) 96%, #FFFFFF); border: 1px solid color-mix(in srgb, var(--border) 74%, transparent); border-radius: var(--radius); box-shadow: 0 10px 28px rgba(23, 23, 23, 0.1); opacity: 0; pointer-events: none; transform: translate3d(var(--tooltip-x), var(--tooltip-y), 0); transition: opacity 120ms ease, transform 120ms ease; }
+.chartTooltip[data-show="true"] { opacity: 1; }
+.tooltipHeader { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--spacer-8); margin-bottom: var(--spacer-4); }
+.tooltipDot { display: block; width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--chart-series-1); }
+.tooltipDot[data-critical="false"] { background: var(--chart-series-2); }
+.tooltipName { margin: 0; color: var(--text); font: var(--weight-medium) var(--text-caption) var(--font-sans); }
+.tooltipRow { display: grid; grid-template-columns: auto 1fr; gap: var(--spacer-12); color: var(--text-muted); font: var(--weight-regular) var(--text-caption) var(--font-sans); }
+.tooltipValue { color: var(--text); text-align: right; font: var(--weight-medium) var(--text-caption) var(--font-sans); font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) {
+  .ganttCard { padding: var(--spacer-16); }
+  .ganttHeader { display: grid; grid-template-columns: 1fr; }
+  .summaryRow { grid-template-columns: 1fr; }
+  .ganttGrid { grid-template-columns: minmax(112px, 132px) minmax(0, 1fr); }
+  .taskHead, .taskName { padding-left: var(--spacer-8); padding-right: var(--spacer-8); }
+  .timelineBand { padding: 0 var(--spacer-8); }
+  .tickLabel { padding: 0 4px; }
+  .barLabel { font: var(--weight-medium) 11px/16px var(--font-sans); }
+}
+</style>
+<div class="widget" data-dynamic-ui-widget data-template="gantt-chart">
+  <section class="ganttCard" data-start="2026-11-02" data-end="2026-02-22" data-today="2026-11-06">
+    <div class="ganttHeader">
+      <div class="ganttTitleBlock">
+        <h3 class="ganttTitle">嵌入式竞争力升级路线</h3>
+        <p class="ganttSub">以现有三个项目为基 · 不换方向，纵深扩展</p>
+      </div>
+    </div>
+    <div class="summaryRow" aria-label="路线概览">
+      <div class="summaryItem" data-focal="true"><span class="summaryValue">12 · 12</span><span class="summaryLabel">CET-4 硬截止（当前主线）</span></div>
+      <div class="summaryItem"><span class="summaryValue">36 天</span><span class="summaryLabel">距考试 · 主线剩余</span></div>
+      <div class="summaryItem"><span class="summaryValue">6 项 / 3 阶段</span><span class="summaryLabel">考后按顺序升级</span></div>
+    </div>
+    <div class="ganttGrid">
+      <div class="taskHead">升级项</div>
+      <div class="timelineHead">
+        <div class="timelineBand"><span>2026-11 → 2026-02</span><span class="todayBadge">今天 11-06</span></div>
+        <div class="tickRow" data-tick-row style="grid-template-columns: 16fr 16fr 16fr 16fr 16fr 16fr 17fr;"><span class="tickLabel">11-02</span><span class="tickLabel">11-18</span><span class="tickLabel">12-04</span><span class="tickLabel">12-20</span><span class="tickLabel">01-05</span><span class="tickLabel">01-21</span><span class="tickLabel">02-06</span></div>
+      </div>
+      <div class="taskNames">
+        <div class="taskName" data-task-name="cet4" data-critical="true"><span class="taskDot"></span><span class="taskText"><span class="taskLabel">CET-4 冲刺（主线）</span><span class="taskOwner">英语 · 硬截止</span></span></div>
+        <div class="taskName" data-task-name="resume" data-critical="false"><span class="taskDot"></span><span class="taskText"><span class="taskLabel">简历零成本升级</span><span class="taskOwner">措辞 · 故事</span></span></div>
+        <div class="taskName" data-task-name="invest" data-critical="false"><span class="taskDot"></span><span class="taskText"><span class="taskLabel">秋招投递 + 面试</span><span class="taskOwner">求职</span></span></div>
+        <div class="taskName" data-task-name="doip" data-critical="false"><span class="taskDot"></span><span class="taskText"><span class="taskLabel">UDS over DoIP</span><span class="taskOwner">车载核心</span></span></div>
+        <div class="taskName" data-task-name="modbus" data-critical="false"><span class="taskDot"></span><span class="taskText"><span class="taskLabel">RS485 + Modbus RTU</span><span class="taskOwner">工业保底</span></span></div>
+        <div class="taskName" data-task-name="can" data-critical="false"><span class="taskDot"></span><span class="taskText"><span class="taskLabel">CAN 错误处理 + DBC</span><span class="taskOwner">车载纵深</span></span></div>
+      </div>
+      <div class="trackWrap" data-track-wrap>
+        <span class="gridLayer" data-grid-layer aria-hidden="true" style="grid-template-columns: 16fr 16fr 16fr 16fr 16fr 16fr 17fr;"><span class="gridLine"></span><span class="gridLine"></span><span class="gridLine"></span><span class="gridLine"></span><span class="gridLine"></span><span class="gridLine"></span><span class="gridLine"></span></span>
+        <span class="calendarBand" data-holiday="寒假扩展窗口" data-start="2026-01-20" data-end="2026-02-22" style="--x: 69.91%; --w: 29.20%;"></span>
+        <span class="todayLine" aria-hidden="true" style="--today-x: 3.54%;"></span>
+        <svg class="dependencyLayer" viewBox="0 0 1000 312" preserveAspectRatio="none" aria-hidden="true">
+          <path class="dependencyPath" d="M354.8 24H384.8Q394.8 24 394.8 34V111Q394.8 120 385.8 120H376.8"></path>
+          <path class="dependencyPath" d="M354.8 24H446.8Q456.8 24 456.8 34V159Q456.8 168 447.8 168H438.8"></path>
+          <path class="dependencyPath" d="M655.7 168H685.7Q695.7 168 695.7 178V207Q695.7 216 686.7 216H677.7"></path>
+          <path class="dependencyPath" d="M806.2 216H836.2Q846.2 216 846.2 226V255Q846.2 264 837.2 264H828.2"></path>
+        </svg>
+        <div class="lane"><button class="taskBar" type="button" data-id="cet4" data-name="CET-4 冲刺" data-owner="英语主线" data-start="2026-11-06" data-end="2026-12-12" data-progress="30" data-status="进行中" data-critical="true" data-dependencies="" style="--x: 3.54%; --w: 32.74%;"><span class="barLabel">CET-4 冲刺</span></button></div>
+        <div class="lane"><button class="taskBar" type="button" data-id="resume" data-name="简历零成本升级" data-owner="措辞 / 故事" data-start="2026-11-06" data-end="2026-11-22" data-progress="20" data-status="进行中" data-critical="false" data-dependencies="" style="--x: 3.54%; --w: 15.04%;"><span class="barLabel">简历升级</span></button></div>
+        <div class="lane"><button class="taskBar" type="button" data-id="invest" data-name="秋招投递 + 面试" data-owner="求职" data-start="2026-12-13" data-end="2026-01-20" data-progress="0" data-status="待开始" data-critical="false" data-dependencies="cet4" style="--x: 36.28%; --w: 34.52%;"><span class="barLabel">投递面试</span></button></div>
+        <div class="lane"><button class="taskBar" type="button" data-id="doip" data-name="UDS over DoIP" data-owner="车载核心" data-start="2026-12-20" data-end="2026-01-15" data-progress="0" data-status="待开始" data-critical="false" data-dependencies="cet4" style="--x: 42.48%; --w: 23.89%;"><span class="barLabel">DoIP 诊断</span></button></div>
+        <div class="lane"><button class="taskBar" type="button" data-id="modbus" data-name="RS485 + Modbus RTU" data-owner="工业保底" data-start="2026-01-16" data-end="2026-02-01" data-progress="0" data-status="待开始" data-critical="false" data-dependencies="doip" style="--x: 66.37%; --w: 15.05%;"><span class="barLabel">Modbus</span></button></div>
+        <div class="lane"><button class="taskBar" type="button" data-id="can" data-name="CAN 错误处理 + DBC" data-owner="车载纵深" data-start="2026-02-02" data-end="2026-02-22" data-progress="0" data-status="待开始" data-critical="false" data-dependencies="modbus" style="--x: 81.42%; --w: 18.58%;"><span class="barLabel">CAN 深化</span></button></div>
+      </div>
+    </div>
+    <div class="chartTooltip" aria-hidden="true">
+      <div class="tooltipHeader"><span class="tooltipDot" data-critical="true"></span><p class="tooltipName">任务</p></div>
+      <div class="tooltipRow"><span>时间窗</span><span class="tooltipValue" data-tooltip="window">-</span></div>
+      <div class="tooltipRow"><span>定位</span><span class="tooltipValue" data-tooltip="owner">-</span></div>
+      <div class="tooltipRow"><span>进度</span><span class="tooltipValue" data-tooltip="progress">-</span></div>
+      <div class="tooltipRow"><span>状态</span><span class="tooltipValue" data-tooltip="status">-</span></div>
+    </div>
+  </section>
+</div>
+<script>
+(() => {
+  const rootSelector = '.widget[data-dynamic-ui-widget][data-template="gantt-chart"]:not([data-mounted])';
+  const dayMs = 24 * 60 * 60 * 1000;
+  const svgNs = 'http://www.w3.org/2000/svg';
+  const parseDate = (value) => { if (!value) return null; const d = new Date(`${value}T00:00:00`); return Number.isNaN(d.getTime()) ? null : d; };
+  const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+  const formatDate = (d) => d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '-';
+  const percentBetween = (date, start, totalDays) => date ? clamp(((date - start) / dayMs / totalDays) * 100, 0, 100) : 0;
+  const makeSvgNode = (tag, attrs = {}) => { const n = document.createElementNS(svgNs, tag); Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v)); return n; };
+  const roundedConnectorPath = (sourceX, sourceY, elbowX, targetY, targetX) => {
+    const hi = Math.sign(elbowX - sourceX) || 1;
+    const ver = Math.sign(targetY - sourceY) || 1;
+    const ho = Math.sign(targetX - elbowX) || 1;
+    const r1 = Math.max(3, Math.min(10, Math.abs(elbowX - sourceX) / 2, Math.abs(targetY - sourceY) / 2));
+    const r2 = Math.max(3, Math.min(10, Math.abs(targetY - sourceY) / 2, Math.abs(targetX - elbowX) / 2));
+    return [`M${sourceX.toFixed(1)} ${sourceY}`, `H${(elbowX - hi * r1).toFixed(1)}`, `Q${elbowX.toFixed(1)} ${sourceY} ${elbowX.toFixed(1)} ${(sourceY + ver * r1).toFixed(1)}`, `V${(targetY - ver * r2).toFixed(1)}`, `Q${elbowX.toFixed(1)} ${targetY} ${(elbowX + ho * r2).toFixed(1)} ${targetY}`, `H${targetX.toFixed(1)}`].join('');
+  };
+  const weekTicks = { labels: ['11-02', '11-18', '12-04', '12-20', '01-05', '01-21', '02-06'], weights: [16, 16, 16, 16, 16, 16, 17] };
+  document.querySelectorAll(rootSelector).forEach((widget) => {
+    widget.setAttribute('data-mounted', 'true');
+    const card = widget.querySelector('.ganttCard');
+    const track = widget.querySelector('[data-track-wrap]');
+    const tickRow = widget.querySelector('[data-tick-row]');
+    const gridLayer = widget.querySelector('[data-grid-layer]');
+    const tooltip = widget.querySelector('.chartTooltip');
+    const svg = widget.querySelector('.dependencyLayer');
+    const start = parseDate(card.dataset.start);
+    const end = parseDate(card.dataset.end);
+    const today = parseDate(card.dataset.today);
+    if (!card || !track || !tickRow || !svg || !start || !end || end <= start) { if (card) card.dataset.error = 'true'; return; }
+    const totalDays = Math.max(1, Math.round((end - start) / dayMs) + 1);
+    const bars = [...widget.querySelectorAll('.taskBar')];
+    const lanes = [...widget.querySelectorAll('.lane')];
+    const taskMap = new Map();
+    const tasks = bars.map((bar, index) => {
+      const ts = parseDate(bar.dataset.start); const te = parseDate(bar.dataset.end);
+      const task = { id: bar.dataset.id, name: bar.dataset.name || '任务', owner: bar.dataset.owner || '-', start: ts, end: te, progress: clamp(Number.parseFloat(bar.dataset.progress || '0') || 0, 0, 100), status: bar.dataset.status || '-', dependencies: (bar.dataset.dependencies || '').split(',').map((s) => s.trim()).filter(Boolean), critical: bar.dataset.critical !== 'false', bar, index };
+      taskMap.set(task.id, task); return task;
+    });
+    const placeTimeItems = () => {
+      tasks.forEach((task) => {
+        if (!task.start || !task.end || task.end < task.start) return;
+        const startPct = percentBetween(task.start, start, totalDays);
+        const rawEndPct = percentBetween(new Date(task.end.getTime() + dayMs), start, totalDays);
+        const widthPct = Math.max(rawEndPct - startPct, 2.5);
+        task.bar.style.setProperty('--x', `${startPct.toFixed(2)}%`);
+        task.bar.style.setProperty('--w', `${Math.min(widthPct, 100 - startPct).toFixed(2)}%`);
+      });
+      widget.querySelectorAll('.calendarBand').forEach((band) => {
+        const bs = parseDate(band.dataset.start); const be = parseDate(band.dataset.end);
+        if (!bs || !be || be < bs) return;
+        const x = percentBetween(bs, start, totalDays); const ep = percentBetween(be, start, totalDays);
+        band.style.setProperty('--x', `${x.toFixed(2)}%`); band.style.setProperty('--w', `${Math.max(ep - x, 1.5).toFixed(2)}%`);
+      });
+      const tl = widget.querySelector('.todayLine');
+      if (tl && today) { const tp = percentBetween(today, start, totalDays); tl.style.setProperty('--today-x', `${tp.toFixed(2)}%`); tl.style.opacity = (today < start || today > end) ? '0.18' : '0.86'; }
+    };
+    const drawDependencies = () => {
+      const height = Math.max(52, lanes.length * 52);
+      svg.setAttribute('viewBox', `0 0 1000 ${height}`);
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      tasks.forEach((task) => {
+        task.dependencies.forEach((depId) => {
+          const dep = taskMap.get(depId);
+          if (!dep || !dep.start || !dep.end || !task.start) return;
+          const sourceX = Math.max(0, percentBetween(new Date(dep.end.getTime() + dayMs), start, totalDays) * 10 - 8);
+          const targetX = Math.min(1000, percentBetween(task.start, start, totalDays) * 10 + 14);
+          const sourceY = dep.index * 52 + 26; const targetY = task.index * 52 + 26;
+          const elbow = Math.min(990, Math.max(sourceX + 24, targetX + 18, 24));
+          svg.appendChild(makeSvgNode('path', { class: 'dependencyPath', d: roundedConnectorPath(sourceX, sourceY, elbow, targetY, targetX) }));
+        });
+      });
+    };
+    const renderWeekTicks = () => {
+      const ticks = weekTicks;
+      tickRow.style.gridTemplateColumns = ticks.weights.map((w) => `${w}fr`).join(' ');
+      if (gridLayer) gridLayer.style.gridTemplateColumns = tickRow.style.gridTemplateColumns;
+      tickRow.replaceChildren(...ticks.labels.map((label) => { const item = document.createElement('span'); item.className = 'tickLabel'; item.textContent = label; return item; }));
+      if (gridLayer) gridLayer.replaceChildren(...ticks.weights.map(() => { const l = document.createElement('span'); l.className = 'gridLine'; return l; }));
+      window.requestAnimationFrame(drawDependencies);
+    };
+    const showTooltip = (event, task) => {
+      if (!tooltip || !task) return;
+      const dot = tooltip.querySelector('.tooltipDot');
+      if (dot) dot.dataset.critical = task.critical ? 'true' : 'false';
+      tooltip.querySelector('.tooltipName').textContent = task.name;
+      tooltip.querySelector('[data-tooltip="window"]').textContent = `${formatDate(task.start)} - ${formatDate(task.end)}`;
+      tooltip.querySelector('[data-tooltip="owner"]').textContent = task.owner;
+      tooltip.querySelector('[data-tooltip="progress"]').textContent = `${Math.round(task.progress)}%`;
+      tooltip.querySelector('[data-tooltip="status"]').textContent = task.status;
+      tooltip.dataset.show = 'true'; tooltip.setAttribute('aria-hidden', 'false');
+      const cardRect = card.getBoundingClientRect(); const barRect = task.bar.getBoundingClientRect(); const tipRect = tooltip.getBoundingClientRect();
+      const pointerX = (event && 'clientX' in event) ? event.clientX : barRect.left + barRect.width / 2;
+      const rawX = pointerX - cardRect.left - tipRect.width / 2;
+      const x = clamp(rawX, 8, Math.max(8, cardRect.width - tipRect.width - 8));
+      const aboveY = barRect.top - cardRect.top - tipRect.height - 8;
+      const belowY = barRect.bottom - cardRect.top + 8;
+      const y = aboveY < 4 ? belowY : aboveY;
+      tooltip.style.setProperty('--tooltip-x', `${x}px`); tooltip.style.setProperty('--tooltip-y', `${y}px`);
+    };
+    const hideTooltip = () => { if (!tooltip) return; tooltip.dataset.show = 'false'; tooltip.setAttribute('aria-hidden', 'true'); bars.forEach((b) => b.classList.remove('is-active')); };
+    tasks.forEach((task) => {
+      task.bar.addEventListener('pointerenter', (e) => { task.bar.classList.add('is-active'); showTooltip(e, task); });
+      task.bar.addEventListener('pointermove', (e) => showTooltip(e, task));
+      task.bar.addEventListener('pointerleave', hideTooltip);
+      task.bar.addEventListener('focus', (e) => { task.bar.classList.add('is-active'); showTooltip(e, task); });
+      task.bar.addEventListener('blur', hideTooltip);
+    });
+    placeTimeItems(); renderWeekTicks();
+    window.addEventListener('resize', drawDependencies, { passive: true });
+  });
+})();
+</script>
+</div>
+<script>
+(function(){
+  if (typeof window.sendPrompt !== 'function') {
+    window.sendPrompt = function(text) {
+      console.info('[ShowWidget] sendPrompt is unavailable outside Trae:', String(text || ''));
+    };
+  }
+})();
+</script>
+</body>
+</html>
