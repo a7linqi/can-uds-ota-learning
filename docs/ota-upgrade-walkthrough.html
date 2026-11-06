@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一次 OTA 升级，四个地方发生了什么</title>
+<style>
+:root{
+  --bg:#0f1117; --panel:#181c26; --panel2:#1f2430; --line:#2a3040;
+  --text:#e6e9f0; --muted:#9aa3b5; --accent:#6c8cff;
+  --flash:#4f8cff; --download:#3ddc97; --backup:#ffb454; --eeprom:#b57bff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:24px; background:var(--bg); color:var(--text);
+  font:15px/1.6 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+}
+.wrap{max-width:1100px;margin:0 auto}
+h1{font-size:22px;font-weight:600;margin:0 0 6px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 22px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:820px){.grid{grid-template-columns:repeat(2,1fr)}}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:14px;min-height:150px;position:relative;transition:.25s;
+}
+.card.changed{border-color:currentColor;box-shadow:0 0 0 1px currentColor,0 8px 28px -12px currentColor}
+.card.flash{color:var(--flash)} .card.download{color:var(--download)}
+.card.backup{color:var(--backup)} .card.eeprom{color:var(--eeprom)}
+.card h2{font-size:13px;font-weight:600;margin:0 0 2px;color:currentColor}
+.card .role{font-size:11px;color:var(--muted);margin:0 0 10px}
+.card .value{font-size:14px;color:var(--text);font-weight:500;word-break:break-word}
+.card .meta{font-size:12px;color:var(--muted);margin-top:6px}
+.bar{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;margin-top:10px}
+.bar>span{display:block;height:100%;background:currentColor;transition:width .4s}
+.narr{
+  background:var(--panel2);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;
+  padding:14px 16px;min-height:88px;margin-bottom:18px;
+}
+.narr .no{font-size:12px;color:var(--accent);font-weight:600;margin-bottom:4px;letter-spacing:.5px}
+.narr .txt{font-size:15px;line-height:1.7}
+.narr .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:20px;margin-right:6px;
+  background:#252b3a;color:var(--muted)}
+.ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button{
+  background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;
+  padding:9px 16px;font-size:14px;cursor:pointer;transition:.15s;font-family:inherit;
+}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.primary:hover{filter:brightness(1.1);color:#fff}
+.dots{display:flex;gap:6px;margin-left:auto}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--line);transition:.2s}
+.dots i.on{background:var(--accent);transform:scale(1.25)}
+.hint{color:var(--muted);font-size:12px;margin-top:10px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:16px;font-size:12px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend b{width:8px;height:8px;border-radius:2px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>一次 OTA 升级，四个地方发生了什么</h1>
+  <p class="sub">从 v1 升到 v2，点「下一步」逐步看。每一步只有一块地方会变。</p>
+
+  <div class="grid">
+    <div class="card flash" id="c-flash">
+      <h2>内部 Flash</h2>
+      <p class="role">展台 · 只有这里能跑</p>
+      <div class="value" id="v-flash">v1 正在跑</div>
+      <div class="meta" id="m-flash">App 区 960 KiB</div>
+      <div class="bar"><span id="b-flash" style="width:20%"></span></div>
+    </div>
+    <div class="card download" id="c-download">
+      <h2>NOR 下载区</h2>
+      <p class="role">新货架 · 放待装的包</p>
+      <div class="value" id="v-download">空</div>
+      <div class="meta" id="m-download">偏移 0 · 1 MiB</div>
+      <div class="bar"><span id="b-download" style="width:0%"></span></div>
+    </div>
+    <div class="card backup" id="c-backup">
+      <h2>NOR 备份区</h2>
+      <p class="role">旧货架 · 放回滚保险</p>
+      <div class="value" id="v-backup">v0（上次升级留下的）</div>
+      <div class="meta" id="m-backup">偏移 1 MiB · 1 MiB</div>
+      <div class="bar"><span id="b-backup" style="width:20%"></span></div>
+    </div>
+    <div class="card eeprom" id="c-eeprom">
+      <h2>EEPROM</h2>
+      <p class="role">记事本 · 写着该干什么</p>
+      <div class="value" id="v-eeprom">IDLE</div>
+      <div class="meta" id="m-eeprom">active=1, pending=0</div>
+      <div class="bar"><span id="b-eeprom" style="width:0%"></span></div>
+    </div>
+  </div>
+
+  <div class="narr">
+    <div class="no" id="step-no">第 1 / 10 步</div>
+    <div class="txt" id="step-txt"></div>
+  </div>
+
+  <div class="ctrl">
+    <button id="prev">上一步</button>
+    <button class="primary" id="next">下一步</button>
+    <button id="reset">重来</button>
+    <div class="dots" id="dots"></div>
+  </div>
+  <p class="hint">键盘 ← → 也可以翻页。</p>
+
+  <div class="legend">
+    <span><b style="background:var(--flash)"></b>内部 Flash</span>
+    <span><b style="background:var(--download)"></b>下载区</span>
+    <span><b style="background:var(--backup)"></b>备份区</span>
+    <span><b style="background:var(--eeprom)"></b>EEPROM</span>
+  </div>
+</div>
+
+<script>
+const steps = [
+  {
+    changed: [],
+    text: '<span class="tag">起点</span>设备正常跑着 v1。仓库里还留着上次升级时的 v0 备份，暂时用不上。',
+    flash: ['v1 正在跑', 'App 区 960 KiB', 20],
+    download: ['空', '偏移 0 · 1 MiB', 0],
+    backup: ['v0（上次升级留下的）', '偏移 1 MiB · 1 MiB', 20],
+    eeprom: ['IDLE', 'active=1, pending=0', 0]
+  },
+  {
+    changed: ['download', 'eeprom'],
+    text: '<span class="tag">0x34</span>PC 说「我要装 v2，一共 1599 字节」。ECU 先把下载区擦干净，清掉旧的残余。记事本改成 DOWNLOADING。',
+    flash: ['v1 正在跑', '一点没动', 20],
+    download: ['擦除中 → 全 0xFF', '擦掉 1 MiB', 8],
+    backup: ['v0', '偏移 1 MiB', 20],
+    eeprom: ['DOWNLOADING', 'active=1, pending=0', 25]
+  },
+  {
+    changed: ['download'],
+    text: '<span class="tag">0x36</span>四块数据进来：510 + 510 + 510 + 69。每块都带序号，重发相同的块不会重复写。',
+    flash: ['v1 正在跑', '一点没动', 20],
+    download: ['v2 的包：头 + 1503 字节 + 签名', '32 + 1503 + 64 = 1599', 100],
+    backup: ['v0', '偏移 1 MiB', 20],
+    eeprom: ['DOWNLOADING', 'active=1, pending=0', 25]
+  },
+  {
+    changed: ['eeprom'],
+    text: '<span class="tag">0x37</span>Ed25519 验签通过。记事本写 READY，记下 pending=2。<b>注意：展台上还是 v1，什么都没装。</b>',
+    flash: ['v1 正在跑', '一点没动', 20],
+    download: ['v2 的包（合格）', '已验签', 100],
+    backup: ['v0', '偏移 1 MiB', 20],
+    eeprom: ['READY', 'active=1, pending=2', 50]
+  },
+  {
+    changed: ['flash'],
+    text: '<span class="tag">0x11</span>PC 发复位。设备重启，Bootloader 醒来，读记事本看到 READY，开始干活。',
+    flash: ['v1（Bootloader 启动）', '等待处理 READY', 20],
+    download: ['v2 的包', '已验签', 100],
+    backup: ['v0', '偏移 1 MiB', 20],
+    eeprom: ['READY', 'active=1, pending=2', 50]
+  },
+  {
+    changed: ['backup', 'eeprom'],
+    text: '<span class="tag">备份</span>先把 v1 完整拷到备份区，覆盖旧的 v0。<b>这一步只读内部 Flash，一个字节都不写</b>，所以中途断电也不会伤到源头。',
+    flash: ['v1（只读）', '源头不动', 20],
+    download: ['v2 的包', '已验签', 100],
+    backup: ['v1（刚刚备份）', '完整副本', 20],
+    eeprom: ['INSTALLING', 'active=1, pending=2', 65]
+  },
+  {
+    changed: ['flash', 'eeprom'],
+    text: '<span class="tag">安装</span>擦掉内部 Flash 的 v1，把 v2 从下载区拷进去，末尾焊上 96 字节 ticket。擦到一半断电也没事，擦除是幂等的。',
+    flash: ['v2（刚装好）', 'payload + ticket', 20],
+    download: ['v2 的包', '先留着，不删', 100],
+    backup: ['v1（退路）', '完整副本', 20],
+    eeprom: ['TRIAL', 'attempts=1', 80]
+  },
+  {
+    changed: ['eeprom'],
+    text: '<span class="tag">试用</span>跳转前先把 attempts 加 1 写盘。为什么要先记？因为死机后没机会补记，不记就可能无限重试。',
+    flash: ['v2 正在跑', '第一次启动', 20],
+    download: ['v2 的包', '先留着', 100],
+    backup: ['v1', '退路还在', 20],
+    eeprom: ['TRIAL', 'attempts=1', 80]
+  },
+  {
+    changed: ['eeprom'],
+    text: '<span class="tag">报到</span>v2 初始化通过：时钟、NOR、EEPROM 都正常，稳定跑了一段，调用 boot_accept_app_health。v2 转正。',
+    flash: ['v2（已确认）', 'active 转正', 20],
+    download: ['v2 的包', '可以清了', 100],
+    backup: ['v1', '下次升级会被覆盖', 20],
+    eeprom: ['IDLE', 'active=2, min=2, attempts=0', 100]
+  },
+  {
+    changed: ['flash', 'eeprom'],
+    text: '<span class="tag">回滚</span>如果 v2 连续 3 次都没报到，Bootloader 就从备份区把 v1 搬回展台。像升级从没发生过。',
+    flash: ['v1（恢复了）', '从备份区拷回', 20],
+    download: ['v2 的包', '留着也没用', 100],
+    backup: ['v1', '来源', 20],
+    eeprom: ['IDLE', 'active=1, pending=0', 0]
+  }
+];
+
+let cur = 0;
+const keyMap = {
+  flash: ['c-flash','v-flash','m-flash','b-flash'],
+  download: ['c-download','v-download','m-download','b-download'],
+  backup: ['c-backup','v-backup','m-backup','b-backup'],
+  eeprom: ['c-eeprom','v-eeprom','m-eeprom','b-eeprom']
+};
+
+function render(i){
+  cur = Math.max(0, Math.min(steps.length - 1, i));
+  const s = steps[cur];
+
+  Object.keys(keyMap).forEach(k => {
+    const [cardId, valId, metaId, barId] = keyMap[k];
+    const card = document.getElementById(cardId);
+    document.getElementById(valId).innerHTML = s[k][0];
+    document.getElementById(metaId).innerHTML = s[k][1];
+    document.getElementById(barId).style.width = s[k][2] + '%';
+    card.classList.toggle('changed', s.changed.includes(k));
+  });
+
+  document.getElementById('step-no').textContent = `第 ${cur + 1} / ${steps.length} 步`;
+  document.getElementById('step-txt').innerHTML = s.text;
+
+  const dots = document.getElementById('dots');
+  dots.innerHTML = steps.map((_, idx) =>
+    `<i class="${idx <= cur ? 'on' : ''}"></i>`).join('');
+}
+
+document.getElementById('next').onclick = () => render(cur + 1);
+document.getElementById('prev').onclick = () => render(cur - 1);
+document.getElementById('reset').onclick = () => render(0);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') render(cur + 1);
+  if (e.key === 'ArrowLeft') render(cur - 1);
+});
+
+render(0);
+</script>
+</body>
+</html>
