@@ -47,6 +47,6 @@ test_wrong_negative_sid (test_pc.ClientGuards.test_wrong_negative_sid) ... ok
 test_wrong_positive_sid (test_pc.ClientGuards.test_wrong_positive_sid) ... ok
 
 ----------------------------------------------------------------------
-Ran 45 tests in 33.083s
+Ran 45 tests in 32.061s
 
 OK

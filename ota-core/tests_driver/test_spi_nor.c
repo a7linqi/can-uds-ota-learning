@@ -217,7 +217,10 @@ static void put_le(uint8_t *p,uint32_t v)
 { p[0]=(uint8_t)v; p[1]=(uint8_t)(v>>8); p[2]=(uint8_t)(v>>16); p[3]=(uint8_t)(v>>24); }
 static int download(uint32_t version)
 {
-    uint8_t image[IMAGE_HEADER_SIZE+16u+OTA_SIGNATURE_SIZE],request[64],response[64];
+    /* request must hold SID + BSC + the whole image; a 64-byte buffer here
+     * silently overran the stack (caught by -Wstringop-overflow). */
+    uint8_t image[IMAGE_HEADER_SIZE+16u+OTA_SIGNATURE_SIZE],
+            request[2u+IMAGE_HEADER_SIZE+16u+OTA_SIGNATURE_SIZE],response[64];
     image_header_t header;
     uint16_t n;
     memset(&header,0,sizeof header); memset(image,0xA5,sizeof image);
