@@ -189,3 +189,27 @@ Next software-only milestone:
 - Default write/handoff/watchdog gates remain disabled until actual BSP timing and hardware validation.
 - Keep default target write/handoff gates disabled; do not install USB drivers or touch real CAN hardware during validation.
 - Save each completed stage and its evidence before moving on.
+
+## Status update (2026-11-07)
+
+The "Next:" list and the "No USB-CAN or board USB UART was seen" observation
+above are **historical**: they describe the state before the board-lab campaign.
+As of 2026-11-07:
+
+- Real CAN is connected and verified read-only: UTC-T01 / PCAN-USB
+  (VID 0C72:000C), 500 kbit/s, 0x7E0 -> 0x7E8. ISO-TP multi-frame VIN read
+  (First Frame 10 14, Flow Control 30 00 00, two Consecutive Frames) assembled
+  20 bytes (62 F1 90 + VIN LOTA0000000000001); read-only acceptance
+  status=passed. Seed/Key unlock and the read-only gate telemetry are also
+  verified on silicon. Evidence: D:\Project\Can\stages\board-lab\evidence\can\
+- Full OTA (0x34/0x36/0x37/0x31/0x11 -> install) is verified on the UART bench,
+  NOT yet on real CAN. Assessment:
+  D:\Project\Can\stages\board-lab\REAL_CAN_OTA_ASSESSMENT.md
+- Power cuts (idle / mid-download / mid-install), hardware IWDG (32.341 s),
+  RDP1 trust anchor, EEPROM bus-lock red/green comparison and signed-image
+  secure boot were all verified on silicon during 2026-11-05.
+- Production write/handoff gates remain disabled in the read-only diagnostic
+  firmware (OTA_ENABLE_FLASHING=0). Keil armlink is unavailable locally; the
+  four GNU read-only images are linked instead.
+- Troubleshooting record:
+  D:\Project\Can\board-docs\05-工具与命令\CAN台架-排障实录.md
