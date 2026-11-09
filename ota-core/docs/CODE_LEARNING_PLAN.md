@@ -10,7 +10,7 @@
 
 本计划包含“完整升级架构”的源码阅读。当前四套探索者固件仍是只读入口，写入、跳转和看门狗门控关闭；主机仿真通过不代表板上已经实现全部流程。签名校验已在 v0.13 实现并有下载/安装/恢复三条路径的主机测试；当前 MCU 主循环尚未使用 FreeRTOS。新增的 UART 台架只替换传输 link，不改变本学习路线。
 
-**2026-11-07 实机状态更新**：真实 CAN 物理层 + ISO-TP 多帧 + UDS `0x22` 只读诊断已在 `PCAN-USB` 500 kbit/s 上跑通（VIN 20 B 多帧读回、只读验收 `status=passed`），但真实 CAN 上的完整 OTA（`0x34…0x37` → 安装）**仍未验证**；完整 OTA 只在 UART 台架实机走过。逐坑排障见档案库 `board-docs/05-工具与命令/CAN台架-排障实录.md`，证据见 `stages/board-lab/evidence/can/`，完整 OTA 的改动清单见 `stages/board-lab/REAL_CAN_OTA_ASSESSMENT.md`。学习时始终按「主机模型 / 目标构建 / 实机」三层区分证据，别把 UART 台架结论自动套到真实 CAN 上。
+**2026-11-09 实机状态更新**：真实 CAN 物理层 + ISO-TP 多帧 + UDS `0x22` 只读诊断已于 11-07 在 `PCAN-USB` 500 kbit/s 上跑通（VIN 20 B 多帧读回、只读验收 `status=passed`）；**11-09 又在同一总线上跑通完整 OTA**（v24 签名包、89 个 `0x36` 块、18.552 s 零负响应、复位安装 + TRIAL 确认、SWD 读回 44824 B 逐字节相同、终态 `IDLE/application/v24`）。逐坑排障见档案库 `board-docs/05-工具与命令/CAN台架-排障实录.md`，证据见 `stages/board-lab/evidence/can/`，执行清单见 `stages/board-lab/REAL_CAN_OTA_RUNBOOK.md`。**仍未验证**：真实 CAN 上的断电恢复、总线负载/错误帧、长时间稳定性、从运行中 App 经 CAN 发起 OTA（App 只保留 UART 诊断端点）。学习时始终按「主机模型 / 目标构建 / 实机」三层区分证据，别把 UART 台架结论自动套到真实 CAN 上。
 
 ## 一、每天怎么读
 

@@ -121,7 +121,7 @@ CRC32 只防意外损坏，防不了伪造（攻击者可重算 CRC）。因此�
 
 板载 USART1（PA9/PA10，115200 8N1）的 CAN-over-UART 台架是**早期阶段**：它把经典 CAN 帧编码成字节流，`0x34…0x37` 完整 OTA、安全启动/回滚与断电实验都在那套台架上实机验证过。
 
-**2026-11-07 起已改用真实 CAN**：UTC-T01 / `PCAN-USB` 500 kbit/s，`0x7E0` → `0x7E8`，ISO-TP 多帧 VIN 读取（首帧 `10 14` → 流控 `30 00 00` → 连续帧 `21`/`22`，拼出 20 B）与 UDS `0x22` 只读验收 `status=passed`，Seed/Key 解锁与门控遥测也已实机验证。当前固件仍是**只读诊断**（`OTA_ENABLE_FLASHING=0`），不开放擦写；真实 CAN 上的完整 OTA 仍未验证，改动清单见 `D:\Project\Can\stages\board-lab\REAL_CAN_OTA_ASSESSMENT.md`。逐坑排障见 `D:\Project\Can\board-docs\05-工具与命令\CAN台架-排障实录.md`，证据见 `D:\Project\Can\stages\board-lab\evidence\can`。串口台架细节见 [UART_BENCH](ota-core/docs/UART_BENCH.md)。
+**2026-11-07 起已改用真实 CAN，2026-11-09 打通完整 OTA**：UTC-T01 / `PCAN-USB` 500 kbit/s，`0x7E0` → `0x7E8`。只读段：ISO-TP 多帧 VIN 读取（首帧 `10 14` → 流控 `30 00 00` → 连续帧 `21`/`22`，拼出 20 B）与 UDS `0x22` 只读验收 `status=passed`，Seed/Key 解锁与门控遥测也已实机验证。完整 OTA：v24 Ed25519 签名包 44920 B，`0x10 02`→Seed/Key→`0x34`→**89 个 `0x36` 块**→`0x37` 验签→`0x31`→`0x11`，**18.552 s 零负响应**；复位后自动安装 + TRIAL 确认，SWD 读回 44824 B 与构建产物逐字节相同、96 B 凭证一致，终态 `IDLE/application/v24`。证据 `D:\Project\Can\stages\board-lab\evidence\can\real_can_ota_summary.json` 与 `can-ota-01.jsonl`，执行清单 `D:\Project\Can\stages\board-lab\REAL_CAN_OTA_RUNBOOK.md`。**仍未验证**：真实 CAN 上的断电恢复、总线负载/错误帧、长时间稳定性、从运行中 App 经 CAN 发起 OTA。逐坑排障见 `D:\Project\Can\board-docs\05-工具与命令\CAN台架-排障实录.md`。串口台架细节见 [UART_BENCH](ota-core/docs/UART_BENCH.md)。
 
 ```bash
 python ota-core/tools/uds_tool.py info \
@@ -200,10 +200,10 @@ python verify_project.py --cc <tcc> --gcc <gcc> --dfp <dfp> --cmsis <cmsis>
 | PC 集成 / NOR 驱动 / 适配器 | 47 / 740 / 258+325 断言，全部通过 |
 | UART 台架 Python 线格式 | 6 个 unittest 用例，0 失败 |
 | 目标构建 | 四套 GNU 只读固件完整链接；ARMClang `-Werror` 零警告；Keil 完整链接未完成 |
-| **实机已完成** | 芯片识别（`0x413` / 1 MiB）、时钟 168/42/84 MHz、内部 CAN 静默回环 16 帧、NOR JEDEC 识别、EEPROM 读取、内部 Flash 1 MiB 双遍备份、LCD 点亮、UART 台架 info/status、**签名 IMG2 实机安装与跳转**、**连续三次升级（v9/v10/v11，随后 v13）**、**TRIAL 失败后从备份区回滚到 v11**、**0x34/0x36 实际擦写外部 NOR**、**三种切点的真实断电恢复（空闲/下载中/安装中）**、**硬件 IWDG（实测 32.341 s，含 sick 镜像 8.71 s 回滚）**、**RDP1 信任锚**、**EEPROM 总线锁死红绿对照**、**真实 CAN 只读诊断（PCAN-USB 500 kbit/s，ISO-TP 多帧 VIN 20 B + UDS `0x22` + Seed/Key + 门控遥测）** |
-| **仍未验证** | 真实 CAN 上的完整 OTA（`0x34…0x37` → 安装，仅 UART 台架实机走过）、OTP 单调版本计数器、WRP/RDP2、故障注入防护、真实 CAN 上的断电恢复与长时间稳定性、Keil 完整链接（本机 armlink 因 DLL 重定位错误不可用，改用 64 位 GNU Arm GCC）、0 V 电压实测（断电判据为串口句柄死亡 + 时间线） |
+| **实机已完成** | 芯片识别（`0x413` / 1 MiB）、时钟 168/42/84 MHz、内部 CAN 静默回环 16 帧、NOR JEDEC 识别、EEPROM 读取、内部 Flash 1 MiB 双遍备份、LCD 点亮、UART 台架 info/status、**签名 IMG2 实机安装与跳转**、**连续三次升级（v9/v10/v11，随后 v13）**、**TRIAL 失败后从备份区回滚到 v11**、**0x34/0x36 实际擦写外部 NOR**、**三种切点的真实断电恢复（空闲/下载中/安装中）**、**硬件 IWDG（实测 32.341 s，含 sick 镜像 8.71 s 回滚）**、**RDP1 信任锚**、**EEPROM 总线锁死红绿对照**、**真实 CAN 只读诊断（PCAN-USB 500 kbit/s，ISO-TP 多帧 VIN 20 B + UDS `0x22` + Seed/Key + 门控遥测）**、**真实 CAN 完整 OTA（2026-11-09：v24 签名包、89 个 `0x36` 块、18.552 s 零负响应、安装/TRIAL 确认、内部 Flash 读回 44824 B 逐字节相同、96 B 凭证一致、终态 `IDLE/application/v24`）** |
+| **仍未验证** | 真实 CAN 上的断电恢复与长时间稳定性、从运行中 App 经 CAN 发起 OTA（App 只保留 UART 诊断端点）、OTP 单调版本计数器、WRP/RDP2、故障注入防护、总线负载/错误帧统计、Keil 完整链接（本机 armlink 因 DLL 重定位错误不可用，改用 64 位 GNU Arm GCC）、0 V 电压实测（断电判据为串口句柄死亡 + 时间线） |
 
-**当前可复现的上限是"主机模型 + 目标构建 + 实机签名安装/回滚（含三种切点断电、硬件 IWDG、RDP1 信任锚）+ UART 台架 + 真实 CAN 只读诊断"。真实 CAN 上的完整 OTA 仍未验证；断电实验无 0 V 电压实测；所有数字按「主机模型 / 目标构建 / 实机」三层区分，别把 UART 台架结论自动套到真实 CAN 上。**
+**当前可复现的上限是"主机模型 + 目标构建 + 实机签名安装/回滚（含三种切点断电、硬件 IWDG、RDP1 信任锚）+ UART 台架 + 真实 CAN 完整 OTA（只读诊断 + 89 块下载 + 安装/TRIAL 确认 + 逐字节读回）"。** 真实 CAN 上的断电恢复与从运行中 App 经 CAN 发起 OTA 仍未验证；断电实验无 0 V 电压实测；所有数字按「主机模型 / 目标构建 / 实机」三层区分，别把 UART 台架结论自动套到真实 CAN 上。
 
 ---
 
