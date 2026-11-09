@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1599 字节，怎么塞进 8 字节的 CAN 帧</title>
+<style>
+:root{
+  --bg:#0f1117; --panel:#181c26; --panel2:#1f2430; --line:#2a3040;
+  --text:#e6e9f0; --muted:#9aa3b5; --accent:#6c8cff;
+  --ff:#b57bff; --cf:#3ddc97; --fc:#ffb454; --sf:#4f8cff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; padding:24px; background:var(--bg); color:var(--text);
+  font:15px/1.6 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+}
+.wrap{max-width:1080px;margin:0 auto}
+h1{font-size:22px;font-weight:600;margin:0 0 6px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 6px}
+.meta{color:var(--muted);font-size:12px;margin:0 0 22px}
+.meta code{color:#c8d0e0;background:var(--panel2);padding:1px 6px;border-radius:5px}
+
+.panels{display:grid;grid-template-columns:200px 1fr 200px;gap:12px;margin-bottom:18px}
+@media(max-width:860px){.panels{grid-template-columns:1fr}}
+.panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;
+}
+.panel h2{font-size:12px;font-weight:600;margin:0 0 2px}
+.panel .role{font-size:11px;color:var(--muted);margin:0 0 10px}
+.big{font-size:30px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.unit{font-size:11px;color:var(--muted);margin-top:2px}
+.bar{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;margin-top:12px}
+.bar>span{display:block;height:100%;transition:width .35s}
+.sender .bar>span{background:var(--accent)}
+.receiver .bar>span{background:var(--cf)}
+.sender .big{color:var(--accent)}
+.receiver .big{color:var(--cf)}
+
+.bus{position:relative}
+.bus .role{color:var(--muted)}
+.frame{display:flex;gap:6px;margin:8px 0 10px;flex-wrap:wrap}
+.cell{
+  width:54px;height:64px;border-radius:9px;background:var(--panel2);
+  border:1px solid var(--line);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;transition:.25s;
+}
+.cell b{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.cell i{font-size:9px;font-style:normal;color:var(--muted);margin-top:3px;text-align:center;line-height:1.2;padding:0 2px}
+.cell.empty{opacity:.3}
+.cell.pci{border-color:var(--ff);color:var(--ff);box-shadow:0 0 0 1px var(--ff) inset}
+.cell.len{border-color:var(--sf);color:var(--sf)}
+.cell.sn{border-color:var(--cf);color:var(--cf)}
+.cell.data{border-color:#3a4256}
+.cell.fs{border-color:var(--fc);color:var(--fc)}
+.cell.bs{border-color:var(--fc);color:var(--fc)}
+.cell.st{border-color:var(--fc);color:var(--fc)}
+.cap{font-size:12px;color:var(--muted);min-height:18px}
+.cap b{color:var(--text);font-weight:600}
+
+.narr{
+  background:var(--panel2);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;
+  padding:14px 16px;min-height:100px;margin-bottom:18px;
+}
+.narr .no{font-size:12px;color:var(--accent);font-weight:600;margin-bottom:4px;letter-spacing:.5px}
+.narr .txt{font-size:15px;line-height:1.75}
+.narr .txt b{color:#fff}
+.narr .txt code{background:#151a24;padding:1px 6px;border-radius:5px;color:#c8d0e0}
+
+.ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+button{
+  background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;
+  padding:9px 16px;font-size:14px;cursor:pointer;transition:.15s;font-family:inherit;
+}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.primary:hover{filter:brightness(1.1);color:#fff}
+button:disabled{opacity:.35;cursor:default}
+button:disabled:hover{border-color:var(--line);color:var(--text)}
+.dots{display:flex;gap:6px;margin-left:auto}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--line);transition:.2s}
+.dots i.on{background:var(--accent);transform:scale(1.25)}
+
+.logbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.logbox h3{font-size:12px;font-weight:600;margin:0 0 8px;color:var(--muted)}
+.log{max-height:150px;overflow:auto;font:12px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.log div{white-space:nowrap}
+.log .tag{display:inline-block;width:26px;color:var(--muted)}
+.log .ff{color:var(--ff)} .log .cf{color:var(--cf)} .log .fc{color:var(--fc)} .log .sf{color:var(--sf)}
+
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px;font-size:12px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend b{width:8px;height:8px;border-radius:2px;display:inline-block}
+.hint{color:var(--muted);font-size:12px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>1599 字节，怎么塞进 8 字节的 CAN 帧</h1>
+  <p class="sub">点“下一步”，跟着一个固件包走一遍 CAN 总线。每一步只有一帧在动。</p>
+  <p class="meta">这个 1599 = <code>32 字节头</code> + <code>1503 字节固件</code> + <code>64 字节签名</code>，是项目里的真实包长。</p>
+
+  <div class="panels">
+    <div class="panel sender">
+      <h2>发送方</h2>
+      <p class="role">PC · 手里还有多少没发</p>
+      <div class="big" id="left">1599</div>
+      <div class="unit">字节待发送</div>
+      <div class="bar"><span id="bar-left" style="width:100%"></span></div>
+    </div>
+
+    <div class="panel bus">
+      <h2>CAN 总线</h2>
+      <p class="role">一帧最多 8 个格子</p>
+      <div class="frame" id="frame"></div>
+      <div class="cap" id="cap">还没开始</div>
+    </div>
+
+    <div class="panel receiver">
+      <h2>接收方</h2>
+      <p class="role">ECU · 已经拼回多少</p>
+      <div class="big" id="got">0</div>
+      <div class="unit">字节已拼回</div>
+      <div class="bar"><span id="bar-got" style="width:0%"></span></div>
+    </div>
+  </div>
+
+  <div class="narr">
+    <div class="no" id="step-no">第 1 / 8 步</div>
+    <div class="txt" id="step-txt"></div>
+  </div>
+
+  <div class="ctrl">
+    <button id="prev">上一步</button>
+    <button class="primary" id="next">下一步</button>
+    <button id="reset">重来</button>
+    <div class="dots" id="dots"></div>
+  </div>
+
+  <div class="logbox">
+    <h3>总线上已经出现过这些帧</h3>
+    <div class="log" id="log"></div>
+  </div>
+
+  <div class="legend">
+    <span><b style="background:var(--ff)"></b>首帧 FF</span>
+    <span><b style="background:var(--cf)"></b>连续帧 CF</span>
+    <span><b style="background:var(--fc)"></b>流控帧 FC</span>
+    <span><b style="background:var(--sf)"></b>长度字段</span>
+  </div>
+  <p class="hint">键盘 ← → 也可以翻页。</p>
+</div>
+
+<script>
+const C = (v,k,t) => ({v,k,t});
+const steps = [
+  {
+    txt:'车来了。<b>1599 字节</b>的固件包要过 CAN 总线，但一帧最多只能装 8 个字节。所以必须拆。现在还没有发任何东西。',
+    cap:'还没开始',
+    frame:[],
+    left:1599, got:0,
+    log:[]
+  },
+  {
+    txt:'第一帧叫<b>首帧</b>。它先花 2 个格子做说明：第一个字节 <code>16</code> 表示“我是开头”，第二个字节 <code>3F</code> 一起拼出总长度 <b>1599</b>。剩下 6 个格子才装固件数据。',
+    cap:'<b>首帧 FF</b> · 声明总长度 1599，先送 6 字节',
+    frame:[C('16','pci','类型+高4位'),C('3F','len','长度低8位'),C('00','data'),C('01','data'),C('02','data'),C('03','data'),C('04','data'),C('05','data')],
+    left:1593, got:6,
+    log:[{t:'FF', cls:'ff', hex:'16 3F 00 01 02 03 04 05'}]
+  },
+  {
+    txt:'发完首帧，发送方<b>必须停下</b>，等对方回话。回话只有 3 个字节：<code>30</code> 是“继续发”，<code>08</code> 是“你一次发 8 帧，然后等我再喊”，<code>00</code> 是“两帧之间至少隔 0 毫秒”。',
+    cap:'<b>流控帧 FC</b> · 接收方说：可以发，一次 8 帧',
+    frame:[C('30','fs','FS=继续'),C('08','bs','BS=8'),C('00','st','STmin=0')],
+    left:1593, got:6,
+    log:[{t:'FF', cls:'ff', hex:'16 3F 00 01 02 03 04 05'},
+         {t:'FC', cls:'fc', hex:'30 08 00'}]
+  },
+  {
+    txt:'后面每一帧叫<b>连续帧</b>。只花 1 个格子写序号，剩下 <b>7 个格子</b>全装数据，比首帧多装 1 个。序号从 1 开始，因为 0 已经被首帧占用了。',
+    cap:'<b>连续帧 CF</b> · 序号 1，带走 7 字节',
+    frame:[C('21','sn','序号1'),C('06','data'),C('07','data'),C('08','data'),C('09','data'),C('0A','data'),C('0B','data'),C('0C','data')],
+    left:1537, got:62,
+    log:[{t:'FF', cls:'ff', hex:'16 3F 00 01 02 03 04 05'},
+         {t:'FC', cls:'fc', hex:'30 08 00'},
+         {t:'CF', cls:'cf', hex:'21 06 07 08 09 0A 0B 0C'},
+         {t:'CF', cls:'cf', hex:'22 0D 0E 0F 10 11 12 13'},
+         {t:'CF', cls:'cf', hex:'23 14 15 16 17 18 19 1A'},
+         {t:'CF', cls:'cf', hex:'24 1B 1C 1D 1E 1F 20 21'},
+         {t:'CF', cls:'cf', hex:'25 22 23 24 25 26 27 28'},
+         {t:'CF', cls:'cf', hex:'26 29 2A 2B 2C 2D 2E 2F'},
+         {t:'CF', cls:'cf', hex:'27 30 31 32 33 34 35 36'},
+         {t:'CF', cls:'cf', hex:'28 37 38 39 3A 3B 3C 3D'}]
+  },
+  {
+    txt:'刚发满 <b>8 帧</b>，发送方又停下。接收方回第二个相同的流控帧。这就是 BS=8 的意思：每 8 帧握一次手。如果 BS 是 0，就一路发到底，但开头那个握手仍然要有。',
+    cap:'<b>流控帧 FC</b> · 第 2 次：前面 8 帧收到了，继续',
+    frame:[C('30','fs','FS=继续'),C('08','bs','BS=8'),C('00','st','STmin=0')],
+    left:1537, got:62,
+    log:[{t:'FF', cls:'ff', hex:'16 3F 00 01 02 03 04 05'},
+         {t:'FC', cls:'fc', hex:'30 08 00'},
+         {t:'CF', cls:'cf', hex:'21 06 07 08 09 0A 0B 0C'},
+         {t:'CF', cls:'cf', hex:'22 0D 0E 0F 10 11 12 13'},
+         {t:'CF', cls:'cf', hex:'23 14 15 16 17 18 19 1A'},
+         {t:'CF', cls:'cf', hex:'24 1B 1C 1D 1E 1F 20 21'},
+         {t:'CF', cls:'cf', hex:'25 22 23 24 25 26 27 28'},
+         {t:'CF', cls:'cf', hex:'26 29 2A 2B 2C 2D 2E 2F'},
+         {t:'CF', cls:'cf', hex:'27 30 31 32 33 34 35 36'},
+         {t:'CF', cls:'cf', hex:'28 37 38 39 3A 3B 3C 3D'},
+         {t:'FC', cls:'fc', hex:'30 08 00'}]
+  },
+  {
+    txt:'序号只有 4 位，最大 15。发到 <code>2F</code>（15）之后，下一帧是 <code>20</code>，也就是回到 0，再往下 <code>21</code>、<code>22</code>…… 这只是<b>数圈圈</b>，不是新消息的开头。',
+    cap:'<b>连续帧 CF</b> · 序号绕回 0，帧头仍以 2 开头',
+    frame:[C('20','sn','序号0'),C('1F','data'),C('20','data'),C('21','data'),C('22','data'),C('23','data'),C('24','data'),C('25','data')],
+    left:1183, got:416,
+    log:[{t:'FF', cls:'ff', hex:'16 3F 00 01 02 03 04 05'},
+         {t:'FC', cls:'fc', hex:'30 08 00'},
+         {t:'CF', cls:'cf', hex:'2E ...'},
+         {t:'CF', cls:'cf', hex:'2F ...  序号 15'},
+         {t:'CF', cls:'cf', hex:'20 ...  序号 0，回绕'},
+         {t:'CF', cls:'cf', hex:'21 ...  序号 1'}]
+  },
+  {
+    txt:'最后一帧装不满。只剩 <b>4 个字节</b>，所以帧里只有 5 个格子有内容：1 个序号 + 4 个数据，DLC=5。很多粗糙的实现就是在这里把后面的填充当成数据读进去。',
+    cap:'<b>连续帧 CF</b> · 最后一帧只有 4 字节数据，DLC=5',
+    frame:[C('24','sn','序号4'),C('3B','data'),C('3C','data'),C('3D','data'),C('3E','data')],
+    left:0, got:1599,
+    log:[{t:'FF', cls:'ff', hex:'16 3F 00 01 02 03 04 05'},
+         {t:'FC', cls:'fc', hex:'30 08 00'},
+         {t:'CF', cls:'cf', hex:'... 共 227 帧'},
+         {t:'CF', cls:'cf', hex:'24 3B 3C 3D 3E   DLC=5'}]
+  },
+  {
+    txt:'接收方按序号拼回完整的 <b>1599 字节</b>，和发送方逐字节比对，一模一样。整趟下来：<b>1 个首帧 + 228 个连续帧 + 29 次流控握手</b>。',
+    cap:'拼回 1599 字节 · 校验一致',
+    frame:[],
+    left:0, got:1599,
+    log:[{t:'FF', cls:'ff', hex:'1 帧'},
+         {t:'CF', cls:'cf', hex:'228 帧'},
+         {t:'FC', cls:'fc', hex:'29 帧'},
+         {t:'',  cls:'',   hex:'合计 258 帧，1599 字节'}]
+  }
+];
+
+let i = 0;
+const $ = id => document.getElementById(id);
+
+function hex(v){ return v.toUpperCase(); }
+
+function renderFrame(s){
+  const el = $('frame');
+  el.innerHTML = '';
+  for (let n = 0; n < 8; n++){
+    const b = s.frame[n];
+    const d = document.createElement('div');
+    d.className = 'cell ' + (b ? b.k : 'empty');
+    d.innerHTML = b ? '<b>'+hex(b.v)+'</b><i>'+(b.t||'')+'</i>' : '<b>--</b><i></i>';
+    el.appendChild(d);
+  }
+}
+
+function renderLog(log){
+  const el = $('log');
+  if (!log.length){ el.innerHTML = '<div style="color:var(--muted)">（空）</div>'; return; }
+  el.innerHTML = log.map(x =>
+    '<div><span class="tag">'+x.t+'</span><span class="'+x.cls+'">'+x.hex+'</span></div>'
+  ).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function render(){
+  const s = steps[i];
+  $('left').textContent = s.left;
+  $('got').textContent = s.got;
+  $('bar-left').style.width = (s.left / 1599 * 100) + '%';
+  $('bar-got').style.width = (s.got / 1599 * 100) + '%';
+  $('cap').innerHTML = s.cap;
+  $('step-no').textContent = '第 ' + (i + 1) + ' / ' + steps.length + ' 步';
+  $('step-txt').innerHTML = s.txt;
+  renderFrame(s);
+  renderLog(s.log);
+  $('prev').disabled = (i === 0);
+  $('next').disabled = (i === steps.length - 1);
+  $('dots').innerHTML = steps.map((_, n) => '<i class="' + (n === i ? 'on' : '') + '"></i>').join('');
+}
+
+$('next').onclick = () => { if (i < steps.length - 1){ i++; render(); } };
+$('prev').onclick = () => { if (i > 0){ i--; render(); } };
+$('reset').onclick = () => { i = 0; render(); };
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' && i < steps.length - 1){ i++; render(); }
+  if (e.key === 'ArrowLeft' && i > 0){ i--; render(); }
+});
+
+render();
+</script>
+</body>
+</html>
