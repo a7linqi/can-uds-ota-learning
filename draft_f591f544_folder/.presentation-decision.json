@@ -1,0 +1,1 @@
+{"audience":"正在学习车载诊断的嵌入式初学者（本人）","reader_task":"理解 ISO-TP 如何在 8 字节 CAN 帧上承载 1599 字节固件包，并能对照源码说出切帧、流控与错误处理的关键点","genre_contract":"router.knowledge","adapter":null,"presentation_mode":"normal","visual_plan":{"reason":"帧型对比与切帧账本用表格最清楚，关键限制用 callout；无需额外图片或画板","blocks":[]}}
