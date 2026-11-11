@@ -662,7 +662,416 @@ CRC 对了，不代表内容合理。`sane()` 会检查：
 
 ---
 
-## 9. 面试可用的 10 句话
+## 11. UDS 下载主线：0x34 / 0x36 / 0x37 / 0x31
+
+整个 OTA 分两段，本章讲第一段：PC 把固件包安全送进 NOR。
+
+```text
+第一段：PC → CAN → ISO-TP → UDS(0x34 / 0x36 / 0x37) → NOR 下载区
+第二段：复位 → Bootloader → 备份 → 安装 → TRIAL → 确认 → IDLE
+```
+
+分两段的根本原因：App 正在内部 Flash 里运行，不能擦自己。
+
+### 11.1 四个服务各管一段
+
+| SID | 干什么 | 一句话记忆 |
+|---|---|---|
+| `0x34` | 登记 | **只宣布，不传数据**；先落盘 DOWNLOADING，再擦 NOR |
+| `0x35` | 上传（未实现） | 发过去得到 `0x11` 服务不支持 |
+| `0x36` | 搬字节 | 只把字节写进 NOR，**不解包、不算 CRC** |
+| `0x37` | 验收 | 重读包头 + 整包校验，成功后落盘 READY |
+| `0x31` | 复核 | 核对 NOR 里的包和 `pending_*` 一致，**不是健康确认** |
+
+### 11.2 0x34：五道门，先落盘再擦
+
+```c
+if (len != 11u || req[1] != 0u || req[2] != 0x44u)  → 0x13
+if (s->session != UDS_SESSION_PROGRAMMING)          → 0x22
+if (!s->unlocked)                                   → 0x33
+if (s->dl_active)                                   → 0x24
+addr = get_be32(req+3); size = get_be32(req+7);
+if (addr != APP_BASE_ADDR || size<IMAGE_HEADER_SIZE+8u || size>上限) → 0x31
+```
+
+请求固定 11 字节：
+
+```text
+34 00 44 | 08 01 00 00 | 00 00 05 DC
+SID 子功能   地址(4B)      大小(4B)
+    └─┬─┘
+   00 44 = 不压缩、不加密
+```
+
+地址是**逻辑执行地址**，不是写入地址：数据存到 NOR 的 `DOWNLOAD_OFFSET`，复位后由 Bootloader 搬到内部 Flash 的 `0x08010000`。
+
+顺序不能反：
+
+```c
+m.state = UPDATE_DOWNLOADING;
+/* Invalidate the old staged package durably BEFORE any erase. */
+if (metadata_save(store, &m) ||
+    external.erase(DOWNLOAD_OFFSET, EXT_IMAGE_SLOT_SIZE)) → 0x72
+```
+
+先落盘的意义：擦到一半掉电，下次上电看到 `DOWNLOADING`，不会误以为有完整包。
+
+正响应 `74 20 02 00`：
+
+```text
+74       = 0x34 + 0x40
+20       = lengthFormatIdentifier：高 4 位 2 表示「最大块长度」占 2 字节
+02 00    = 512
+```
+
+512 算的是**整个 0x36 请求的长度**，含 SID 和块号，所以纯数据最多 510。
+
+### 11.3 0x36：重复块只答复，不重复累加
+
+```c
+counter = req[1]; n = len - 2;
+
+if (dl_has_previous && counter == dl_previous_counter) {
+    /* 疑似重传 */
+    if (n != dl_last_size)                    → 0x73
+    if (read(offset + dl_last_offset, previous, n)) → 0x72
+    if (memcmp(previous, req+2, n))           → 0x73
+    /* 一模一样：什么也不做，直接回 76 */
+} else {
+    if (counter != dl_next_counter)           → 0x73
+    if (n > dl_size - dl_written)             → 0x31
+    write(offset + dl_written, req+2, n);
+    dl_last_offset = dl_written; dl_last_size = n;
+    dl_previous_counter = counter; dl_has_previous = 1;
+    dl_written += n;                          /* ← 只有这里累加 */
+    dl_next_counter = counter + 1;            /* FF → 00 合法 */
+}
+```
+
+1500 字节走一遍：
+
+| 请求 | 写在哪 | dl_written | next |
+|---|---|---|---|
+| `36 01` + 510 | offset + 0 | 510 | 2 |
+| `36 02` + 510 | offset + 510 | 1020 | 3 |
+| `36 03` + 480 | offset + 1020 | 1500 | 4 |
+
+重传时块号等于 `dl_previous_counter`，从 NOR 读回上一块逐字节比对，一致就回 `76`，`dl_written` 和 `dl_next_counter` 都不变。
+
+为什么必须读 NOR 来比：
+
+- 没法区分「重传」和「同号不同内容」，只能比内容
+- 省 RAM：没有常驻 510 字节缓存，NOR 里本来就有一份
+- 顺带验了上一块写得对不对
+
+跳号一律 `0x73`：只认「我期待的下一个」和「我刚收过的那个」。
+
+长度检查用减法不用加法，避免 uint32 溢出：
+
+```c
+if (n > dl_size - dl_written) → 0x31    /* 安全 */
+/* 而不是 dl_written + n > dl_size */
+```
+
+### 11.4 长度不对的四种情况
+
+| 情况 | 判定 | 返回 |
+|---|---|---|
+| 单帧太短（连块号都没有） | `len < 3` | `0x13` |
+| 单帧超过协商块长 | `len > 512` | `0x13` |
+| 累计超过声明总长 | `n > dl_size - dl_written` | `0x31` |
+| 一直没收够 | `0x36` 不判断，到 `0x37` 才查 | `0x24` |
+
+为什么「累计超过总长」不是 `0x13`：`0x13` 是这一帧本身的格式问题，`0x31` 是格式没问题但数值超出声明范围。
+
+为什么 `0x36` 不判断「收完了没」：它回答不了「后面还有没有」。只有 PC 发 `0x37` 说「我传完了」，服务器才有资格判断「你传完了但我没收齐」。
+
+### 11.5 0x37：七步验收
+
+```c
+if (len != 1u)                            → 0x13
+if (session != PROGRAMMING)                → 0x22
+if (!unlocked)                             → 0x33
+if (!dl_active || dl_written != dl_size)   → 0x24
+
+/* ① 重读包头 */
+if (image_read_header(DOWNLOAD_OFFSET, &h) ||
+    /* ② 长度自洽：payload + 头 + 签名 = 声明总长 */
+    h.image_size + IMAGE_HEADER_SIZE +
+        ((h.flags & IMAGE_FLAG_SIGNED) ? OTA_SIGNATURE_SIZE : 0u) != dl_size ||
+    /* ③ 整包校验：从 NOR 读回来算 */
+    image_validate(DOWNLOAD_OFFSET, 0, 0))  → 0x72
+
+/* ④ 状态必须还在下载中 */
+if (metadata_load(store, &m) != 1 || m.state != UPDATE_DOWNLOADING) → 0x72
+
+/* ⑤ 版本必须严格更高 */
+if (h.version <= m.min_version || h.version <= m.active_version)   → 0x31
+
+/* ⑥ 落盘 READY */
+m.state = READY; m.pending_version = h.version;
+m.pending_size = h.image_size; m.pending_crc = h.payload_crc;
+m.boot_attempts = 0;
+if (metadata_save(store, &m))               → 0x72
+
+/* ⑦ 清下载态，回 77 */
+s->dl_active = 0u;
+```
+
+- 必须重读包头：`0x36` 全程只把字节原样写进 NOR，没解析过包头，服务器此刻不知道 NOR 里是什么
+- 必须验 NOR 而不是收到的字节：`image_validate` 从 NOR 读回来算，能发现 NOR 写坏
+- `77` 是安全点：READY 已进 EEPROM，之后断电重启由 Bootloader 自动安装
+- `77 ≠ 装好了`：内部 Flash 里还是旧 App
+- 版本必须**严格更高**，同版本重刷也拒绝
+
+### 11.6 0x31：只复核，不确认健康
+
+```c
+if (len != 4u)                                  → 0x13
+if ((req[1] & 0x7Fu) != 1u)                     → 0x12
+if (req[2] != 0u || req[3] != 1u)                → 0x31
+if (session != PROGRAMMING || !unlocked)         → 0x33
+if (metadata_load(store,&m) != 1 || m.state != UPDATE_READY) → 0x22
+if (h.version != m.pending_version ||
+    h.image_size != m.pending_size ||
+    h.payload_crc != m.pending_crc ||
+    image_validate(DOWNLOAD_OFFSET,0,0))         → 0x72
+resp = 71 01 00 01 00
+```
+
+做的事只有一件：**复核 NOR 里的包和 `pending_*` 是否仍然一致**。
+
+```c
+/* Routine 0001 verifies a READY package. Health confirmation belongs
+ * to the running app; a tester cannot confirm a package before boot. */
+```
+
+`0x31` 不是健康确认。健康确认只能由运行中的 App 调用 `boot_confirm`，诊断仪没有这个权力。
+
+### 11.7 为什么不在 0x36 里算 CRC
+
+1. 算的是**收到的字节**，不是**写进 NOR 的字节**。NOR 写入失败时这个 CRC 照样是对的，要发现写失败只能回读
+2. 传输错误 CAN 层已经管了：15 位 CRC + ACK 管单帧，ISO-TP 序号管丢帧乱序，UDS 块号管丢块重复块
+3. 包头里的 `payload_crc` 是整包的，最后一块到齐前算不出来；中间某块错了也不能只补那一块
+
+### 11.8 三个够用的 NRC
+
+| NRC | 什么时候出现 |
+|---|---|
+| `0x24` | 序列错：没开下载就发 `0x36`；没传完就发 `0x37` |
+| `0x73` | 块号错：既不是期待的下一块，也不是刚收过的那个 |
+| `0x31` | 范围错：地址不对、大小越界、版本不够高 |
+
+---
+
+## 12. 会话、解锁与复位：0x10 / 0x27 / 0x11
+
+### 12.1 0x10 会话控制
+
+| 值 | 会话 | 能干什么 |
+|---|---|---|
+| `01` | 默认 | 只能读 DID。车辆正常运行时就是这个状态 |
+| `02` | 编程 | 只有在这里 `0x34 / 0x36 / 0x37 / 0x31` 才被允许 |
+| `03` | 扩展 | 本项目基本没用 |
+
+```c
+s->session    = sub;
+s->unlocked   = 0u;      /* 重新上锁 */
+s->seed_valid = 0u;
+s->seed       = 0u;
+s->dl_active  = 0u;      /* 下载任务作废 */
+```
+
+**每换一次会话，权限都归零，必须重新 27。**
+
+正响应 `50 02 00 32 01 F4`：P2 = 50 ms，P2\* = 500 × 10 ms = 5000 ms。
+
+判断通过要看「期望的正响应回来了没有」，不能只看「不是 `7F`」——`50 03`、`50 01` 也不是 `7F`，但那是别的会话。
+
+### 12.2 0x27 安全访问
+
+```text
+27 01  →  67 01 [4 字节种子]     我给你一个随机数
+            （PC 用同样的算法算出 key）
+27 02 [4 字节 key] → 67 02        钥匙对，解锁
+```
+
+```c
+if (s->unlocked) { 返回种子 0 }          /* 种子 0 表示已经解锁 */
+
+s->seed = 0xC0DE0000u ^ (s->request_count * 2654435761u);
+if (s->seed == 0u) s->seed = 0x12345678u;
+
+/* 27 02 */
+if (!s->seed_valid) → 0x24
+if (key != uds_calc_key(s->seed)) {
+    s->seed_valid = 0u;                  /* 一次机会，错了种子作废 */
+    s->key_failures++;
+    if (s->key_failures >= 3u) { 锁 10 秒; → 0x36 }
+    → 0x35
+}
+```
+
+钥匙算法：
+
+```c
+uint32_t k = seed ^ 0xA5A5A5A5u;
+k = (k << 7) | (k >> 25);
+k += 0x9E3779B9u;
+```
+
+说实话：种子由 `request_count` 算出，可预测，密钥也在 App 里，所以它只是协议形状，不是真正的安全边界。真实产品用硬件随机数或 HSM。
+
+### 12.3 0x11 复位：只记账，不当场复位
+
+```c
+if (sub != 0x01 && sub != 0x03) → 0x12
+s->reset_requested = 1u;
+resp[0] = 0x51u; resp[1] = sub;
+```
+
+真正复位要等两件事都干净：ISO-TP 多帧响应发完、CAN 硬件发送邮箱真的空了。否则 `51 01` 会残缺或丢失，PC 会以为复位失败而重试。
+
+### 12.4 硬件复位 vs 断电
+
+| | 硬件复位 | 断电 |
+|---|---|---|
+| RAM | 清空 | 清空 |
+| EEPROM / NOR / 内部 Flash | 保留 | 保留 |
+| 发生时机 | 软件主动请求，时刻确定 | 随时可能，可能停在任意指令中间 |
+| 正在进行的写入 | 那一刻没有写入在进行 | 可能正好赶上分页写或扇区擦，撕裂写 |
+| 电源与时钟 | 稳定 | 电压跌落过程不确定 |
+
+一句话：断电是「无序停机」，复位是「有序重启」。
+
+### 12.5 复位之后：READY → INSTALLING → TRIAL → IDLE
+
+```text
+Bootloader 启动 → 看到 READY
+  ↓
+create_backup      旧 App：内部 Flash → NOR 备份区（只读内部 Flash）
+  ↓
+set_state(INSTALLING)               ← 备份完成之后才改状态
+  ↓
+install()          擦内部 Flash，把新包从 NOR 下载区搬进去
+  ↓
+set_state(TRIAL)   装好了，但还没被信任
+  ↓
+boot_attempts++ 落盘 → 跳新 App
+  ↓
+新 App 自检通过 → boot_confirm → IDLE
+  ↓
+3 次起不来 → RESTORING → 从备份区把旧版搬回来
+```
+
+三个容易记反的点：
+
+1. **READY 是 `37` 那一刻落盘的**，不是复位后进入的
+2. **备份在 INSTALLING 之前**，且在 READY 状态下完成，只读内部 Flash
+3. **装完是 TRIAL 不是 IDLE**，要 App 自己调 `boot_confirm` 才变 IDLE（`boot_attempts == 0` 说明还没真跑过）
+
+关键结论：`boot_select()` 只在 Bootloader 里调用，App 侧只调 `boot_accept_app_health()`。**App 里根本没有备份和安装的代码，所以这个包永远不会自己装上去，必须复位。**
+
+### 12.6 dl_active：只有下载阶段才需要的开关
+
+它是 RAM 里的一个字节，回答的只有一句话：**「现在有没有一个已经打开、但还没结算的下载单？」**
+
+全部 7 处读写：
+
+| 行号 | 位置 | 代码 | 作用 |
+|---|---|---|---|
+| 99 | `0x10` 切会话 | `dl_active = 0` | 换会话就作废 |
+| 293 | `0x34` 门槛 | `if (dl_active) → 0x24` | 防重复开单 |
+| 310 | `0x34` 成功 | `dl_active = 1` | 打开窗口 |
+| 330 | `0x36` 门槛 | `if (!dl_active) → 0x24` | 没开单不准传 |
+| 363 | `0x37` 门槛 | `if (!dl_active) → 0x24` | 没开单不准验收 |
+| 378 | `0x37` 成功 | `dl_active = 0` | 结算关窗 |
+| 442 | S3 超时 | `dl_active = 0` | 太久不说话就作废 |
+
+`0x27` / `0x11` / `0x31` / Bootloader 都不碰它。
+
+为什么只有下载需要：
+
+1. 下载是唯一被外部请求切碎的阶段，每条 `36` 都要判断「该不该执行」
+2. 下载有一堆跨请求存活的零碎状态（`dl_offset` / `dl_written` / `dl_next_counter` …），`dl_active` 是总开关
+3. 下载能被打断（切会话、S3 超时），后面三个阶段是 Bootloader 顺序执行，天然不可中断
+
+`0x37` 里两个条件不是一回事：
+
+```text
+!dl_active              → 「你压根没开单」     前提不存在
+written != size         → 「你开单了但没干完」 任务未完成
+```
+
+### 12.7 六个状态值与全部合法转换
+
+| 值 | 名称 | 谁写的 | 什么时候写 |
+|---|---|---|---|
+| 0 | `IDLE` | `clear_pending()` / `boot_confirm()` | 没有待装包；或新版本已确认 |
+| 1 | `DOWNLOADING` | `0x34` | 开始下载 |
+| 2 | `READY` | `0x37` | 验收全过 |
+| 3 | `INSTALLING` | `boot_select()` | 备份完成之后 |
+| 4 | `TRIAL` | `boot_select()` | 安装完成之后 |
+| 5 | `RESTORING` | `boot_select()` | 新包不合格，或试运行失败 |
+
+| 从 | 到 | 触发条件 | 代码 |
+|---|---|---|---|
+| `IDLE` / `DOWNLOADING` | `DOWNLOADING` | `0x34` 通过五道门 | uds.c:305 |
+| `DOWNLOADING` | `READY` | `0x37` 七步全过 | uds.c:375 |
+| `READY` | `IDLE` | 包读不出来 / 头部对不上 | boot.c:96 |
+| `READY` | `INSTALLING` | 备份成功 | boot.c:104 |
+| `INSTALLING` | `TRIAL` | `install()` 成功 | boot.c:118 |
+| `INSTALLING` | `RESTORING` | 包不合格但备份可用 | boot.c:115 |
+| `TRIAL` | `IDLE` | `boot_confirm()` 成功 | boot.c:157 |
+| `TRIAL` | `RESTORING` | 3 次起不来或镜像校验失败 | boot.c:129 |
+| `RESTORING` | `IDLE` | 回滚完成 | boot.c:141 |
+
+掉电之后：
+
+| 掉电时的 state | 重启后 Bootloader 怎么做 |
+|---|---|
+| `IDLE` | 直接跳旧 App |
+| `DOWNLOADING` | 直接跳旧 App（半截包不管，下次 `0x34` 会擦） |
+| `READY` | 备份 → 安装 |
+| `INSTALLING` | 备份作废重做 → 安装（不续传） |
+| `TRIAL` | `boot_attempts+1` → 再试；到 3 次回滚 |
+| `RESTORING` | 重新回滚一遍 |
+
+`DOWNLOADING` 掉电可以「跳旧 App 不管」，因为内部 Flash 完好；`INSTALLING` 掉电不行，因为内部 Flash 可能已被擦掉一半，旧 App 不在了，必须靠备份区重建。
+
+### 12.8 S3 超时清哪四样
+
+```c
+s->session    = UDS_SESSION_DEFAULT;
+s->unlocked   = 0u;
+s->seed_valid = 0u;
+s->dl_active  = 0u;
+```
+
+四层关系：
+
+```text
+session    ─ 你在哪个房间
+unlocked   ─ 你有没有钥匙
+seed_valid ─ 手上那张临时通行证过没过期
+dl_active  ─ 柜台有没有给你开着单
+```
+
+**没有清 `state`，也不该清。** S3 超时只说明「客户端不说话了」，不能据此推断「包坏了」。
+
+所以会出现「不同步」，而这是刻意设计的：
+
+```text
+S3 超时后：
+  dl_active = 0           这次连接没戏了
+  state     = DOWNLOADING 设备仍处在「可能有个半截包」的事实里
+```
+
+`state = DOWNLOADING` 本来就不承诺包完整，所以遗留它是无害且自洽的。
+
+---
+
+## 13. 面试可用的 10 句话
 
 1. UDS 服务号来自 ISO 14229；项目只实现一个子集，`uds.c` 的 `switch` 是“支持清单”。
 2. `0x22` 是 ReadDataByIdentifier；后面两字节是 DID，`F195` 是软件版本。
@@ -677,7 +1086,7 @@ CRC 对了，不代表内容合理。`sane()` 会检查：
 
 ---
 
-## 10. 待继续
+## 14. 待继续
 
 - `0x36` 发送中途断电，PC 端如何判断“包可能已 READY”？
 - `0x37` 应答丢失时，`UnknownCommit` 的完整恢复流程。
