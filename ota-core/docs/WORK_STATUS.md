@@ -202,9 +202,13 @@ As of 2026-11-07:
   20 bytes (62 F1 90 + VIN LOTA0000000000001); read-only acceptance
   status=passed. Seed/Key unlock and the read-only gate telemetry are also
   verified on silicon. Evidence: D:\Project\Can\stages\board-lab\evidence\can\
-- Full OTA (0x34/0x36/0x37/0x31/0x11 -> install) is verified on the UART bench,
-  NOT yet on real CAN. Assessment:
-  D:\Project\Can\stages\board-lab\REAL_CAN_OTA_ASSESSMENT.md
+- Full OTA (0x34/0x36/0x37/0x31/0x11 -> install) is verified BOTH on the UART bench
+  (2026-11-05) and on real CAN (2026-11-09): v24 signed package, 89 TransferData
+  blocks, 18.552 s with zero negative responses, install + TRIAL confirmed after
+  reset, 44824 B read back byte-identical, 96 B ticket matches. Runbook/evidence:
+  D:\Project\Can\stages\board-lab\REAL_CAN_OTA_RUNBOOK.md and evidence/can/
+- Real-CAN power-cut recovery, bus-load/error-frame stats and long-run stability
+  are still NOT verified (the three power-cut points were verified on the UART bench).
 - Power cuts (idle / mid-download / mid-install), hardware IWDG (32.341 s),
   RDP1 trust anchor, EEPROM bus-lock red/green comparison and signed-image
   secure boot were all verified on silicon during 2026-11-05.

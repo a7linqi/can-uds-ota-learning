@@ -4,7 +4,7 @@
 
 2026-11-05 起实机状态（详见 [参考板文档](docs/EXPLORER_REFERENCE.md)，机器可读的 `evidence/verification.json` 仍保守写 `hardware_verified=false`）：只读镜像在板上冷启动，驱动干读 256 B 的 CRC32 与离线金标同段一致；双开镜像经 `0x34`/`0x36` 真实擦写外部 NOR（1 MiB 槽，4 KiB 载荷跨页下发），判决用器件自算的整片 CRC32 而非主机回执；恢复固件支持按块定向修回，写坏一块到修回约 77 s。
 
-同一天下午和深夜继续在实物上推进：loader 通过产品 UDS 路径收下**合法签名的 IMG2**，`0x37` 验签、`0x11` 复位后擦写 960 KiB 内部 Flash、安装、进入 TRIAL、跳转；App 运行 500 ms 后确认健康。随后运行中的 App 用 `10 02` 请求回 loader，同一串口会话连续升级 v9/v10/v11；TRIAL 三次未确认后从外部 NOR 备份区回滚到 v11，读回与升级前逐字节相同，随后 v13 安装成功。状态 DID 0x0200 的 44 字节记录、门控遥测和 `i2c_bus_clear()` 也已上板。内部 Flash 读回 SHA256 与构建产物相同。仍未执行：**真实拔电中断、真实 CAN 总线（USB-CAN 未到货）、硬件 IWDG、安全启动 ticket 规则下的备份恢复复测**。默认 Bootloader/App 仍使用未配置 BSP；实机测试使用探索者参考 BSP + UART 台架。
+同一天下午和深夜继续在实物上推进：loader 通过产品 UDS 路径收下**合法签名的 IMG2**，`0x37` 验签、`0x11` 复位后擦写 960 KiB 内部 Flash、安装、进入 TRIAL、跳转；App 运行 500 ms 后确认健康。随后运行中的 App 用 `10 02` 请求回 loader，同一串口会话连续升级 v9/v10/v11；TRIAL 三次未确认后从外部 NOR 备份区回滚到 v11，读回与升级前逐字节相同，随后 v13 安装成功。状态 DID 0x0200 的 44 字节记录、门控遥测和 `i2c_bus_clear()` 也已上板。内部 Flash 读回 SHA256 与构建产物相同。上述各项在此后均已完成：**三种切点真实断电恢复、硬件 IWDG（32.341 s）、ticket 规则下的备份恢复、真实 CAN 总线**（见下）。默认 Bootloader/App 仍使用未配置 BSP；实机测试使用探索者参考 BSP + UART 台架。
 
 ## 从这里运行
 
@@ -95,4 +95,4 @@ python tools/package_project.py
 
 实机收尾：USB-CAN 到货后做真实 CAN 总线、真实 VDD 断电矩阵、硬件 IWDG 复位/恢复、安全启动 ticket 规则下的备份恢复复测，以及 Keil 完整链接和默认 Bootloader/App 的 BSP 绑定。UART 台架已记录 `0x34` 擦除约 13.82–14.26 s、`0x37` 验签约 0.53 s、`0x31` 安装约 0.48 s；完整断电恢复仍待实测。
 
-已有基于 App 区尾部 96 字节 ticket 的软件安全启动：App 启动前验签，备份恢复重放签名；完整升级链已在 UART 台架实物走通，真实 CAN 未执行。仍不是生产级安全启动：信任根是 RDP，WRP 未开、Bootloader 自身不验签、无硬件防回滚计数器；公开的演示 Seed/Key 不提供密码学安全，签名公钥硬编码、演示 seed 非生产密钥。示例 payload 只有向量与填充字节，不能写入 MCU 当作 App。
+已有基于 App 区尾部 96 字节 ticket 的软件安全启动：App 启动前验签，备份恢复重放签名；完整升级链已在 UART 台架实物走通，**2026-11-09 又在真实 CAN（PCAN-USB 500 kbit/s）上完成 v24 完整 OTA**：89 个 `0x36` 块、18.552 s 零负响应、复位安装 + TRIAL 确认、SWD 读回 44824 B 逐字节相同、96 B 凭证一致。证据：档案库 `stages/board-lab/evidence/can/real_can_ota_summary.json`。仍不是生产级安全启动：信任根是 RDP，WRP 未开、Bootloader 自身不验签、无硬件防回滚计数器；公开的演示 Seed/Key 不提供密码学安全，签名公钥硬编码、演示 seed 非生产密钥。示例 payload 只有向量与填充字节，不能写入 MCU 当作 App。

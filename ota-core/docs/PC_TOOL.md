@@ -42,7 +42,7 @@ python tools/uds_tool.py info --backend can --interface gs_usb --channel "你的
 
 工具另外做软件过滤，因为 gs_usb 不支持设备侧报文过滤。该后端的 `send(timeout)` 不支持超时中断；客户端会传入剩余期限并在返回后检查，但不能强行打断被驱动阻塞的调用。因此总期限覆盖协议状态机的等待，不是对所有第三方驱动调用的硬实时保证。
 
-## USART1 台架（USB-CAN 未到货时）
+## USART1 台架（无物理 CAN 或需复现断电实验时）
 
 真实后端还可以走串口：PC 把经典 CAN 帧编码成 `A5 5A ...` 字节流，MCU 用同一份 ISO-TP/UDS 处理。需要可选依赖 `pyserial`，并且只对已经烧入 UART 台架固件的板子有效。
 
