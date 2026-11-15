@@ -641,7 +641,7 @@ CRC 对了，不代表内容合理。`sane()` 会检查：
 
 ---
 
-## 8. 状态机：READY → INSTALLING → TRIAL → RESTORING
+## 8. 上电与状态机：一次上电到底发生什么
 
 | 状态 | 含义 | 谁会写 | 下一步 |
 |---|---|---|---|
@@ -652,13 +652,351 @@ CRC 对了，不代表内容合理。`sane()` 会检查：
 | `TRIAL` | 新 App 试运行 | Bootloader | 健康确认 → IDLE；失败/超次数 → RESTORING |
 | `RESTORING` | 从备份区恢复旧 App | Bootloader | 恢复完成 → IDLE |
 
-关键点：
+### 8.1 先分清两个 bootloader
 
-- `READY` 在 EEPROM 里，不在 SRAM；拔电不丢。
-- `INSTALLING` 在 EEPROM 里；安装到一半拔电，下次上电重做。
-- `TRIAL` 的 `boot_attempts` 在跳转前写入；拔电也算一次尝试。
-- `boot_confirm` 只有在新 App 有效、`state=TRIAL`、`boot_attempts != 0` 时才把 `active` 更新为新版本，然后 `state=IDLE`。
-- `boot_select` 如果发现 `READY` 记录和 NOR 包头对不上，会清 pending，回到 IDLE，启动旧 App；没有旧 App 就停在 Loader。
+| | 芯片自带 bootloader | 我们自己的 Bootloader |
+|---|---|---|
+| 在哪 | ST 出厂烧在 ROM / 系统存储器 | 内部 Flash 前 64 KiB（0x08000000~0x0800FFFF） |
+| 谁触发 | `BOOT0` 引脚 = 1 | 正常上电（`BOOT0` = 0） |
+| 干什么 | 串口 / CAN 出厂烧录 | 我们的 OTA 逻辑 |
+| 平时参与吗 | 不参与 | 每次上电都跑 |
+
+平时说的"上电先跑 Bootloader"，指的是右边那个。芯片自带的那个只在产线烧录时用，OTA 全程不碰它。
+
+### 8.2 上电到跳转的完整路径
+
+```text
+① CPU 复位，从 0x00000000 读初始 SP 和 Reset_Handler
+   （BOOT0=0 时 0x00000000 被映射到 0x08000000）
+
+② 执行我们的 Bootloader（0x08000000 起，64 KiB）
+
+③ boot_select()：
+     读 EEPROM 两份记录 → 选 seq 大的那份 → 过四道门
+     ↓
+     看 state
+
+④ 按 state 决定：
+     IDLE / DOWNLOADING  → 校验内部 Flash 的 App → 跳过去
+     READY               → 备份 + 安装
+     INSTALLING          → 继续装
+     TRIAL               → 计数 + 跳新 App
+     RESTORING           → 回滚
+     记录无效 / App 无效  → 停在 Loader
+
+⑤ 跳转：设 MSP、设 VTOR、跳到 Reset_Handler
+```
+
+### 8.3 决策依据是 `state`，不是版本号
+
+`boot_select` 里没有一行代码比较版本号。
+
+```text
+设备是离线的，它不知道服务器上现在是什么版本
+它只知道：我手上有没有一个待安装的包？
+```
+
+版本号比较只发生在两处：
+
+```text
+0x37 验收时：新包版本必须 > 当前版本（且 > min_version）
+TRIAL 失败判断：靠 boot_attempts 计数，不是版本
+```
+
+所以正确的说法是：
+
+```text
+✗ 上电后检查有没有新版本，有就升级
+✓ 上电后看元数据记录的 state，按状态机决定这一步该干什么
+```
+
+"要不要更新"不由设备判断，由 PC 决定——PC 主动发 `0x34` 才开始一次升级，设备从不主动问。
+
+### 8.4 四个检查函数：四道门 vs 三个 ok
+
+| 检查谁 | 在哪 | 查什么 | 函数 | 验签名 |
+|---|---|---|---|---|
+| 元数据记录 | EEPROM 64 字节 | magic / commit / CRC / sane | `read_copy` | 无 |
+| 内部 Flash 的 App | 内部 960 KiB | `size != 0` 且 CRC 对 | `active_ok` | 无 |
+| NOR 下载区的包 | NOR 1 MiB | 包头 + 整包 CRC + 签名 | `pending_ok` | 有 |
+| NOR 备份区的旧版 | NOR 1 MiB | 包头 + CRC | `backup_ok` | 无 |
+
+四道门（是四道，不是五道）：
+
+| 门 | 检查什么 |
+|---|---|
+| `magic` | 这块数据是不是元数据（`MAT2`） |
+| `commit` | 是不是写完了（`A55A5AA5`，最后写） |
+| `CRC` | 这 64 字节有没有坏 |
+| `sane` | 内容合不合理（比如 `IDLE` 时不能有 `pending_version`） |
+
+核心区别：
+
+```text
+四道门    → 确认"这张纸条是我写的、写完了、没坏、内容不荒唐"
+active_ok → 确认"纸条上说的那个 App，真的完整地在 Flash 里"
+```
+
+前者管 `metadata`，后者管 `image`。两者缺一不可：
+
+```text
+只验元数据：纸条真，Flash 坏了 → 跳过去 HardFault
+只验 App：  知道代码对，但不知道版本 / 有没有待装包 / 该不该回滚
+```
+
+`active_ok` 不验签名，因为内部 Flash 里只有裸 payload，签名留在 NOR 下载区，装的时候没搬过来。完整信任链是：
+
+```text
+签名          在 NOR 下载区验一次（0x37 时）
+CRC + 向量表   在内部 Flash 验一次（每次上电）
+```
+
+### 8.5 `seq` 比的是副本序号，不是版本号
+
+```text
+✗ 选"版本更新"的那份元数据
+✓ 选 seq（副本序号）更大的那份元数据
+```
+
+`seq` 是"第几次写的"。`metadata_save` 里唯一让它 +1 的地方：
+
+```c
+next.seq = have ? current.seq + 1u : 1u;
+```
+
+业务代码从不碰 `seq`，所以"选 seq 大的"必然等价于"选后写的那份"。
+
+App 的版本号在 `active_version` / `pending_version` 里，是另一回事。
+
+### 8.6 元数据写入：作废 → 正文 → commit
+
+```c
+int metadata_save(metadata_store_t *s, metadata_t *m)
+{
+    /* ① 检查 */
+    if (!s || !m || !s->eeprom.write || !s->eeprom.read || !sane(m)) return -1;
+
+    /* ② 目标是另一份 */
+    have   = metadata_load_ex(s, &current, &index);
+    target = offsets[have ? (1 - index) : 0];
+
+    /* ③ 构造内容 */
+    next = *m;
+    next.magic  = META_MAGIC;
+    next.seq    = have ? current.seq + 1u : 1u;
+    next.commit = META_COMMITTED;
+    next.crc    = 0u;
+    encode(&next, raw);
+    next.crc = crc32_calc(raw, 56u);
+    encode(&next, raw);
+
+    /* ④ 第一步：把目标槽的 commit 作废 */
+    if (write_bytes(&s->eeprom, target + 60u, invalid, 4u) ||   /* 写 4 个 0 */
+        s->eeprom.read(..., verify, 4u) ||
+        memcmp(verify, invalid, 4u) != 0) return -1;
+
+    /* ⑤ 第二步写正文，第三步才盖 commit */
+    if (write_bytes(&s->eeprom, target, raw, 60u) ||
+        write_bytes(&s->eeprom, target + 60u, raw + 60u, 4u) ||
+        s->eeprom.read(..., verify, sizeof verify) ||
+        memcmp(raw, verify, sizeof raw) != 0) return -1;
+
+    /* ⑥ 成功才回填 */
+    *m = next;
+    return 0;
+}
+```
+
+顺序图：
+
+```text
+作废 commit（写 0，读回确认）
+   ↓
+写正文 60 字节
+   ↓
+盖 commit 4 字节
+   ↓
+读回 64 字节比对
+   ↓
+*m = next
+```
+
+两个要点：
+
+```text
+① 先作废 commit → 写一半掉电，这份一定无效，另一份照样能用
+   否则旧 commit 还在，新旧混合的垃圾数据会被误认为有效
+
+② *m = next 不能漏 → 调用者的 m 里 seq / crc 还是旧值
+   不回填，下次再存 seq 就算错
+```
+
+任何一步失败就 `return -1`，另一份完好。这是双副本的全部价值。
+
+### 8.7 为什么用多个 `if` 而不是 `switch`
+
+`boot_select` 里四个 `if` 是顺序流水线，不是 `switch`。
+
+```c
+if (state == READY) {
+    create_backup();
+    set_state(INSTALLING);       /* 状态被改了 */
+}
+if (state == INSTALLING) {       /* 这一轮立刻进来 */
+    install();
+    set_state(TRIAL);
+}
+if (state == TRIAL) {            /* 还会进来 */
+    attempts++;
+    target = APP;
+}
+```
+
+一次上电：备份 → 安装 → 试运行，全干完。
+
+换成 `switch`：
+
+```c
+switch (state) {
+case READY:
+    create_backup();
+    set_state(INSTALLING);
+    break;            /* 出去了，INSTALLING 这一轮不处理 */
+case INSTALLING:
+    ...
+}
+```
+
+一次上电只做一件事，装完要再复位一次才能进下一步。
+
+| | 多个 `if` | `switch` |
+|---|---|---|
+| 判断依据 | 每次重新读 `state` | 进入时锁定一次 |
+| 状态中途变化 | 会落到下一个分支 | 不影响当前分支 |
+| 一次上电能走几步 | 多步 | 一步 |
+| 缺点 | 顺序有语义，放错位置就错 | 安全但慢 |
+
+代价是位置即逻辑：任何新的状态跳转代码，必须放在目标状态的 `if` 之前，否则同一轮接不上，要多一次复位。
+
+### 8.8 优雅降级：`READY` 时包坏了会怎样
+
+```c
+if (m.state == UPDATE_READY) {
+    if (!pending_ok(b, &m)) {
+        next = m;
+        clear_pending(&next);            /* state → IDLE，pending_* 清零 */
+        if (metadata_save(b->store, &next)) goto done;
+        m = next;
+    } else {
+        if (m.active_size && create_backup(b, &m)) goto done;
+        if (set_state(b, &m, UPDATE_INSTALLING)) goto done;
+    }
+}
+...
+if ((m.state == UPDATE_IDLE || m.state == UPDATE_DOWNLOADING) && active_ok(b, &m))
+    target = BOOT_TARGET_APP;
+```
+
+三步：
+
+```text
+① 包坏了（pending_ok 失败）
+② 不装，pending_* 全部丢弃，state 退回 IDLE
+③ 退回 IDLE 后再检查旧 App，还在就跳旧 App
+```
+
+新包坏了就不装，继续跑旧的，用户无感。前提是 `active_size != 0`；出厂从没装过 App 的设备没有旧版可退，只能停在 Loader。
+
+`clear_pending()` 内部就是改状态：
+
+```c
+static void clear_pending(metadata_t *m)
+{
+    m->pending_version = 0u;
+    m->pending_size    = 0u;
+    m->pending_crc     = 0u;
+    m->boot_attempts   = 0u;
+    m->state           = UPDATE_IDLE;   /* ← 这里 */
+}
+```
+
+"清掉待装包"和"回到 IDLE"本质是一件事，所以合在一个函数里。
+
+### 8.9 `goto done` 是什么
+
+不是"传给 EEPROM"，是 C 的跳转语句。
+
+```c
+done:
+    if (meta_out) *meta_out = m;
+    return target;
+```
+
+`goto done` = 跳到函数末尾直接返回，中间所有 `if` 分支全部跳过，`target` 保持默认值 `BOOT_TARGET_LOADER`。
+
+在本项目里它基本表示失败退出：
+
+```c
+if (metadata_save(b->store, &next)) goto done;   /* 存盘失败，别往下走 */
+if (!backup_ok(b, &m))               goto done;   /* 备份坏了，别瞎装 */
+```
+
+用它是为了避免多层嵌套，这是嵌入式 C 里最常见的"提前返回"写法。真正落盘的是 `metadata_save()` / `set_state()`。
+
+### 8.10 各状态掉电后的结果
+
+| 掉电时 | 重启后 |
+|---|---|
+| `IDLE` | 跳旧 App |
+| `DOWNLOADING` | 跳旧 App（半截包不管） |
+| `READY` | 备份 → 安装 |
+| `INSTALLING` | 备份重做 → 安装 |
+| `TRIAL` | 计数 +1 → 再试；到 3 次回滚 |
+| `RESTORING` | 重新回滚 |
+
+没有任何一个状态会导致变砖（首次刷机且没有旧 App 的情况除外，那种只能停在 Loader 等人救）。
+
+### 8.11 已知边界：`IDLE` 时 App 坏了不会自动回滚
+
+现状：
+
+```text
+state = IDLE，active_ok 失败
+→ 最后的 if 不成立，target 保持 LOADER
+→ 停住等人救
+```
+
+备份区里明明有旧版，但不会被使用。因为 `RESTORING` 只在两个地方被设置：
+
+```text
+① INSTALLING 时 pending_ok 失败
+② TRIAL 时 attempts >= 3 或新 App 校验失败
+```
+
+两个都属于"升级过程中出事"，有明确的"退回哪一版"语义。而运行期 App 损坏原因不明（Flash 硬件问题？被改写？），系统不擅自行动。
+
+改进方向见 GitHub issue：`feature: IDLE/DOWNLOADING 下 App 校验失败时自动从备份回滚`。
+
+### 8.12 自测 5 题
+
+```text
+1. 上电后两份元数据，凭什么选其中一份？比的是什么字段？
+   → seq 更大的那份；比的是副本序号，不是 App 版本号
+
+2. 元数据四道门全过，能说明内部 Flash 的 App 是好的吗？
+   → 不能。App 要靠 active_ok 单独验（size + CRC + 向量表）
+
+3. state=READY 但 pending_ok 失败，最终跳哪个？
+   → clear_pending 退回 IDLE → active_ok 通过 → 跳旧 App
+
+4. state=TRIAL，attempts>=3 且 backup_ok 也失败，会怎样？
+   → goto done，停 Loader。注意不是"超时"，是计数到顶
+
+5. 要让 IDLE 下 App 坏了也能自动恢复，改哪里？
+   → 在 boot_select 开头（RESTORING 分支之前）加判断：
+     active_ok 失败且 active_size!=0 且 backup_ok → set_state(RESTORING)
+     用 active_ok 现算，不加标志位；位置必须在 RESTORING 分支之前
+```
 
 ---
 
