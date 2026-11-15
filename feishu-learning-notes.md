@@ -835,48 +835,21 @@ int metadata_save(metadata_store_t *s, metadata_t *m)
 
 ### 8.7 为什么用多个 `if` 而不是 `switch`
 
-`boot_select` 里四个 `if` 是顺序流水线，不是 `switch`。
+四段 `if` 是顺序流水线，不是互斥分支：
 
 ```c
-if (state == READY) {
-    create_backup();
-    set_state(INSTALLING);       /* 状态被改了 */
-}
-if (state == INSTALLING) {       /* 这一轮立刻进来 */
-    install();
-    set_state(TRIAL);
-}
-if (state == TRIAL) {            /* 还会进来 */
-    attempts++;
-    target = APP;
-}
+if (state == READY)      { create_backup(); set_state(INSTALLING); }
+if (state == INSTALLING) { install();       set_state(TRIAL); }
+if (state == TRIAL)      { attempts++;      target = APP; }
 ```
 
-一次上电：备份 → 安装 → 试运行，全干完。
+第一个 `if` 把状态改成 `INSTALLING` 之后，第二个 `if` 在同一次调用里立刻成立。一次上电可以连走「备份 → 安装 → 试运行」三步。
 
-换成 `switch`：
+换成裸 `switch` 一次只处理一个状态，走完三步要复位三次。
 
-```c
-switch (state) {
-case READY:
-    create_backup();
-    set_state(INSTALLING);
-    break;            /* 出去了，INSTALLING 这一轮不处理 */
-case INSTALLING:
-    ...
-}
-```
+**代价是位置即逻辑**：任何新增的状态跳转代码必须放在目标状态的 `if` 之前，否则同一轮接不上，要多一次复位。
 
-一次上电只做一件事，装完要再复位一次才能进下一步。
-
-| | 多个 `if` | `switch` |
-|---|---|---|
-| 判断依据 | 每次重新读 `state` | 进入时锁定一次 |
-| 状态中途变化 | 会落到下一个分支 | 不影响当前分支 |
-| 一次上电能走几步 | 多步 | 一步 |
-| 缺点 | 顺序有语义，放错位置就错 | 安全但慢 |
-
-代价是位置即逻辑：任何新的状态跳转代码，必须放在目标状态的 `if` 之前，否则同一轮接不上，要多一次复位。
+完整对比（含 `for(;;) + switch` 的等价写法、以及为什么顺序 `if` 不可能死循环）见 [10.1](#10-1)。
 
 ### 8.8 优雅降级：`READY` 时包坏了会怎样
 
@@ -997,6 +970,501 @@ state = IDLE，active_ok 失败
      active_ok 失败且 active_size!=0 且 backup_ok → set_state(RESTORING)
      用 active_ok 现算，不加标志位；位置必须在 RESTORING 分支之前
 ```
+
+---
+
+## 9. 存储事务详解：magic、sane 与三种返回值
+
+第 7 章是速查版，本章是展开版：讲清四个常量的来历、`sane` 七条规则各自挡什么故障，以及 `0 / 1 / -1` 三个返回值的具体后果。
+
+### 9.1 永远写另一份，保护的是「现在有效的那份」
+
+先分清两个容易搞混的东西：
+
+| 存在哪 | 存什么 | 大小 |
+|-|-|-|
+| EEPROM | 状态记录（A/B 两份镜像） | 64 字节 × 2 |
+| NOR 下载区 | 新固件包 | 1 MB |
+| NOR 备份区 | 旧 App 的副本，回滚用 | 1 MB |
+| 内部 Flash | 正在运行的 App | 1 MB |
+
+EEPROM 里的 A/B **不是「旧版本」和「新版本」**，而是同一份状态的镜像副本。它们不存固件，只存几十个数字。
+
+写另一份的原因不是回滚，而是：EEPROM 一个字节一个字节写，不是原子的。
+
+```Plaintext
+写当前有效那份，写到第 30 字节掉电
+  → 唯一一份完好的记录被毁
+  → 两份都废，停在 Loader，设备变砖
+
+写另一份，写到第 30 字节掉电
+  → 这一份毁了，无所谓
+  → 当前有效那份一个字节都没动
+```
+
+打比方：改重要文件不在原件上涂改，而是复制一份改副本，原件留到最后。
+
+### 9.2 magic 和 commit 是人挑的常量
+
+```C
+#define META_MAGIC     0x3241544Du
+#define META_COMMITTED 0xA55A5AA5u
+```
+
+magic 由 4 个 ASCII 字符换出来：
+
+```Plaintext
+想看到的文本     M    A    T    2
+ASCII 十六进制   4D   41   54   32
+拼成小端 uint32  32 54 41 4D  →  0x3241544D
+```
+
+小端是低字节存在低地址，所以 EEPROM 偏移 0\~3 是 `4D 41 54 32`，hex dump 一看就是 `MAT2`。
+
+| 理由 | 说明 |
+|-|-|
+| 可读 | 抓 EEPROM 内容时一眼看出这块是不是元数据 |
+| 带版本 | 末尾的 2 是格式版本，老版本是别的值，升级后旧记录不会被误认 |
+| 不撞空白 | 全新 EEPROM 全 FF、擦除后全 00，都跟 4D 41 54 32 差得远 |
+
+commit 的位模式：
+
+```Plaintext
+A5 5A 5A A5  =  1010 0101  0101 1010  0101 1010  1010 0101
+```
+
+交替模式，既不是全 1 也不是全 0，空白区 `FF FF FF FF` 或全零区 `00 00 00 00` 都不可能碰巧等于它。
+
+同类常量到处都有：ELF 的 `0x7F 'E' 'L' 'F'`、PNG 的 `89 50 4E 47`。作用是让「读错地方」几乎不可能发生。
+
+### 9.3 四道门各管什么
+
+| 门 | 回答的问题 | 防什么 |
+|-|-|-|
+| `magic` | 这块数据是我的吗 | 读错区域、空白 EEPROM、旧格式 |
+| `commit` | 写到最后一步了吗 | 写到一半掉电 |
+| `CRC` | 字节坏了吗 | 传输或存储损坏 |
+| `sane` | 内容讲得通吗 | 自己代码写错，写入荒唐值 |
+
+前两个是状态标记，后两个是内容检查。四个全过才算有效记录。
+
+### 9.4 sane 七条规则
+
+```C
+static int sane(const metadata_t *m)
+{
+    /* ① 单字段范围 */
+    if (m->state > UPDATE_RESTORING ||
+        m->active_size > APP_SIZE ||
+        m->pending_size > APP_SIZE ||
+        m->boot_attempts > MAX_BOOT_ATTEMPTS)
+        return 0;
+
+    /* ② 保留位必须为 0 */
+    if (m->reserved[0] || m->reserved[1] || m->reserved[2])
+        return 0;
+
+    /* ③ 没有 App ⇒ 版本、CRC、min_version 也必须是 0 */
+    if (m->active_size == 0u) {
+        if (m->active_version || m->active_crc || m->min_version)
+            return 0;
+    }
+    /* ④ 有 App ⇒ 大小至少 8、版本非 0、min_version 等于当前版本 */
+    else if (m->active_size < 8u ||
+             m->active_version == 0u ||
+             m->min_version != m->active_version)
+        return 0;
+
+    /* ⑤ IDLE / DOWNLOADING ⇒ 不许有半截的待装包 */
+    if (m->state == UPDATE_IDLE || m->state == UPDATE_DOWNLOADING)
+        return m->pending_version == 0u &&
+               m->pending_size == 0u &&
+               m->pending_crc == 0u &&
+               m->boot_attempts == 0u;
+
+    /* ⑥ 有待装包 ⇒ 版本必须比现在高，也比最低版本高 */
+    if (m->pending_size < 8u ||
+        m->pending_version <= m->min_version ||
+        m->pending_version <= m->active_version)
+        return 0;
+
+    /* ⑦ 说正在回滚 ⇒ 必须真的有旧 App 可回滚 */
+    if (m->state == UPDATE_RESTORING && m->active_size == 0u)
+        return 0;
+
+    return 1;
+}
+```
+
+| 规则 | 挡住的荒唐记录 | 不挡会怎样 |
+|-|-|-|
+| ① | `state = 99` | switch 掉到 default，行为未定义 |
+| ② | 保留位是随机值 | 将来扩展时旧数据被误解释 |
+| ③ | `size=0` 却有 `version=3` | 矛盾，不知道该不该跳 App |
+| ④ | `min_version` 不等于 `active_version` | 防回滚基线错乱，可能装回旧版本 |
+| ⑤ | `IDLE` 却有 `pending_version` | Bootloader 去装一个不存在的包 |
+| ⑥ | `pending_version` 不比现在高 | 降级攻击：刷回有漏洞的旧版本 |
+| ⑦ | `RESTORING` 但没有 active | 回滚时找不到源，卡死 |
+
+推导方法：为每个 `state` 列出「此时哪些字段必须是什么」，得到一张表，把表写成 `if` 就是 `sane`。6 个状态所以能看到 7 条检查。
+
+关于版本号要说清楚：设备**不知道服务器上的最新版本是几**。它手里只有 `active_version`、`pending_version`、`min_version` 三个本地数字，所以规则只能是相对比较（必须比现在高、必须不低于回滚基线），不可能是「是不是最新」。
+
+⑥ 里的两条判断在合法记录中其实等价（第 ④ 条已要求 `min_version == active_version`），保留两条是防御性冗余：万一有人只改了 `active_version` 没改 `min_version`，单靠一条就绕过去了。
+
+`min_version` 在 `boot_confirm` 里跟着抬高：
+
+```C
+m.active_version = m.pending_version;
+m.min_version    = m.active_version;   /* 防回滚基线往上走一格 */
+```
+
+### 9.5 CRC 对，但状态不自洽
+
+一条记录写着 `state = READY` 但 `pending_size = 0`：
+
+```Plaintext
+偏移  8  state         READY      ← 含义是「包下完了，等着安装」
+偏移 28  pending_size  0          ← 含义是「这个包是 0 字节」
+偏移 56  crc           正确        ← 这 64 字节确实是那么写进去的
+```
+
+CRC 算的是偏移 0\~55 这 56 个字节，一个不少，所以一定算得出来也确实是对的。它不关心这些字节代表什么意义。
+
+后果：`install` 先擦掉整个 App 区，然后 `while (off < 0)` 一次都不执行，最后校验空镜像失败，设备卡在 Loader。一个 0 字节的包把好好的旧固件擦掉了。
+
+拦它的就是 `sane` 里这一行：
+
+```C
+if (m->pending_size < 8u || ...) return 0;
+```
+
+### 9.6 0 / 1 / -1：三个返回值的后果
+
+`read_copy` 有三种返回，不是两种：
+
+| 返回 | 判据 | 通俗说 | 重试有用吗 |
+|-|-|-|-|
+| -1 | `eeprom.read()` 返回非 0 | 抽屉拉不开，一个字节都没读到 | 有用，抖动重试常好 |
+| 0 | 读到了但 magic / commit / CRC / sane 任一不过 | 拉出来了，是废纸 | 没用，它确实坏了 |
+| 1 | 四项全过 | 好纸条 | — |
+
+两份组合起来：
+
+| A 读到 | B 读到 | load 返回 | 说明 |
+|-|-|-|-|
+| -1 | 任意 | -1 | 有一份读不出来，全盘失败 |
+| 任意 | -1 | -1 | 同上 |
+| 0 | 0 | 0 | 两份都废纸，正常（新板子） |
+| 1 | 0 | 1，选 A | 只有 A 能用 |
+| 0 | 1 | 1，选 B | 只有 B 能用 |
+| 1 | 1 | 1，选 seq 大的 | 两份都好，比谁新 |
+
+写路径拿到返回值之后：
+
+| have | 写哪一份 | 新序号 | 为什么 |
+|-|-|-|-|
+| -1 | 不写 | — | 不知道现状，不能动 |
+| 0 | A（偏移 0） | 1 | 两份都废，写哪都一样 |
+| 1，当前是 A | B | A.seq + 1 | 永远写另一份 |
+| 1，当前是 B | A | B.seq + 1 | 永远写另一份 |
+
+### 9.7 为什么 -1 必须中止，不能当成 0
+
+假设真实情况：A 是 `seq=5` 的 `IDLE`，B 是 `seq=6` 的 `READY`（新包已验收，等着复位安装）。
+
+此时读 B 偶发 I2C 失败。如果把它当 0（「B 是废纸」）处理：
+
+```Plaintext
+判定：B 无效 → 用 A
+当前最大 seq = 5
+下次写 → 写到 B，seq = 6
+B 里那条 READY 被覆盖，没了
+```
+
+NOR 里新固件包还在，但 EEPROM 里没有任何一条记录说「有个包等安装」。Bootloader 上电读到 `IDLE`，什么都不做。用户看到的现象是：进度条走完了，重启后还是老版本，没有报错，没有日志。
+
+更糟的是序号也乱了：程序以为最大是 5，新记录写成 `seq=6`，而原来 B 里那条也是 `seq=6`。以后可能出现**两条 seq 相同、内容不同**的记录，那时只能报错，从此每次上电都返回 -1，设备卡死在 Loader。
+
+```C
+if (ra < 0 || rb < 0) return -1;             /* 任何一份读失败，整个 load 失败 */
+...
+have = metadata_load_ex(s, &current, &index);
+if (have < 0) return -1;                     /* save 直接拒绝写 */
+```
+
+同一个原则的第二个体现：
+
+```C
+if (delta == 0u && memcmp(&a, &b, sizeof a) != 0) return -1;  /* 序号同内容不同，不猜 */
+if (delta == 0x80000000u) return -1;                         /* 差半圈，不猜 */
+```
+
+<callout emoji="💡">
+看不清一份文件，不等于那份文件是白纸。在这个模块里，所有「不确定」的分支都是返回 -1，没有一个分支是「猜一个继续」。宁可让上层报错重试，也不要在不确定的状态下动 EEPROM。
+</callout>
+
+## 10. Bootloader 上电决策：流水线、幂等与健康确认
+
+第 8 章讲清上电主线和决策顺序，本章展开三个容易讲不清的细节：四段 `if` 为什么不是 `switch`、备份和安装为什么都能重做、以及新 App 靠什么证明自己健康。
+
+### 10.1 四个 if 是流水线，不是 switch
+
+```C
+if (m.state == UPDATE_READY)      { ... set_state(INSTALLING); }
+if (m.state == UPDATE_INSTALLING) { ... set_state(TRIAL); }
+if (m.state == UPDATE_TRIAL)      { ... }
+if (m.state == UPDATE_RESTORING)  { ... }
+```
+
+这不是笔误，也没有 `else if`。第一个 `if` 把状态改成 `INSTALLING` 之后，第二个 `if` 在同一次调用里立刻成立。
+
+```Plaintext
+上电 → 读到 READY
+     → 备份旧 App
+     → 状态改 INSTALLING（已落盘）
+     → 立刻继续：装新包到内部 Flash
+     → 状态改 TRIAL（已落盘）
+     → 立刻继续：试运行计数 +1（已落盘）
+     → 跳转新 App
+```
+
+裸 `switch` 一次只处理一个状态，`break` 一出函数就结束，走完三步要复位三次。要用 `switch` 就必须套循环：
+
+```C
+for (;;) {
+    switch (m.state) {
+    case UPDATE_READY:
+        ...
+        set_state(UPDATE_INSTALLING);
+        continue;                  /* 回到循环头重新判断 */
+    case UPDATE_INSTALLING:
+        ...
+        set_state(UPDATE_TRIAL);
+        continue;
+    case UPDATE_TRIAL:
+        ...
+        return BOOT_TARGET_APP;
+    case UPDATE_RESTORING:
+        ...
+        continue;
+    default:
+        return active_ok(b, &m) ? BOOT_TARGET_APP : BOOT_TARGET_LOADER;
+    }
+}
+```
+
+这是等价写法，功能一模一样。作者选展开的原因：
+
+| 写法 | 可能死循环 | 意图是否明显 |
+|-|-|-|
+| `switch` + `for(;;)` | 可能，状态转移写错就卡死 | 明显 |
+| 四段顺序 `if` | **不可能**，最多执行 4 个块 | 容易误读成互斥 |
+
+在「一次上电必须做出决定」的代码里，能不能死循环是硬指标。Bootloader 卡在循环里，等于设备变砖。
+
+<callout emoji="💡">
+看这段代码要记住：这四个 if 是接着走的，不是选其中一个。
+</callout>
+
+### 10.2 状态时间线：谁在跑，什么时候跑
+
+| # | 谁在跑 | 触发 | 状态 | 动作 |
+|-|-|-|-|-|
+| 1 | App | 0x34 | DOWNLOADING | 擦 NOR 下载区 |
+| 2 | App | 0x36 × N | DOWNLOADING | 数据写进 NOR 下载区 |
+| 3 | App | 0x37 | → READY | 校验整包，写 EEPROM。什么都没备份 |
+| 4 | — | 0x11 01 | READY | 掉电重启 |
+| 5 | Bootloader | — | READY | 读 EEPROM，看到 READY |
+| 6 | Bootloader | — | READY | create_backup：内部 Flash → NOR 备份区 |
+| 7 | Bootloader | — | → INSTALLING | 落盘 |
+| 8 | Bootloader | — | INSTALLING | install：擦内部 App 区，NOR 下载区 → 内部 Flash |
+| 9 | Bootloader | — | → TRIAL | 落盘 |
+| 10 | Bootloader | — | TRIAL | boot_attempts + 1 落盘 → 跳转 |
+| 11 | 新 App | — | TRIAL | 自检 |
+| 12 | 新 App | — | → IDLE | boot_confirm |
+
+### 10.3 两段搬运，方向相反
+
+```Plaintext
+第 6 步：内部 Flash  →  NOR 备份区     （备份，留退路）
+第 8 步：NOR 下载区  →  内部 Flash       （安装，换新）
+```
+
+「下载」是从 PC 进 NOR，「安装」是从 NOR 进内部 Flash，两个完全不同的搬运方向。
+
+为什么备份不能在 App 里做：`0x37` 那一刻 App 还在内部 Flash 里运行。备份要读内部 Flash 没问题，但接下来安装要擦掉整个 App 区，而正在执行的代码就在里面。一擦，CPU 当场取指失败，程序跑飞。
+
+```Plaintext
+在 App 里：把包放进 NOR，写个 READY，然后自己请求复位
+                              ↓
+在 Bootloader 里：App 已经不跑了，可以放心擦
+```
+
+<callout emoji="💡">
+「运行中的 App 不能擦自己」是整条链路分成两段的根本原因。上三层（PC → CAN → UDS）只负责把包安全送进 NOR，下两层（Bootloader）负责把包安全装进内部 Flash，中间靠一个 READY 状态解耦。
+</callout>
+
+### 10.4 幂等：每一步都能重做
+
+装到一半掉电，再次上电读到 `INSTALLING`：
+
+```C
+if (m.state == UPDATE_INSTALLING) {
+    if (m.active_size && !backup_ok(b, &m)) goto done;   /* ① 备份还在吗 */
+    if (!pending_ok(b, &m)) {                            /* ② 待装的包还在吗 */
+        ... set_state(UPDATE_RESTORING) ...              /* 不在 → 用备份回滚 */
+    } else {
+        if (install(b, DOWNLOAD_OFFSET, m.pending_size, m.pending_crc)) goto done;
+        if (set_state(b, &m, UPDATE_TRIAL)) goto done;
+    }
+}
+```
+
+| 情况 | 结果 |
+|-|-|
+| 备份坏 + 有旧 App | `goto done`，停在 Loader，无源可恢复 |
+| 备份好 + 包坏 | `RESTORING`，从备份还原旧 App |
+| 备份好 + 包好 | 重装 → `TRIAL` |
+
+不需要续传，因为 `install` 第一行就把整个 App 区擦掉：
+
+```C
+if (b->internal.erase(b->internal.user, APP_OFFSET, APP_SIZE)) return -1;
+```
+
+上次装到 300 KB 的内容全被擦除，重做就是从头做一遍。这正是只靠一个 `state` 字段就能撑住恢复逻辑的原因：内部 Flash 反正每次都是整块重写。
+
+备份同样幂等。备份做完了但状态还没改成 `INSTALLING` 就掉电，下次上电还会再做一遍备份——`create_backup` 先把整个备份区擦干净再重写，不是追加：
+
+```Plaintext
+第一次：擦 → 写 300 KB → 校验通过
+掉电
+第二次：擦 → 写 300 KB → 校验通过
+```
+
+这期间内部 Flash 里的旧 App 一个字节都没动，所以每次都能通过 `active_ok`，备份可以无限重做。
+
+<callout emoji="💡">
+所有「可能被打断」的步骤，都设计成「重做一遍就好」；所有「不能重来」的动作，都放到最后。整个流程里没有一步是「只能做一次、做错就完了」。
+</callout>
+
+### 10.5 TRIAL 计数必须先落盘
+
+```C
+next = m; next.boot_attempts++;
+/* A failed counter commit MUST NOT launch an untracked trial. */
+if (metadata_save(b->store, &next)) goto done;
+m = next; target = BOOT_TARGET_APP; goto done;
+```
+
+`MAX_BOOT_ATTEMPTS = 3`，判断条件是 `>=`：
+
+| 第几次上电 | 读到 attempts | 达标？ | 做什么 |
+|-|-|-|-|
+| 1 | 0 | 否 | 写 1 → 跳转 → 死机 → 复位 |
+| 2 | 1 | 否 | 写 2 → 跳转 → 死机 → 复位 |
+| 3 | 2 | 否 | 写 3 → 跳转 → 死机 → 复位 |
+| 4 | 3 | **是** | 不再跳转，进入 RESTORING 回滚 |
+
+新 App 最多被启动 3 次，第 4 次上电时判定失败并回滚。
+
+如果落盘失败也照样跳转：
+
+```Plaintext
+读到 attempts=0 → 写 1（失败，还是 0）→ 跳转 → 死机 → 复位
+读到 attempts=0 → 写 1（失败，还是 0）→ 跳转 → 死机 → 复位
+读到 attempts=0 → ……
+```
+
+永远试，永远回不了滚，设备变成一颗永久重启的砖。
+
+<callout emoji="💡">
+跳转之前，这次的尝试必须已经在 EEPROM 里留下了痕迹。留不下痕迹，就不许跳。宁可停在 Loader，也不做一次「没人知道」的启动。
+</callout>
+
+### 10.6 健康确认 = 喂狗权
+
+App 主循环每 500 ms 判断一次：
+
+```C
+if (!confirmed && storage.storage_ready && ota_bsp_app_healthy() &&
+    boot_accept_app_health(&storage.boot) == 0)
+    confirmed = 1;
+```
+
+只要 `confirmed` 还是 0，就不喂狗。
+
+```Plaintext
+上电 → App 启动 → 自检
+        │
+        ├─ 自检过 → 确认成功 → confirmed=1 → 开始喂狗 → 活着
+        │
+        └─ 自检不过 / 卡死 / 不确认 → 一直不喂狗
+                                      → 看门狗超时
+                                      → 硬件复位
+                                      → 重新走 boot_select
+                                      → attempts + 1
+```
+
+坏 App 不需要谁去杀它，它自己喂不了狗，就死了。三次之后 `attempts >= 3`，回滚。
+
+这比「跑 30 秒看看」强在卡死也能被发现：计时器方案里，如果 App 卡在死循环，谁去数那 30 秒？看门狗不需要 App 配合，它只看有没有人喂。
+
+两个细节：
+
+```C
+int ota_firmware_watchdog_service(void) { return 0; }   /* 永远不喂 */
+```
+
+注释写着 *App storage/ACK callbacks must not keep an unhealthy App alive.* 只有主循环的健康决策能喂狗。否则一个坏 App 只要不停读写 EEPROM，就能靠回调喂狗续命。
+
+健康检查有 10 秒上限（`OTA_APP_HEALTH_DEADLINE_MS`）。超过这个时间还没确认，就不再给确认的机会，直接按失败处理。
+
+`boot_accept_app_health` 有两种身份：
+
+| 当前状态 | 做什么 |
+|-|-|
+| `TRIAL` | 真的确认，active 更新成新版本，state 变 IDLE |
+| `IDLE` / `DOWNLOADING` | 只校验当前 App 的 CRC，**不改任何状态** |
+| `READY` / `INSTALLING` / `RESTORING` | 一律拒绝 |
+
+第二行是为了解决一个具体问题：下载中途断电后，元数据停在 `DOWNLOADING`，但旧 App 还在正常跑。如果这时候不认它的健康状态，旧 App 就永远喂不了狗，设备会被自己的看门狗反复打死。
+
+### 10.7 三个必须承认的边界
+
+**边界一：首次刷机失败会变砖**
+
+```C
+if (m.active_size && create_backup(b, &m)) goto done;
+```
+
+`active_size = 0` 时 `&&` 短路，备份直接跳过。试运行失败时因为 `m.active_size == 0u`，没有旧 App 可回，只能清掉 `pending`、回 `IDLE`、停进 Loader 等人来救。
+
+所以真实产品会在出厂前把 App 和一条 `IDLE` 记录一起烧进去，让设备从一开始就有可回滚的基线。
+
+**边界二：确认之后不再回滚**
+
+`boot_confirm` 把 `pending` 全清、`state` 变 `IDLE` 之后，状态机里没有任何一个分支会走 `RESTORING`。备份文件还在 NOR 里，但没有任何代码会去读它——回滚的开关被关掉了。
+
+之后如果 CAN 总线短路：不喂狗 → 复位 → 读到 `IDLE` → `active_ok` 通过（CAN 短路不会改内部 Flash）→ 又跳同一个 App → 又复位，无限重启。
+
+| 场景 | 回滚有用吗 |
+|-|-|
+| 新固件漏初始化某个外设 | 有用，旧固件没这 bug |
+| 新固件内存越界导致死机 | 有用，旧固件是好的 |
+| CAN 总线短路 | 没用，换固件也没用 |
+| 电源不稳 | 没用 |
+
+前两种发生在确认之前的自检阶段，会被 `TRIAL` 的计数机制拦住；后两种发生在确认之后，任何固件都救不了。
+
+<callout emoji="💡">
+boot_confirm 是一次性的门槛检查，不是持续监控。过了门槛它就相信你；之后出问题，它只负责让设备停下来，不再替你换一条路。
+</callout>
+
+**边界三：CRC 对不代表状态自洽**
+
+见 9.5 与 9.6：CRC 管「这 64 个字节是不是我写的那 64 个字节」，`sane` 管「这 64 个字节描述的状态是不是自洽、合法」。前者看字节，后者看语义，两者管的范围不重叠。
 
 ---
 
