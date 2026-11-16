@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UDS 刷写报文级走查：14 步</title>
+<style>
+  :root{
+    --bg:#0f1218; --panel:#161b24; --line:#242c3a; --txt:#e6ecf5; --dim:#8b98ab;
+    --flash:#4a9eff; --dl:#ff9f43; --backup:#2ed39a; --ee:#b48cff;
+    --ok:#2ed39a; --warn:#ffcc4d; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:radial-gradient(1200px 600px at 50% -10%,#1b2433,#0f1218 60%);
+    color:var(--txt);font:15px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 6px;letter-spacing:.5px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:22px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap}
+  .badge{font-size:12px;color:var(--dim);background:#1d2431;border:1px solid var(--line);padding:4px 10px;border-radius:999px}
+  .stepno{font-weight:600;font-size:14px}
+  .title{font-size:18px;font-weight:600;margin:6px 0 14px}
+  .msgrow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+  @media(max-width:760px){.msgrow{grid-template-columns:1fr}}
+  .msg{background:#111722;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .msg .who{font-size:11px;color:var(--dim);letter-spacing:1px;margin-bottom:6px}
+  .hex{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;word-break:break-all}
+  .req{border-left:3px solid var(--flash)}
+  .resp{border-left:3px solid var(--ok)}
+  .resp.neg{border-left-color:var(--bad)}
+  ul.pts{margin:0;padding-left:20px}
+  ul.pts li{margin:5px 0}
+  ul.pts code,.hex code{background:#1d2532;padding:1px 5px;border-radius:4px;font-size:13px}
+  .store{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0 8px}
+  @media(max-width:860px){.store{grid-template-columns:repeat(2,1fr)}}
+  .box{background:#111722;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:88px}
+  .box h3{margin:0 0 8px;font-size:12px;letter-spacing:.5px;font-weight:600}
+  .box .val{font-size:13px;line-height:1.6;color:var(--txt);word-break:break-all}
+  .box.flash{border-top:3px solid var(--flash)} .box.flash h3{color:var(--flash)}
+  .box.dl{border-top:3px solid var(--dl)}     .box.dl h3{color:var(--dl)}
+  .box.bk{border-top:3px solid var(--backup)} .box.bk h3{color:var(--backup)}
+  .box.ee{border-top:3px solid var(--ee)}     .box.ee h3{color:var(--ee)}
+  .note{margin-top:14px;background:#14202b;border:1px solid #1f3a4d;border-radius:10px;padding:10px 12px;font-size:13px;color:#bcd3e6}
+  .note b{color:#e6f3ff}
+  .nav{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:10px}
+  button{
+    background:#1d2532;color:var(--txt);border:1px solid var(--line);border-radius:9px;
+    padding:9px 16px;font-size:14px;cursor:pointer;transition:.15s;
+  }
+  button:hover:not(:disabled){background:#26303f;border-color:#3a475a}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  .dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;flex:1}
+  .dot{width:8px;height:8px;border-radius:50%;background:#2a3342;cursor:pointer;transition:.15s}
+  .dot.on{background:var(--flash);transform:scale(1.35)}
+  .dot.done{background:#3b6ea8}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--dim);font-size:12px;margin-top:16px}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+  kbd{background:#1d2532;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;font-size:12px;font-family:inherit}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>UDS 刷写：报文级 14 步</h1>
+  <div class="sub">左边是总线上真实收发的字节，右边是 ECU 内部动作，下面四个框是四个存储区此刻的状态。用 <kbd>←</kbd> <kbd>→</kbd> 翻页。</div>
+
+  <div class="card">
+    <div class="topbar">
+      <div class="stepno" id="stepno">第 1 / 14 步</div>
+      <div class="badge" id="tag">起点</div>
+    </div>
+    <div class="title" id="title"></div>
+
+    <div class="msgrow">
+      <div class="msg req"><div class="who">PC → ECU</div><div class="hex" id="req"></div></div>
+      <div class="msg resp" id="respBox"><div class="who">ECU → PC</div><div class="hex" id="resp"></div></div>
+    </div>
+
+    <ul class="pts" id="pts"></ul>
+
+    <div class="store">
+      <div class="box flash"><h3>内部 Flash（App 区）</h3><div class="val" id="v-flash"></div></div>
+      <div class="box dl"><h3>NOR 下载区</h3><div class="val" id="v-dl"></div></div>
+      <div class="box bk"><h3>NOR 备份区</h3><div class="val" id="v-bk"></div></div>
+      <div class="box ee"><h3>EEPROM（元数据）</h3><div class="val" id="v-ee"></div></div>
+    </div>
+
+    <div class="note" id="note"></div>
+
+    <div class="nav">
+      <button id="prev">← 上一步</button>
+      <div class="dots" id="dots"></div>
+      <button id="next">下一步 →</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i style="background:var(--flash)"></i>内部 Flash：正在运行的 App</span>
+    <span><i style="background:var(--dl)"></i>下载区：新包暂存</span>
+    <span><i style="background:var(--backup)"></i>备份区：旧 App 的退路</span>
+    <span><i style="background:var(--ee)"></i>EEPROM：几十字节的状态记录</span>
+  </div>
+</div>
+
+<script>
+const steps = [
+  {
+    tag:'起点', title:'v1 正常运行，没有待装包',
+    req:'—', resp:'—',
+    pts:[
+      '内部 Flash 里跑着 v1，EEPROM 记录 <code>state=IDLE</code>',
+      'NOR 下载区是空的；备份区还留着上次升级时的 v0',
+      '此时可以开始新的下载：<code>0x34</code> 允许从 IDLE 或 DOWNLOADING 进入'
+    ],
+    flash:'v1（运行中）', dl:'空', bk:'v0（上次留下的）', ee:'IDLE',
+    note:'<b>四个存储区各管一件事：</b>内部 Flash 放正在跑的代码，下载区放新包，备份区放旧 App，EEPROM 只放状态。'
+  },
+  {
+    tag:'0x10', title:'切到编程会话',
+    req:'10 02', resp:'50 02 00 32 01 F4',
+    pts:[
+      '只接受子功能 01/02/03，其他回 <code>7F 10 12</code>',
+      '切会话会清掉 <code>unlocked / seed / dl_active</code>，权限归零',
+      '最后四个字节是 P2=50 ms、P2*=5000 ms，写给诊断仪的定时器'
+    ],
+    flash:'v1（运行中）', dl:'空', bk:'v0', ee:'IDLE',
+    note:'会话是<b>权限天花板</b>：不在编程会话里，<code>0x34/0x36/0x37/0x31</code> 一律回 0x22。'
+  },
+  {
+    tag:'0x27', title:'要种子：发出挑战',
+    req:'27 01', resp:'67 01 3F 2A 91 C4',
+    pts:[
+      '种子由 <code>request_count</code> 算出，并保证不为 0',
+      '种子为 0 有特殊含义：<b>已经解锁</b>，不用再算',
+      '这一步只是发题，还没验证任何东西'
+    ],
+    flash:'v1（运行中）', dl:'空', bk:'v0', ee:'IDLE',
+    note:'种子的作用是让每次解锁的钥匙都不同，防止录下一条 <code>27 02</code> 反复重放。'
+  },
+  {
+    tag:'0x27', title:'交钥匙：验证',
+    req:'27 02 8D 17 02 9E', resp:'67 02',
+    pts:[
+      'key = ((seed ^ A5A5A5A5) 循环左移 7 位) + 9E3779B9',
+      '错一次种子立即作废；连错 3 次锁 10 秒，回 <code>7F 27 36</code>',
+      '成功后 <code>unlocked=1</code>，种子清零'
+    ],
+    flash:'v1（运行中）', dl:'空', bk:'v0', ee:'IDLE',
+    note:'钥匙算错时回 <code>7F 27 35</code>；超过尝试次数回 <code>7F 27 36</code>。两个不是一回事。'
+  },
+  {
+    tag:'0x34', title:'登记：先落盘，再擦除',
+    req:'34 00 44 08 01 00 00 00 00 05 DC',
+    resp:'74 20 02 00',
+    pts:[
+      '五道门：11 字节 / <code>00 44</code> / 编程会话 / 已解锁 / 没有进行中的下载',
+      '地址必须等于 <code>0x08010000</code>，但它只是<b>逻辑地址</b>，实际写 NOR 下载区',
+      '顺序关键：<b>先把 state 写成 DOWNLOADING 落盘，再擦 NOR</b>'
+    ],
+    flash:'v1（运行中）', dl:'空（刚被擦掉）', bk:'v0', ee:'DOWNLOADING',
+    note:'<b>先落盘再擦除：</b>如果顺序反过来，擦到一半断电时状态还是 IDLE，会误判"没有下载在进行"。'
+  },
+  {
+    tag:'0x36', title:'第 1 块：写进下载区',
+    req:'36 01 [510 字节]', resp:'76 01',
+    pts:[
+      '块号必须等于"期待的下一个"，初始是 1',
+      '写到下载区偏移 0，<code>dl_written</code> 变成 510',
+      '记下上一块的块号、偏移、长度，用于识别重传'
+    ],
+    flash:'v1（运行中）', dl:'已收 510 B', bk:'v0', ee:'DOWNLOADING',
+    note:'<code>0x36</code> 只搬字节：<b>不解包、不算 CRC、不碰内部 Flash</b>。'
+  },
+  {
+    tag:'0x36', title:'第 2 块：继续累加',
+    req:'36 02 [510 字节]', resp:'76 02',
+    pts:[
+      '写到偏移 510，<code>dl_written</code> = 1020',
+      '块号加 1 变成 3；<code>0xFF</code> 之后是 <code>0x00</code>，合法回绕',
+      '长度检查用 <code>dl_size - dl_written</code>，避免 uint32 相加溢出'
+    ],
+    flash:'v1（运行中）', dl:'已收 1020 B', bk:'v0', ee:'DOWNLOADING',
+    note:'块号只认两种：<b>我期待的下一个</b>、<b>我刚收过的那个</b>。其余一律 <code>7F 36 73</code>。'
+  },
+  {
+    tag:'0x36', title:'应答丢了，PC 重发同一块',
+    req:'36 02 [同一份 510 字节]', resp:'76 02',
+    pts:[
+      '块号等于"刚收过的那个" → 进入<b>重传分支</b>',
+      '从 NOR 读回上一块，逐字节比对，一致就直接回 <code>76 02</code>',
+      '<code>dl_written</code> 保持 1020，<b>绝不重复累加</b>',
+      '若同号但内容不同 → <code>7F 36 73</code>，因为这是矛盾不是重传'
+    ],
+    flash:'v1（运行中）', dl:'已收 1020 B（没变）', bk:'v0', ee:'DOWNLOADING',
+    note:'<b>为什么读 NOR 而不是留内存缓存：</b>省 RAM，而且读回来本身就是一次回读校验，能发现上一块写坏了。'
+  },
+  {
+    tag:'0x36', title:'第 3 块：最后一块不满',
+    req:'36 03 [480 字节]', resp:'76 03',
+    pts:[
+      '总长 1500，还差 480，正好收齐',
+      '若对方塞满 510，多出的 30 字节会被截掉：<b>只取还缺的数量</b>',
+      '<code>dl_written</code> = 1500 = <code>dl_size</code>'
+    ],
+    flash:'v1（运行中）', dl:'已收 1500 B（完整）', bk:'v0', ee:'DOWNLOADING',
+    note:'最后一帧装不满是正常的。接收方以"我还缺多少"为准，不盲目相信对方声明的长度。'
+  },
+  {
+    tag:'0x37', title:'验收：七步全过才回 77',
+    req:'37', resp:'77',
+    pts:[
+      '七步：收齐 / 重读包头 / 长度自洽 / 整包 CRC（从 NOR 读回）/ 状态仍是 DOWNLOADING / 版本严格更高 / 落盘 READY',
+      '<code>77</code> 是<b>安全点</b>：READY 已进 EEPROM，此后断电也不用重传',
+      '<code>77 ≠ 装好了</code>，此刻内部 Flash 里还是 v1'
+    ],
+    flash:'v1（运行中）', dl:'v2（完整，待安装）', bk:'v0', ee:'READY',
+    note:'<b>版本必须严格更高：</b>同版本重刷也拒绝（<code>7F 37 31</code>），因为没意义还白耗 Flash 寿命。'
+  },
+  {
+    tag:'0x11', title:'请求复位：交接棒',
+    req:'11 01', resp:'51 01',
+    pts:[
+      '只置 <code>reset_requested=1</code>，不当场复位',
+      '要等 ISO-TP 发完、CAN 硬件邮箱排空，否则 <code>51 01</code> 会残缺或丢失',
+      '复位是<b>有序重启</b>：RAM 清空，EEPROM / NOR / 内部 Flash 全部保留'
+    ],
+    flash:'v1（运行中）', dl:'v2（完整，待安装）', bk:'v0', ee:'READY',
+    note:'<b>为什么必须复位：</b>安装要擦掉整个 App 区，而执行擦除的代码就在里面。只能让 CPU 从 Bootloader 重新开始。'
+  },
+  {
+    tag:'Bootloader', title:'备份旧 App（只读，不写）',
+    req:'—（复位后没有 UDS 参与）', resp:'—',
+    pts:[
+      '读 EEPROM 看到 READY，Bootloader 开始干活',
+      '备份：内部 Flash 的 v1 → NOR 备份区，覆盖旧的 v0',
+      '<b>这一步只读内部 Flash，一个字节都不写</b>，中途断电也不伤源头'
+    ],
+    flash:'v1（原样未动）', dl:'v2（完整）', bk:'v1（刚备份）', ee:'READY → INSTALLING',
+    note:'备份完立刻把状态改成 <code>INSTALLING</code> 落盘。若这步掉电，下次重做一遍备份即可——擦干净重写，幂等。'
+  },
+  {
+    tag:'Bootloader', title:'安装：擦内部 Flash，搬新包',
+    req:'—', resp:'—',
+    pts:[
+      '先擦整个 App 区，再从下载区从头搬 1500 字节',
+      '擦到一半断电也没事：下次读到 <code>INSTALLING</code>，整个流程重做',
+      '装完校验内部 Flash 的 CRC，落盘 <code>TRIAL</code>'
+    ],
+    flash:'v2（刚装好，未验证）', dl:'v2（还在，暂时不删）', bk:'v1', ee:'TRIAL',
+    note:'<b>不续传的理由：</b>内部 Flash 已经半新半旧，没法接着装；整块擦掉重写反而简单可靠。'
+  },
+  {
+    tag:'试运行', title:'跳转、自检、确认',
+    req:'—', resp:'—',
+    pts:[
+      '跳转前先把 <code>boot_attempts+1</code> 落盘，成功才跳',
+      '新 App 自检通过 → <code>boot_confirm</code>：active 换成 v2、<code>min_version</code> 抬高、state=IDLE',
+      '若连续 3 次没报到 → <code>RESTORING</code>，从备份区把 v1 搬回来'
+    ],
+    flash:'v2（运行中，已确认）', dl:'v2（残留，可覆盖）', bk:'v1（退路仍在）', ee:'IDLE（active=v2）',
+    note:'<b>确认之后回滚窗口就关了：</b>之后 CAN 总线坏了也不会回滚，因为换固件救不了硬件。'
+  }
+];
+
+let cur = 0;
+const $ = id => document.getElementById(id);
+
+function render(){
+  const s = steps[cur];
+  $('stepno').textContent = `第 ${cur+1} / ${steps.length} 步`;
+  $('tag').textContent = s.tag;
+  $('title').textContent = s.title;
+  $('req').innerHTML = s.req;
+  $('resp').innerHTML = s.resp;
+  $('respBox').classList.toggle('neg', /^7F/.test(s.resp.trim()));
+  $('pts').innerHTML = s.pts.map(p=>`<li>${p}</li>`).join('');
+  $('v-flash').innerHTML = s.flash;
+  $('v-dl').innerHTML = s.dl;
+  $('v-bk').innerHTML = s.bk;
+  $('v-ee').innerHTML = s.ee;
+  $('note').innerHTML = s.note;
+  $('prev').disabled = cur === 0;
+  $('next').disabled = cur === steps.length-1;
+  [...$('dots').children].forEach((d,i)=>{
+    d.className = 'dot' + (i===cur?' on':(i<cur?' done':''));
+  });
+}
+
+$('dots').innerHTML = steps.map(()=>'<div class="dot"></div>').join('');
+[...$('dots').children].forEach((d,i)=> d.onclick = ()=>{cur=i;render();});
+$('prev').onclick = ()=>{ if(cur>0){cur--;render();} };
+$('next').onclick = ()=>{ if(cur<steps.length-1){cur++;render();} };
+document.addEventListener('keydown', e=>{
+  if(e.key==='ArrowLeft' && cur>0){cur--;render();}
+  if(e.key==='ArrowRight' && cur<steps.length-1){cur++;render();}
+});
+render();
+</script>
+</body>
+</html>
