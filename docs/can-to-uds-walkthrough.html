@@ -311,7 +311,7 @@
       layer:'ISO-TP',
       frames:[F.ff, F.fc, F.cfBad],
       buf:fullBuf(6, function(){return 'ff';}),
-      st:{rx_state:'IDLE', rx_len:'0', rx_got:'6', rx_sn:'1', rx_done:'0'},
+      st:{rx_state:'IDLE', rx_len:'11', rx_got:'6', rx_sn:'1', rx_done:'0'},
       chg:['r-state','r-len','r-done'],
       note:'<div class="bad"><b>ECU 的行为：</b>发现 <code>sn(3) != rx_sn(1)</code>，' +
            '把状态打回 <code>IDLE</code>，<code>rx_done</code> 保持 0，<b>静默丢弃，什么都不回</b>。' +
