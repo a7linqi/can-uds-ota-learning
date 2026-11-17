@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一帧 CAN 怎么变成一条 UDS 请求</title>
+<style>
+  :root{
+    --bg:#0f1218; --panel:#161b24; --line:#242c3a; --txt:#e6ecf5; --dim:#8b98ab;
+    --can:#4a9eff; --isotp:#b48cff; --uds:#2ed39a;
+    --ff:#ff9f43; --cf:#2ed39a;
+    --ok:#2ed39a; --warn:#ffcc4d; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:radial-gradient(1200px 600px at 50% -10%,#1b2433,#0f1218 60%);
+    color:var(--txt);font:15px/1.7 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1120px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 6px;letter-spacing:.5px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .pill{font-size:12px;padding:5px 12px;border-radius:999px;background:#1a2130;border:1px solid var(--line);color:var(--dim);cursor:pointer}
+  .pill.on{background:#233048;border-color:#3a5580;color:#cfe2ff}
+  .badge{font-size:12px;color:var(--dim);background:#1d2431;border:1px solid var(--line);padding:4px 10px;border-radius:999px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap}
+  .title{font-size:18px;font-weight:600;margin:2px 0 4px}
+  .desc{color:var(--dim);font-size:13px;margin-bottom:16px}
+
+  /* 三层 */
+  .flow{display:grid;grid-template-columns:1fr 26px 1fr 26px 1fr;align-items:center;gap:6px;margin-bottom:18px}
+  @media(max-width:760px){.flow{grid-template-columns:1fr;gap:8px}.flow .arw{display:none}}
+  .lyr{background:#111722;border:1px solid var(--line);border-radius:10px;padding:9px 12px;text-align:center;transition:.18s}
+  .lyr .n{font-size:13px;font-weight:600}
+  .lyr .d{font-size:11.5px;color:var(--dim);margin-top:2px}
+  .lyr.can.on{border-color:var(--can);background:#132234} .lyr.can .n{color:var(--can)}
+  .lyr.isotp.on{border-color:var(--isotp);background:#1e1a2e} .lyr.isotp .n{color:var(--isotp)}
+  .lyr.uds.on{border-color:var(--uds);background:#13251d} .lyr.uds .n{color:var(--uds)}
+  .arw{color:#3a475a;text-align:center;font-size:16px}
+
+  .cols{display:grid;grid-template-columns:1.05fr .95fr;gap:16px}
+  @media(max-width:880px){.cols{grid-template-columns:1fr}}
+  .box{background:#0f141d;border:1px solid var(--line);border-radius:10px;padding:12px 13px}
+  .box h3{margin:0 0 10px;font-size:12px;letter-spacing:.6px;color:var(--dim);font-weight:500}
+
+  /* 总线帧 */
+  .frame{display:grid;grid-template-columns:46px 1fr auto;gap:9px;align-items:center;
+    background:#111722;border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin-bottom:7px;
+    opacity:0;transform:translateY(4px);transition:.22s}
+  .frame.show{opacity:1;transform:none}
+  .frame .fid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--can)}
+  .frame .fb{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;letter-spacing:.4px}
+  .frame .t{font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--dim);white-space:nowrap}
+  .frame .b-ff{color:var(--ff)}
+  .frame .b-cf{color:var(--cf)}
+  .frame .b-fc{color:var(--isotp)}
+  .frame .b-ok{color:var(--uds)}
+  .frame.bad{border-color:#4a2530;background:#1e1418}
+
+  /* 缓冲 */
+  .buf{display:grid;grid-template-columns:repeat(11,1fr);gap:5px;margin:2px 0 8px}
+  @media(max-width:560px){.buf{grid-template-columns:repeat(6,1fr)}}
+  .slot{background:#0b0f15;border:1px dashed #2b3442;border-radius:6px;height:44px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:#4b5769;transition:.2s}
+  .slot .ix{font-size:9.5px;color:#3c4657;margin-top:1px}
+  .slot.ff{background:#2a1e10;border:1px solid #6a4a1e;color:var(--ff)}
+  .slot.cf{background:#0f2419;border:1px solid #1f5c3d;color:var(--cf)}
+  .slot.ff .ix,.slot.cf .ix{color:#7d8899}
+  .lg{display:flex;gap:14px;font-size:11.5px;color:var(--dim);margin-top:6px}
+  .lg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+
+  /* 状态表 */
+  table{border-collapse:collapse;width:100%;font-size:12.5px}
+  th,td{text-align:left;padding:5px 7px;border-bottom:1px solid var(--line)}
+  th{color:var(--dim);font-weight:500;font-size:11px}
+  td.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+  tr.chg td{background:#1f2a3a}
+  tr.chg td:first-child{box-shadow:inset 2px 0 0 var(--isotp)}
+
+  .note{margin-top:14px;background:#14202b;border:1px solid #1f3a4d;border-radius:10px;padding:10px 13px;font-size:13px;color:#bcd3e6}
+  .note b{color:#e6f3ff}
+  .warn{margin-top:12px;background:#2a2110;border:1px solid #4d3b16;border-radius:10px;padding:10px 13px;font-size:13px;color:#e8d6a8}
+  .bad{margin-top:12px;background:#2a1620;border:1px solid #4a2530;border-radius:10px;padding:10px 13px;font-size:13px;color:#f0bcc4}
+  code{background:#1d2532;padding:1px 5px;border-radius:4px;font-size:12.5px;font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  .nav{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:10px}
+  button{background:#1d2532;color:var(--txt);border:1px solid var(--line);border-radius:9px;
+    padding:9px 16px;font-size:14px;cursor:pointer;transition:.15s}
+  button:hover:not(:disabled){background:#26303f;border-color:#3a475a}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  ul.pts{margin:8px 0 0;padding-left:20px;font-size:13.5px}
+  ul.pts li{margin:4px 0}
+  .kbd{font-size:11px;color:#5f6b7d;margin-top:10px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>一帧 CAN 怎么变成一条 UDS 请求</h1>
+  <div class="sub">11 字节的 <code>0x34</code> 装不进 8 字节的 CAN 帧，中间是谁把它拼回来的</div>
+
+  <div class="steps" id="steps"></div>
+
+  <div class="card">
+    <div class="topbar">
+      <span class="badge" id="stepTag">第 1 / 8 步</span>
+      <span class="badge" id="stepLayer">—</span>
+    </div>
+    <div class="title" id="title"></div>
+    <div class="desc" id="desc"></div>
+
+    <div class="flow">
+      <div class="lyr can" id="lyrCan"><div class="n">CAN</div><div class="d">搬 8 字节</div></div>
+      <div class="arw">→</div>
+      <div class="lyr isotp" id="lyrIsotp"><div class="n">ISO-TP</div><div class="d">收帧拼包</div></div>
+      <div class="arw">→</div>
+      <div class="lyr uds" id="lyrUds"><div class="n">UDS</div><div class="d">认服务</div></div>
+    </div>
+
+    <div class="cols">
+      <div class="box">
+        <h3>总线上的帧（ID 0x7E0 进 / 0x7E8 出）</h3>
+        <div id="frames"></div>
+        <div class="lg">
+          <span><i style="background:var(--ff)"></i>首帧 FF</span>
+          <span><i style="background:var(--cf)"></i>连续帧 CF</span>
+          <span><i style="background:var(--isotp)"></i>流控 FC</span>
+          <span><i style="background:var(--uds)"></i>应答 SF</span>
+        </div>
+      </div>
+
+      <div class="box">
+        <h3 id="bufTitle">ISO-TP 拼装缓冲 rx_buf[11]</h3>
+        <div class="buf" id="buf"></div>
+        <h3 style="margin-top:12px">状态字段（isotp_link_t）</h3>
+        <table>
+          <tr><th>字段</th><th>含义</th><th style="text-align:right">值</th></tr>
+          <tr id="r-state"><td class="mono">rx_state</td><td>在等什么</td><td class="mono" style="text-align:right"></td></tr>
+          <tr id="r-len"><td class="mono">rx_len</td><td>总共多长</td><td class="mono" style="text-align:right"></td></tr>
+          <tr id="r-got"><td class="mono">rx_got</td><td>已收到多少</td><td class="mono" style="text-align:right"></td></tr>
+          <tr id="r-sn"><td class="mono">rx_sn</td><td>期待的 CF 序号</td><td class="mono" style="text-align:right"></td></tr>
+          <tr id="r-done"><td class="mono">rx_done</td><td>拼完了吗</td><td class="mono" style="text-align:right"></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div id="notes"></div>
+
+    <div class="nav">
+      <button id="prev">← 上一步</button>
+      <button id="next">下一步 →</button>
+    </div>
+    <div class="kbd">也可以用 ← → 键切换</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var MSG = ['34','00','44','08','01','00','00','00','00','AF','78'];
+  var root = document.querySelector('.wrap');
+  var elSteps = root.querySelector('#steps');
+  var elFrames = root.querySelector('#frames');
+  var elBuf = root.querySelector('#buf');
+  var elTitle = root.querySelector('#title');
+  var elDesc = root.querySelector('#desc');
+  var elNotes = root.querySelector('#notes');
+  var elTag = root.querySelector('#stepTag');
+  var elLayer = root.querySelector('#stepLayer');
+  var lyrCan = root.querySelector('#lyrCan');
+  var lyrIsotp = root.querySelector('#lyrIsotp');
+  var lyrUds = root.querySelector('#lyrUds');
+
+  function slotHTML(i, v){
+    if(!v) return '<div class="slot"><span>—</span><span class="ix">'+i+'</span></div>';
+    return '<div class="slot '+v.o+'"><span>'+v.v+'</span><span class="ix">'+i+'</span></div>';
+  }
+  function fullBuf(upTo, owner){
+    var a = [];
+    for(var i=0;i<11;i++){
+      a.push(i < upTo ? {v:MSG[i], o: owner ? owner(i) : 'ff'} : null);
+    }
+    return a;
+  }
+  function noneBuf(){ return fullBuf(0, null); }
+
+  /* 帧定义 */
+  var F = {
+    ff:   {id:'7E0', cls:'b-ff', bytes:'10 0B 34 00 44 08 01 00', tag:'FF 首帧'},
+    fc:   {id:'7E0', cls:'b-fc', bytes:'30 00 00 00 00 00 00 00', tag:'FC 流控'},
+    cf:   {id:'7E0', cls:'b-cf', bytes:'21 00 00 00 AF 78 00 00', tag:'CF 连续帧'},
+    cfBad:{id:'7E0', cls:'b-cf', bytes:'23 00 00 00 AF 78 00 00', tag:'CF 序号错'},
+    rsp:  {id:'7E8', cls:'b-ok', bytes:'04 74 20 02 00 00 00 00', tag:'SF 应答'}
+  };
+
+  var STEPS = [
+    {
+      t:'目标：一条 11 字节的 UDS 请求',
+      d:'CAN 一帧最多 8 字节，装不下。所以这条请求必须拆成两帧走。',
+      layer:'—',
+      frames:[], buf:noneBuf(),
+      st:{rx_state:'IDLE', rx_len:'0', rx_got:'0', rx_sn:'0', rx_done:'0'},
+      chg:[],
+      note:'<div class="note">要发的内容（11 字节）：<b>' + MSG.join(' ') + '</b><br>' +
+           '前 3 字节是服务号、格式、地址长度格式；接着 4 字节地址 <code>0x08010000</code>；' +
+           '最后 4 字节大小 <code>0x0000AF78</code> = 44920。</div>'
+    },
+    {
+      t:'第 1 帧：首帧 FF 进中断',
+      d:'PCI 高 4 位是 1，说明这是长消息的第一帧。',
+      layer:'CAN → ISO-TP',
+      frames:[F.ff],
+      buf:fullBuf(6, function(){return 'ff';}),
+      st:{rx_state:'WAIT_CF', rx_len:'11', rx_got:'6', rx_sn:'1', rx_done:'0'},
+      chg:['r-state','r-len','r-got','r-sn'],
+      note:'<div class="note"><b>拆解：</b><code>10</code> 高 4 位 1 = FF，低 4 位 + 下一字节 = ' +
+           '<code>0x00B</code> = 11 字节总长。首帧占掉 2 字节（PCI + 长度），剩下 6 字节是数据。' +
+           '代码里就是 <code>rx_got = dlc - 2</code>。</div>' +
+           '<div class="warn">此时 <code>rx_got(6) != rx_len(11)</code>，消息还没拼完，' +
+           '<code>rx_done</code> 仍是 0。<b>上层的 uds_handle 拿不到任何东西。</b></div>'
+    },
+    {
+      t:'ISO-TP 自动回流控帧',
+      d:'收到首帧后必须立刻告诉对方"可以继续发"。',
+      layer:'ISO-TP → CAN',
+      frames:[F.ff, F.fc],
+      buf:fullBuf(6, function(){return 'ff';}),
+      st:{rx_state:'WAIT_CF', rx_len:'11', rx_got:'6', rx_sn:'1', rx_done:'0'},
+      chg:[],
+      note:'<div class="note"><code>30 00 00</code>：高 4 位 3 = FC，低 4 位 0 = 继续发；' +
+           '<code>BS=0</code> 不限块数，<code>STmin=0</code> 帧间不等。<br>' +
+           '<b>注意这是 ECU 自己回的，不用 UDS 层操心</b>——' +
+           '代码里 <code>link_send_fc()</code> 在 FF 分支里就调了。</div>'
+    },
+    {
+      t:'第 2 帧：连续帧 CF 拼上',
+      d:'SN 必须等于期待值（这里是 1），否则整条消息作废。',
+      layer:'CAN → ISO-TP',
+      frames:[F.ff, F.fc, F.cf],
+      buf:fullBuf(11, function(i){ return i < 6 ? 'ff' : 'cf'; }),
+      st:{rx_state:'WAIT_CF', rx_len:'11', rx_got:'11', rx_sn:'2', rx_done:'1'},
+      chg:['r-got','r-sn','r-done'],
+      note:'<div class="note"><b>关键一步：截断。</b>这一帧带了 7 字节，但只剩 5 字节空间：' +
+           '<code>room = rx_len - rx_got = 5</code>，<code>n = min(7, 5) = 5</code>。' +
+           '<br>最后 2 个 <code>00</code> 是补齐字节，<b>如果不过滤就会被当成数据</b>。</div>' +
+           '<div class="note"><code>rx_got(11) >= rx_len(11)</code> → <code>rx_done = 1</code>，' +
+           '状态回 <code>IDLE</code>。<b>到这一步，一条完整消息才存在。</b></div>'
+    },
+    {
+      t:'isotp_read 取包',
+      d:'主循环问"有没有完整的"，有就取走，取完清标志。',
+      layer:'ISO-TP',
+      frames:[F.ff, F.fc, F.cf],
+      buf:fullBuf(11, function(i){ return i < 6 ? 'ff' : 'cf'; }),
+      st:{rx_state:'IDLE', rx_len:'0', rx_got:'11', rx_sn:'2', rx_done:'0'},
+      chg:['r-len','r-done'],
+      note:'<div class="note"><code>isotp_read()</code> 把 11 字节拷到 <code>req[]</code>，' +
+           '返回 <b>1</b> 表示拿到了一条，同时把 <code>rx_done</code> 清 0 —— 取走即消费。</div>' +
+           '<div class="warn"><b>为什么不在中断里直接调 uds_handle？</b>' +
+           '<code>isotp_on_frame</code> 跑在 CAN 接收中断里。' +
+           '而 <code>uds_handle</code> 可能擦 Flash（2.4 秒）。' +
+           '中断只搬数据，业务留给主循环——这是嵌入式的纪律。</div>'
+    },
+    {
+      t:'uds_handle 认出 0x34',
+      d:'到这里，UDS 层完全不知道 CAN 存在。',
+      layer:'UDS',
+      frames:[F.ff, F.fc, F.cf],
+      buf:fullBuf(11, function(i){ return i < 6 ? 'ff' : 'cf'; }),
+      st:{rx_state:'IDLE', rx_len:'0', rx_got:'11', rx_sn:'2', rx_done:'0'},
+      chg:[],
+      note:'<div class="note">函数签名可能是 CAN 送来的，也可能来自串口：' +
+           '<code>uds_handle(s, req, 11, resp, max)</code>。' +
+           '<b>它只看到 req[] 和长度</b>，所以同一套 UDS 换个底层也能用。</div>' +
+           '<div class="note">走 <code>switch(SID)</code> → <code>0x34</code> → 八道门 → 返回 4。</div>'
+    },
+    {
+      t:'应答怎么发出去',
+      d:'应答只有 4 字节，塞得进一帧，所以不用分帧。',
+      layer:'UDS → CAN',
+      frames:[F.ff, F.fc, F.cf, F.rsp],
+      buf:fullBuf(11, function(i){ return i < 6 ? 'ff' : 'cf'; }),
+      st:{rx_state:'IDLE', rx_len:'0', rx_got:'11', rx_sn:'2', rx_done:'0'},
+      chg:[],
+      note:'<div class="note"><code>74 20 02 00</code>：<code>74</code> 是正响应，' +
+           '<code>20</code> 说"接下来 2 字节是长度"，<code>0200</code> = 512 字节单块上限。</div>' +
+           '<div class="note">总长 4 ≤ 7，走 <b>SF 单帧</b>：<code>04 74 20 02 00 00 00 00</code>，' +
+           '首字节低 4 位就是长度，剩下补 0。</div>'
+    },
+    {
+      t:'反例：如果 CF 序号发错',
+      d:'把 21 写成 23，会发生什么。',
+      layer:'ISO-TP',
+      frames:[F.ff, F.fc, F.cfBad],
+      buf:fullBuf(6, function(){return 'ff';}),
+      st:{rx_state:'IDLE', rx_len:'0', rx_got:'6', rx_sn:'1', rx_done:'0'},
+      chg:['r-state','r-len','r-done'],
+      note:'<div class="bad"><b>ECU 的行为：</b>发现 <code>sn(3) != rx_sn(1)</code>，' +
+           '把状态打回 <code>IDLE</code>，<code>rx_done</code> 保持 0，<b>静默丢弃，什么都不回</b>。' +
+           '已经拼的 6 字节还躺在缓冲里，但再也不会被收完。</div>' +
+           '<div class="warn"><b>后果：</b>ISO-TP 层没有否定响应码，出错只能靠上层超时。' +
+           'PC 等不到 <code>74</code> → 超时 → 重发整条 <code>0x34</code>。' +
+           '如果 PC 没意识到，会继续把剩下的 CF 全发完，<b>几百帧全白费</b>。</div>' +
+           '<div class="note">这就是为什么 ISO-TP 的序列号必须严格校验——' +
+           '拼错一个字节的固件比传失败危险得多。</div>'
+    }
+  ];
+
+  /* 生成导航 */
+  STEPS.forEach(function(s, i){
+    var b = document.createElement('span');
+    b.className = 'pill' + (i === 0 ? ' on' : '');
+    b.textContent = (i + 1);
+    b.setAttribute('data-i', i);
+    b.addEventListener('click', function(){ show(i); });
+    elSteps.appendChild(b);
+  });
+
+  var cur = 0;
+  function show(i){
+    cur = Math.max(0, Math.min(STEPS.length - 1, i));
+    var s = STEPS[cur];
+
+    elTitle.textContent = s.t;
+    elDesc.textContent = s.d;
+    elTag.textContent = '第 ' + (cur + 1) + ' / ' + STEPS.length + ' 步';
+    elLayer.textContent = s.layer;
+
+    Array.prototype.forEach.call(elSteps.children, function(el, k){
+      el.classList.toggle('on', k === cur);
+    });
+
+    lyrCan.classList.toggle('on', /CAN/.test(s.layer));
+    lyrIsotp.classList.toggle('on', /ISO-TP/.test(s.layer));
+    lyrUds.classList.toggle('on', /UDS/.test(s.layer));
+
+    /* 帧 */
+    elFrames.innerHTML = '';
+    s.frames.forEach(function(f, k){
+      var d = document.createElement('div');
+      d.className = 'frame' + (f.tag === 'CF 序号错' ? ' bad' : '');
+      d.innerHTML = '<span class="fid">' + f.id + '</span>' +
+                    '<span class="fb ' + f.cls + '">' + f.bytes + '</span>' +
+                    '<span class="t">' + f.tag + '</span>';
+      elFrames.appendChild(d);
+      setTimeout(function(){ d.classList.add('show'); }, 40 * k);
+    });
+    if(s.frames.length === 0){
+      elFrames.innerHTML = '<div style="color:#5f6b7d;font-size:12.5px;padding:6px 2px">（还没有帧）</div>';
+    }
+
+    /* 缓冲 */
+    elBuf.innerHTML = s.buf.map(function(v, k){ return slotHTML(k, v); }).join('');
+
+    /* 状态 */
+    var map = { 'r-state':'rx_state', 'r-len':'rx_len', 'r-got':'rx_got', 'r-sn':'rx_sn', 'r-done':'rx_done' };
+    Object.keys(map).forEach(function(rowId){
+      var tr = root.querySelector('#' + rowId);
+      tr.querySelectorAll('td')[2].textContent = s.st[map[rowId]];
+      tr.classList.toggle('chg', s.chg.indexOf(rowId) >= 0);
+    });
+
+    elNotes.innerHTML = s.note || '';
+
+    root.querySelector('#prev').disabled = (cur === 0);
+    root.querySelector('#next').disabled = (cur === STEPS.length - 1);
+  }
+
+  root.querySelector('#prev').addEventListener('click', function(){ show(cur - 1); });
+  root.querySelector('#next').addEventListener('click', function(){ show(cur + 1); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight') show(cur + 1);
+    if (e.key === 'ArrowLeft') show(cur - 1);
+  });
+
+  show(0);
+})();
+</script>
+</body>
+</html>
