@@ -85,6 +85,12 @@
   .warn{margin-top:12px;background:#2a2110;border:1px solid #4d3b16;border-radius:10px;padding:10px 13px;font-size:13px;color:#e8d6a8}
   .bad{margin-top:12px;background:#2a1620;border:1px solid #4a2530;border-radius:10px;padding:10px 13px;font-size:13px;color:#f0bcc4}
   code{background:#1d2532;padding:1px 5px;border-radius:4px;font-size:12.5px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .diag{background:#0b0f15;border:1px solid var(--line);border-radius:8px;padding:11px 13px;margin:10px 0;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.9;white-space:pre;overflow-x:auto}
+  .diag .pci{color:var(--isotp)}
+  .diag .dat{color:#e6ecf5}
+  .diag .cmt{color:#5f6b7d}
+  .cap{font-size:12px;color:var(--dim);margin:0 0 4px}
 
   .nav{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:10px}
   button{background:#1d2532;color:var(--txt);border:1px solid var(--line);border-radius:9px;
@@ -214,9 +220,20 @@
       buf:fullBuf(6, function(){return 'ff';}),
       st:{rx_state:'WAIT_CF', rx_len:'11', rx_got:'6', rx_sn:'1', rx_done:'0'},
       chg:['r-state','r-len','r-got','r-sn'],
-      note:'<div class="note"><b>拆解：</b><code>10</code> 高 4 位 1 = FF，低 4 位 + 下一字节 = ' +
-           '<code>0x00B</code> = 11 字节总长。首帧占掉 2 字节（PCI + 长度），剩下 6 字节是数据。' +
-           '代码里就是 <code>rx_got = dlc - 2</code>。</div>' +
+      note:'<div class="cap">先看这一帧里到底装了什么 —— 帧里的字节 ≠ 消息里的字节</div>' +
+           '<div class="diag"><span class="dat">34 00 44 08 01 00 00 00 00 AF 78</span>  <span class="cmt">← 消息，11 字节</span>\n\n' +
+           '<span class="pci">10 0B</span>                    <span class="cmt">← PCI，ISO-TP 加的，消息里原本没有</span>\n' +
+           '<span class="dat">34 00 44 08 01 00</span>           <span class="cmt">← 消息的前 6 字节，原封不动</span></div>' +
+           '<div class="note"><b>所以帧 = PCI 说明 + 消息的一段。</b>PCI 不是数据，是给接收方看的标签。' +
+           '首帧占掉 2 字节 PCI，8 - 2 = 6，只剩 6 个字节装数据 —— 代码里就是 <code>rx_got = dlc - 2</code>。</div>' +
+           '<div class="cap">再看 <code>10 0B</code> 怎么变成"总长 11"</div>' +
+           '<div class="diag"><span class="pci">10</span>  高 4 位 = 1  表示"我是首帧"\n' +
+           '    低 4 位 = 0  总长度的高 4 位\n' +
+           '<span class="pci">0B</span>  低 8 位 = 0x0B  总长度的低 8 位\n\n' +
+           '    合起来 = (0 &lt;&lt; 8) | 0x0B = <span class="dat">11</span></div>' +
+           '<div class="note">四种帧的 PCI 长度不同，所以能带的数据字节数也不同：<br>' +
+           '单帧 SF 占 1 字节 → 带 7 ｜ <b>首帧 FF 占 2 字节 → 带 6</b> ｜ ' +
+           '连续帧 CF 占 1 字节 → 带 7 ｜ 流控帧 FC 占 3 字节 → 不带数据</div>' +
            '<div class="warn">此时 <code>rx_got(6) != rx_len(11)</code>，消息还没拼完，' +
            '<code>rx_done</code> 仍是 0。<b>上层的 uds_handle 拿不到任何东西。</b></div>'
     },
