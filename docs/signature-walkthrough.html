@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>签名到底在防什么：一次可点击的篡改实验</title>
+<style>
+  :root{
+    --bg:#0f1218; --panel:#161b24; --line:#242c3a; --txt:#e6ecf5; --dim:#8b98ab;
+    --hdr:#b48cff; --payload:#4a9eff; --sig:#2ed39a;
+    --ok:#2ed39a; --warn:#ffcc4d; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:radial-gradient(1200px 600px at 50% -10%,#1b2433,#0f1218 60%);
+    color:var(--txt);font:15px/1.75 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    padding:28px 20px 60px;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 6px;letter-spacing:.5px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .pill{font-size:12px;padding:5px 12px;border-radius:999px;background:#1a2130;border:1px solid var(--line);color:var(--dim);cursor:pointer}
+  .pill.on{background:#233048;border-color:#3a5580;color:#cfe2ff}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap}
+  .badge{font-size:12px;color:var(--dim);background:#1d2431;border:1px solid var(--line);padding:4px 10px;border-radius:999px}
+  .title{font-size:18px;font-weight:600;margin:2px 0 4px}
+  .desc{color:var(--dim);font-size:13px;margin-bottom:16px}
+
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font-weight:500;font-size:11.5px}
+  td.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+
+  .bar{display:flex;height:58px;border-radius:10px;overflow:hidden;border:1px solid var(--line);margin:8px 0 6px}
+  .seg{display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;color:#0b0f15}
+  .seg.h{background:var(--hdr);width:16%}
+  .seg.p{background:var(--payload);width:68%}
+  .seg.s{background:var(--sig);width:16%}
+  .legend{display:flex;gap:18px;font-size:12px;color:var(--dim);margin-bottom:4px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+  .cover{font-size:12.5px;color:var(--dim);margin-top:6px}
+
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+  .chip{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;padding:6px 9px;border-radius:7px;
+    background:#111722;border:1px solid var(--line);color:var(--payload);cursor:pointer;transition:.12s;user-select:none}
+  .chip:hover{border-color:var(--payload)}
+  .chip.bad{background:#2a1620;border-color:#7a3344;color:var(--bad)}
+
+  .verdicts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  @media(max-width:760px){.verdicts{grid-template-columns:1fr}}
+  .vd{background:#111722;border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+  .vd .lb{font-size:11.5px;color:var(--dim);margin-bottom:4px}
+  .vd .v{font-size:14px;font-weight:600}
+  .vd.ok{border-color:#1f5c3d;background:#0f2419} .vd.ok .v{color:var(--ok)}
+  .vd.no{border-color:#7a3344;background:#2a1620} .vd.no .v{color:var(--bad)}
+  .vd .s{font-size:12px;color:var(--dim);margin-top:3px;font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  .note{margin-top:14px;background:#14202b;border:1px solid #1f3a4d;border-radius:10px;padding:10px 13px;font-size:13px;color:#bcd3e6}
+  .note b{color:#e6f3ff}
+  .warn{margin-top:12px;background:#2a2110;border:1px solid #4d3b16;border-radius:10px;padding:10px 13px;font-size:13px;color:#e8d6a8}
+  .bad{margin-top:12px;background:#2a1620;border:1px solid #4a2530;border-radius:10px;padding:10px 13px;font-size:13px;color:#f0bcc4}
+  code{background:#1d2532;padding:1px 5px;border-radius:4px;font-size:12.5px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  ul.pts{margin:8px 0 0;padding-left:20px;font-size:13.5px}
+  ul.pts li{margin:5px 0}
+
+  .toggle{display:flex;gap:8px;margin:10px 0 14px;flex-wrap:wrap}
+  .toggle button{background:#1a2130;color:var(--dim);border:1px solid var(--line);border-radius:8px;
+    padding:7px 14px;font-size:13px;cursor:pointer}
+  .toggle button.on{background:#233048;border-color:#3a5580;color:#cfe2ff}
+
+  .fields{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+  @media(max-width:700px){.fields{grid-template-columns:1fr}}
+  .fd{background:#111722;border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+  .fd .k{font-size:11.5px;color:var(--dim)}
+  .fd .v{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;margin-top:2px}
+  .fd.open{border-color:#7a3344;background:#2a1620}
+  .fd.open .v{color:var(--bad)}
+  .fd .tag{font-size:11px;color:var(--bad);margin-top:4px;display:none}
+  .fd.open .tag{display:block}
+
+  .nav{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:10px}
+  .nav button{background:#1d2532;color:var(--txt);border:1px solid var(--line);border-radius:9px;
+    padding:9px 16px;font-size:14px;cursor:pointer;transition:.15s}
+  .nav button:hover:not(:disabled){background:#26303f;border-color:#3a475a}
+  .nav button:disabled{opacity:.35;cursor:not-allowed}
+  .kbd{font-size:11px;color:#5f6b7d;margin-top:10px;text-align:center}
+  .cap{font-size:12px;color:var(--dim);margin:12px 0 4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>签名到底在防什么</h1>
+  <div class="sub">一次可以动手的篡改实验：改一个字节，看 CRC 能不能救你</div>
+
+  <div class="steps" id="steps"></div>
+
+  <div class="card">
+    <div class="topbar">
+      <span class="badge" id="stepTag">第 1 / 6 步</span>
+      <span class="badge" id="stepHint">—</span>
+    </div>
+    <div class="title" id="title"></div>
+    <div class="desc" id="desc"></div>
+    <div id="stage"></div>
+
+    <div class="nav">
+      <button id="prev">← 上一步</button>
+      <button id="next">下一步 →</button>
+    </div>
+    <div class="kbd">也可以用 ← → 键切换</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var root = document.querySelector('.wrap');
+  var elSteps = root.querySelector('#steps');
+  var elTitle = root.querySelector('#title');
+  var elDesc = root.querySelector('#desc');
+  var elStage = root.querySelector('#stage');
+  var elTag = root.querySelector('#stepTag');
+  var elHint = root.querySelector('#stepHint');
+
+  /* ---------- 真实 CRC32（和固件里同一套算法） ---------- */
+  var TBL = (function(){
+    var t = [], c, n, k;
+    for(n=0;n<256;n++){
+      c = n;
+      for(k=0;k<8;k++){ c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); }
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  function crc32(bytes){
+    var c = 0xFFFFFFFF;
+    for(var i=0;i<bytes.length;i++){ c = TBL[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8); }
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function hex8(v){ return ('00000000' + v.toString(16)).slice(-8); }
+  function hex2(v){ return ('0' + v.toString(16)).slice(-2).toUpperCase(); }
+
+  var PAYLOAD = [0x7F,0x45,0x4C,0x46,0x02,0x01,0x01,0x00,
+                 0xAA,0x55,0x12,0x34,0xDE,0xAD,0xBE,0xEF];
+  var CUR = PAYLOAD.slice();
+  var ORIG_CRC = crc32(PAYLOAD);
+
+  var STEPS = [
+    {
+      t:'三个东西：私钥、公钥、签名',
+      d:'先分清谁有什么，后面才不会乱。',
+      hint:'角色',
+      html:
+        '<table>' +
+        '<tr><th>东西</th><th>大小</th><th>谁有</th><th>干什么</th></tr>' +
+        '<tr><td><b>私钥</b></td><td class="mono">32 B</td><td>只有 PC</td><td>签包时用，<b>绝不出厂</b></td></tr>' +
+        '<tr><td><b>公钥</b></td><td class="mono">32 B</td><td>写在 Bootloader 里</td><td>验签时用，公开也没关系</td></tr>' +
+        '<tr><td><b>签名</b></td><td class="mono">64 B</td><td>跟着包走</td><td>证明这个包是持私钥的人签的</td></tr>' +
+        '</table>' +
+        '<div class="note"><b>为什么公钥可以公开：</b>有公钥能验出“是不是你签的”，' +
+        '但推不出私钥，所以造不出新签名。这叫单向。</div>' +
+        '<div class="warn">整套安全只建立在一件事上：<b>私钥只在 PC 上</b>。' +
+        '私钥一泄露，签名体系立刻作废。</div>'
+    },
+    {
+      t:'一个固件包长什么样',
+      d:'三段：包头、payload、签名。注意签名盖住的范围。',
+      hint:'结构',
+      html:
+        '<div class="bar">' +
+        '<div class="seg h">包头 32 B</div>' +
+        '<div class="seg p">payload · 44824 B</div>' +
+        '<div class="seg s">签名 64 B</div>' +
+        '</div>' +
+        '<div class="legend">' +
+        '<span><i style="background:var(--hdr)"></i>包头</span>' +
+        '<span><i style="background:var(--payload)"></i>payload</span>' +
+        '<span><i style="background:var(--sig)"></i>Ed25519 签名</span>' +
+        '</div>' +
+        '<div class="cover">↑ 签名覆盖：<b style="color:var(--hdr)">包头</b> + <b style="color:var(--payload)">payload</b>；' +
+        '<b style="color:var(--sig)">不含签名自己</b>。</div>' +
+        '<div class="note"><b>为什么签名不含自己：</b>签名是对“内容”盖的印，印本身不是内容的一部分。' +
+        '这和 <code>header_crc</code> 只算前 28 字节是同一个道理——校验值不能包含自己。</div>'
+    },
+    {
+      t:'动手：改一个字节试试',
+      d:'点任意一个字节改动它，看 CRC 和签名分别是什么反应。',
+      hint:'可交互',
+      html:
+        '<div class="cap">payload（16 字节，点一下翻一位）</div>' +
+        '<div class="chips" id="chips"></div>' +
+        '<div class="verdicts">' +
+        '<div class="vd ok" id="vdCrc"><div class="lb">CRC32（攻击者能自己重算）</div>' +
+        '<div class="v" id="vCrc">合法</div><div class="s" id="sCrc"></div></div>' +
+        '<div class="vd ok" id="vdSig"><div class="lb">Ed25519 签名（攻击者造不出）</div>' +
+        '<div class="v" id="vSig">通过</div><div class="s" id="sSig">签名 64 字节未变</div></div>' +
+        '</div>' +
+        '<div class="note" id="ldNote"><b>现在还没改。</b>CRC 对得上，签名也对得上。</div>' +
+        '<div class="warn" id="ldWarn" style="display:none"><b>看到区别了吗：</b>' +
+        'CRC 变了，但攻击者<b>能自己算出一个新的合法值</b>写回包头；' +
+        '签名他算不出来，因为那需要私钥。<b>所以能挡住篡改的只有签名。</b></div>'
+    },
+    {
+      t:'为什么包头也必须一起签',
+      d:'如果只签 payload，包头就能被随便改，而且没人发现。',
+      hint:'关键点',
+      html:
+        '<div class="toggle">' +
+        '<button id="mOnly" data-m="0">只签 payload</button>' +
+        '<button id="mBoth" class="on" data-m="1">签 包头 + payload</button>' +
+        '</div>' +
+        '<div class="fields">' +
+        '<div class="fd" id="f1"><div class="k">version（偏移 4）</div><div class="v">24</div>' +
+        '<div class="tag">可改成 999，绕过降级检查</div></div>' +
+        '<div class="fd" id="f2"><div class="k">load_address（偏移 16）</div><div class="v">0x08010000</div>' +
+        '<div class="tag">可改成别处，装到错误区域</div></div>' +
+        '<div class="fd" id="f3"><div class="k">image_size（偏移 8）</div><div class="v">44824</div>' +
+        '<div class="tag">可改小，只验一部分内容</div></div>' +
+        '</div>' +
+        '<div class="note" id="mNote"></div>'
+    },
+    {
+      t:'三条验签路径',
+      d:'签名不是写了个函数没人调用。三个入口都会触发。',
+      hint:'落地',
+      html:
+        '<table>' +
+        '<tr><th>什么时候</th><th>在哪</th><th>验什么</th></tr>' +
+        '<tr><td>收包结束时</td><td class="mono">0x37</td><td>CRC + 向量表 + <b>签名</b>，通过才置 READY</td></tr>' +
+        '<tr><td>装进去之前</td><td class="mono">boot_select / READY</td><td>再验一遍，防 NOR 中途被改</td></tr>' +
+        '<tr><td>回滚时</td><td class="mono">RESTORING</td><td><b>只验 CRC，不验签名</b></td></tr>' +
+        '</table>' +
+        '<div class="note"><b>回滚为什么不验签：</b>备份里装的是“已验过签名、装进内部 Flash 的那个 App”的副本，' +
+        '搬的还是同一份东西；而且 MCU 上没有私钥，没法在恢复时重新签。</div>' +
+        '<div class="warn"><b>但这条免签路径必须堵死，否则就是后门。</b>代码两道锁：' +
+        '<code>offset 必须是 BACKUP_OFFSET</code>、<code>flags 必须 == 0</code>。' +
+        '拿下载区的伪造包去调它，直接拒绝。</div>' +
+        '<div class="note">设计模式：要开一个“放宽检查”的入口时，把它<b>限定在特定数据上</b>，' +
+        '而不是加一个 <code>skip_verify = 1</code> 的参数。</div>'
+    },
+    {
+      t:'边界：这不是安全启动',
+      d:'说错一次，后面全都不被信。',
+      hint:'表述',
+      html:
+        '<table>' +
+        '<tr><th>不能说</th><th>为什么</th></tr>' +
+        '<tr><td>“实现了安全启动”</td><td>公钥硬编码、Bootloader 自身不验签、无 BootROM 信任根</td></tr>' +
+        '<tr><td>“能防降级”</td><td>没有 OTP 单调计数器，旧版本包重放挡不住</td></tr>' +
+        '<tr><td>“抗侧信道”</td><td>用的是 <code>*_vartime</code> 点运算</td></tr>' +
+        '</table>' +
+        '<div class="note"><b>正确说法：</b>“我做的是<b>镜像篡改检测</b>——包被改过、签名伪造、' +
+        '用错密钥签的，都会被拒绝。但我不会说这是安全启动，' +
+        '因为 Bootloader 自身没有被验签，也没有硬件信任根。”</div>' +
+        '<div class="warn"><b>加一句更加分：</b>“验签路径用的是变时间点运算，' +
+        '固件签名场景可接受（都是公开数据），量产应换常量时间实现或硬件加速。”</div>'
+    }
+  ];
+
+  /* 导航 */
+  STEPS.forEach(function(s, i){
+    var b = document.createElement('span');
+    b.className = 'pill' + (i === 0 ? ' on' : '');
+    b.textContent = (i + 1);
+    b.addEventListener('click', function(){ show(i); });
+    elSteps.appendChild(b);
+  });
+
+  var cur = 0;
+
+  function renderTamper(){
+    var box = root.querySelector('#chips');
+    if(!box) return;
+    box.innerHTML = CUR.map(function(v, i){
+      var bad = (v !== PAYLOAD[i]) ? ' bad' : '';
+      return '<span class="chip' + bad + '" data-i="' + i + '">' + hex2(v) + '</span>';
+    }).join('');
+
+    var changed = CUR.some(function(v, i){ return v !== PAYLOAD[i]; });
+    var c = crc32(CUR);
+
+    var vCrc = root.querySelector('#vCrc');
+    var sCrc = root.querySelector('#sCrc');
+    var vSig = root.querySelector('#vSig');
+    var sSig = root.querySelector('#sSig');
+    var vdSig = root.querySelector('#vdSig');
+
+    sCrc.textContent = '0x' + hex8(c) + (changed ? '（重算成功）' : '（原始值）');
+    vCrc.textContent = '合法';
+
+    if(changed){
+      vSig.textContent = '不通过';
+      sSig.textContent = '签名还是原来那 64 字节，对不上了';
+      vdSig.className = 'vd no';
+    } else {
+      vSig.textContent = '通过';
+      sSig.textContent = '签名 64 字节未变';
+      vdSig.className = 'vd ok';
+    }
+
+    root.querySelector('#ldNote').style.display = changed ? 'none' : 'block';
+    root.querySelector('#ldWarn').style.display = changed ? 'block' : 'none';
+
+    Array.prototype.forEach.call(box.children, function(el){
+      el.addEventListener('click', function(){
+        var i = parseInt(el.getAttribute('data-i'), 10);
+        CUR[i] = CUR[i] ^ 0x01;
+        renderTamper();
+      });
+    });
+  }
+
+  function bindMode(){
+    var bOnly = root.querySelector('#mOnly');
+    var bBoth = root.querySelector('#mBoth');
+    var note = root.querySelector('#mNote');
+    if(!bOnly || !bBoth) return;
+
+    function set(mode){
+      bOnly.classList.toggle('on', mode === 0);
+      bBoth.classList.toggle('on', mode === 1);
+      ['#f1','#f2','#f3'].forEach(function(sel){
+        root.querySelector(sel).classList.toggle('open', mode === 0);
+      });
+      if(mode === 0){
+        note.innerHTML = '<b style="color:var(--bad)">只签 payload 时：</b>' +
+          '包头里这三个字段<b>没有任何保护</b>。攻击者可以随便改，' +
+          'CRC 他自己重算一遍就合法了，签名也只覆盖 payload、照样对得上。' +
+          '<br>→ 能改版本号绕过降级检查、能改地址装到别处、能改长度只验一部分。';
+      } else {
+        note.innerHTML = '<b style="color:var(--ok)">签包头 + payload 时：</b>' +
+          '这三个字段被锁死。改任何一位，签名立刻失效。' +
+          '<br>代价是打包顺序必须是：算 payload CRC → 写包头 → 算 header_crc → 写包头 → <b>最后才签名</b>。' +
+          '倒过来就不行——先签完再改头，签名当场作废。';
+      }
+    }
+    bOnly.addEventListener('click', function(){ set(0); });
+    bBoth.addEventListener('click', function(){ set(1); });
+    set(1);
+  }
+
+  function show(i){
+    cur = Math.max(0, Math.min(STEPS.length - 1, i));
+    var s = STEPS[cur];
+    elTitle.textContent = s.t;
+    elDesc.textContent = s.d;
+    elTag.textContent = '第 ' + (cur + 1) + ' / ' + STEPS.length + ' 步';
+    elHint.textContent = s.hint;
+
+    Array.prototype.forEach.call(elSteps.children, function(el, k){
+      el.classList.toggle('on', k === cur);
+    });
+
+    elStage.innerHTML = s.html;
+
+    if(cur === 2) renderTamper();
+    if(cur === 3) bindMode();
+
+    root.querySelector('#prev').disabled = (cur === 0);
+    root.querySelector('#next').disabled = (cur === STEPS.length - 1);
+  }
+
+  root.querySelector('#prev').addEventListener('click', function(){ show(cur - 1); });
+  root.querySelector('#next').addEventListener('click', function(){ show(cur + 1); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowRight') show(cur + 1);
+    if(e.key === 'ArrowLeft') show(cur - 1);
+  });
+
+  show(0);
+})();
+</script>
+</body>
+</html>
